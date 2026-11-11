@@ -129,10 +129,10 @@ eine einzige Bilddatei:
 | Schritt | Was passiert |
 | --- | --- |
 | Höhenfeld | sechs Oktaven Gradientenrauschen ergeben das Grundrelief |
-| Krater | Schüssel, aufgeworfener Wall und Auswurfdecke; die Ränder sind leicht unrund, kleine Krater sind viel häufiger als große |
+| Krater | Schüssel, flacher Wall und Auswurfdecke; die Ränder sind leicht unrund. Wenige große statt vieler kleiner — sonst wird die Fläche unruhig |
 | Steine | kleine steile Buckel, die eigene Schatten werfen |
 | Licht | Normalen aus dem Gefälle, Sonne flach über dem Horizont |
-| Schatten | Strahlmarsch entlang der Sonnenrichtung — ohne Atmosphäre sind die Schatten hart und lang, und genau das macht den Eindruck |
+| Schatten | Strahlmarsch entlang der Sonnenrichtung; weich abgedunkelt statt pechschwarz |
 | Albedo | heller Staub auf Kraterrändern, dunklere Flächen dazwischen |
 
 Gerechnet wird in Häppchen von zehn Millisekunden pro Bild, sonst stünde die

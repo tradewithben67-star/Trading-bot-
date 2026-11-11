@@ -43,17 +43,19 @@ h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:-.02em;marg
 p{margin:0}
 :focus-visible{outline:1px solid var(--gold);outline-offset:3px}
 
+/* ---------- Mondgestein ---------- */
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:#0A0A0B;pointer-events:none}
 .bg>*{position:absolute}
 .bg__rock{inset:0;width:100%;height:100%;display:block}
 /* Der Lichtsaum am oberen Rand: die Sonne steht dort flach über dem Grat. */
 .bg__sun{
   inset:0;
   background:
-    radial-gradient(120% 70% at 78% -14%,rgba(255,246,226,.10) 0%,rgba(255,240,210,.035) 32%,transparent 62%),
+    radial-gradient(120% 70% at 78% -14%,rgba(255,246,226,.07) 0%,rgba(255,240,210,.025) 32%,transparent 62%),
     radial-gradient(90% 60% at 12% 108%,rgba(96,116,150,.10) 0%,transparent 58%);
 }
 /* Damit die Schrift gewinnt: eine dunkle Decke über dem Gestein. */
-.bg__shade{inset:0;background:linear-gradient(180deg,rgba(6,7,9,.60) 0%,rgba(6,7,9,.66) 44%,rgba(6,7,9,.76) 100%)}
+.bg__shade{inset:0;background:linear-gradient(180deg,rgba(6,7,9,.66) 0%,rgba(6,7,9,.70) 44%,rgba(6,7,9,.78) 100%)}
 .bg__vig{inset:0;background:radial-gradient(142% 112% at 50% 36%,transparent 26%,rgba(0,0,0,.42) 58%,rgba(0,0,0,.78) 100%)}
 
 .wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
@@ -959,7 +961,7 @@ pre b{color:var(--fg);font-weight:500}
         stones: stoneList(w, h),
         drawn: 0
       };
-      var az = 2.5, el = 0.30;
+      var az = 2.5, el = 0.44;
       job.lx = Math.cos(az) * Math.cos(el);
       job.ly = Math.sin(az) * Math.cos(el);
       job.lz = Math.sin(el);
@@ -973,26 +975,26 @@ pre b{color:var(--fg);font-weight:500}
 
     function craterList(w, h){
       var r = rng(4242), out = [];
-      var count = Math.max(40, Math.round(w * h / 5200));
+      var count = Math.max(14, Math.round(w * h / 16000));
       for (var c = 0; c < count; c++){
-        var R = 7 * Math.pow(1 - 0.999 * r(), -0.72);
-        if (R > Math.min(w, h) * 0.26) R = Math.min(w, h) * 0.26;
+        var R = 13 * Math.pow(1 - 0.999 * r(), -0.58);
+        if (R > Math.min(w, h) * 0.24) R = Math.min(w, h) * 0.24;
         out.push({
           R: R, cx: r() * w, cy: r() * h,
-          depth: R * (0.17 + 0.1 * r()),
+          depth: R * (0.12 + 0.07 * r()),
           rim: 0, wobble: 0.05 + 0.07 * r(),
           phase: r() * 6.28318, lobes: 3 + ((r() * 4) | 0)
         });
-        out[out.length - 1].rim = out[out.length - 1].depth * (0.42 + 0.22 * r());
+        out[out.length - 1].rim = out[out.length - 1].depth * (0.34 + 0.16 * r());
       }
       return out;
     }
 
     function stoneList(w, h){
       var r = rng(991), out = [];
-      var n = Math.round(w * h / 26000);
+      var n = Math.round(w * h / 150000);
       for (var i = 0; i < n; i++){
-        var R = 2 + r() * 5;
+        var R = 3 + r() * 4;
         out.push({x: r() * w, y: r() * h, R: R, H: R * (0.8 + r() * 0.7)});
       }
       return out;
@@ -1002,13 +1004,13 @@ pre b{color:var(--fg);font-weight:500}
       var w = j.w, p = j.p, p2 = j.p2, base = 1 / 260;
       for (var x = 0; x < w; x++){
         var amp = 1, freq = base, v = 0;
-        for (var i = 0; i < 6; i++){
+        for (var i = 0; i < 5; i++){
           v += amp * perlin(x * freq, y * freq, p);
           freq *= 2.07; amp *= 0.5;
         }
         var k = y * w + x;
-        j.height[k] = v * 26;
-        j.albedo[k] = 0.80 + 0.20 * perlin(x * 0.0022, y * 0.0022, p2);
+        j.height[k] = v * 17;
+        j.albedo[k] = 0.86 + 0.12 * perlin(x * 0.0022, y * 0.0022, p2);
       }
     }
 
@@ -1028,13 +1030,13 @@ pre b{color:var(--fg);font-weight:500}
           var k = y * w + x;
           if (rr < 1){
             j.height[k] -= c.depth * (1 - rr * rr) * 0.92;
-            j.albedo[k] += 0.05 * (1 - rr);
+            j.albedo[k] += 0.025 * (1 - rr);
           }
           var e = rr - 1.0;
           j.height[k] += c.rim * Math.exp(-(e * e) / 0.018);
           var f = rr - 1.35;
           j.height[k] += c.rim * 0.3 * Math.exp(-(f * f) / 0.34);
-          if (rr > 0.95 && rr < 1.5) j.albedo[k] += 0.06 * Math.exp(-(e * e) / 0.06);
+          if (rr > 0.95 && rr < 1.5) j.albedo[k] += 0.03 * Math.exp(-(e * e) / 0.06);
         }
       }
     }
@@ -1077,15 +1079,15 @@ pre b{color:var(--fg);font-weight:500}
             px2 += j.sx * step; py2 += j.sy * step;
             var ix = px2 | 0, iy = py2 | 0;
             if (ix < 0 || iy < 0 || ix >= w || iy >= h) break;
-            if (height[iy * w + ix] - hC > j.need * (s + 1) * step){ lit *= 0.06; break; }
+            if (height[iy * w + ix] - hC > j.need * (s + 1) * step){ lit *= 0.22; break; }
             step *= 1.17;
           }
         }
 
-        var ao = 0.72 + 0.28 / (1 + Math.exp(-(hC + 2) * 0.22));
-        var v = albedo[k] * (0.045 + 0.955 * Math.pow(lit, 0.92)) * ao;
-        v *= 0.50;
-        v += (j.noise() - 0.5) * 0.012;
+        var ao = 0.82 + 0.18 / (1 + Math.exp(-(hC + 2) * 0.22));
+        var v = albedo[k] * (0.09 + 0.91 * Math.pow(lit, 1.05)) * ao;
+        v *= 0.46;
+        v += (j.noise() - 0.5) * 0.006;
         if (v < 0) v = 0; else if (v > 1) v = 1;
 
         var sm = 1 - lit, o = k * 4;

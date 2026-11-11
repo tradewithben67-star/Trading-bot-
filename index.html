@@ -283,25 +283,18 @@ a{color:var(--fg)}
 .foot .copyline .val{font-size:12px;letter-spacing:0}
 .foot .btn{padding:5px 10px;font-size:10px}
 
-/* Schmal */
+/* Schmal: Leiste bleibt links, nur schmaler */
 @media (max-width:760px){
-  .shell{grid-template-columns:minmax(0,1fr);gap:28px}
-  .rail{
-    position:sticky;
-    top:env(safe-area-inset-top,0px);
-    z-index:10;
-    margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));
-    padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
-    padding-block:10px;
-    background:rgba(0,0,0,.86);
-    backdrop-filter:blur(8px);
-    border-bottom:1px solid var(--line-soft);
-  }
-  .rail__list{grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
-  .ltr{padding:0;text-align:center;font-size:clamp(30px,10vw,44px)}
-  .ltr::before{left:50%;transform:translateX(-50%);top:auto;bottom:-6px;width:18px;height:2px}
-  .rail__word{text-align:center;padding-left:0;margin-top:6px}
-  .rail__hint{display:none}
+  .shell{grid-template-columns:clamp(48px,13vw,92px) minmax(0,1fr);gap:clamp(14px,4vw,30px)}
+  .ltr{font-size:clamp(28px,7.6vw,42px);padding-left:11px}
+  .rail__word,.rail__hint{display:none}
+  .panel{gap:22px}
+  .rules li{grid-template-columns:minmax(0,1fr);gap:6px}
+  .rules i{display:block}
+}
+@media (max-width:430px){
+  .facts{grid-template-columns:minmax(0,1fr)}
+  .video__ph{padding:16px}
 }
 </style>
 </head>

@@ -1,0 +1,319 @@
+"""Telegram-Anbindung.
+
+Der Bot hängt an derselben Maschine wie der Handelsbot und liest dessen
+Protokoll, Zustand und Aufgaben. Er beantwortet Befehle immer; freies
+Schreiben nur, wenn das Anthropic-SDK und ein Schlüssel vorhanden sind.
+
+Gesprochen wird über die Bot-API von Telegram, per langem Abruf (getUpdates).
+Dafür braucht die Maschine keine öffentliche Adresse — sie fragt nur nach
+draußen. Reines Standard-Python.
+
+Zugangsdaten kommen aus der Umgebung, nie aus dem Repository:
+
+    TELEGRAM_TOKEN     von @BotFather
+    TELEGRAM_CHAT_ID   die eigene Chat-Kennung; nur sie wird bedient
+    ANTHROPIC_API_KEY  nur für freies Schreiben
+"""
+
+from __future__ import annotations
+
+import base64
+import json
+import os
+import time
+import urllib.error
+import urllib.request
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any, Protocol, Sequence
+
+from . import report
+from .assistant import Assistant, AssistantSettings
+from .cli import rules_for
+from .config import Config
+
+API = "https://api.telegram.org"
+LIMIT = 3900          # Telegram bricht bei 4096 Zeichen ab
+
+
+@dataclass
+class TelegramSettings:
+    token: str = ""
+    chat_id: str = ""
+    poll_timeout: int = 50
+    model: str = "claude-opus-5-5"
+    effort: str = "low"
+    max_tokens: int = 1200
+
+    @staticmethod
+    def from_env(env: dict[str, str] | None = None) -> "TelegramSettings":
+        e = env if env is not None else os.environ
+        return TelegramSettings(
+            token=e.get("TELEGRAM_TOKEN", "").strip(),
+            chat_id=str(e.get("TELEGRAM_CHAT_ID", "")).strip(),
+            poll_timeout=int(e.get("TELEGRAM_POLL_TIMEOUT", "50") or 50),
+            model=e.get("BENGX_MODEL", "claude-opus-5-5").strip() or "claude-opus-5-5",
+            effort=e.get("BENGX_EFFORT", "low").strip() or "low",
+            max_tokens=int(e.get("BENGX_MAX_TOKENS", "1200") or 1200),
+        )
+
+
+def load_env_file(path: str | Path) -> dict[str, str]:
+    """Liest eine einfache KEY=WERT-Datei. Nichts davon gehört ins Repository."""
+    p = Path(path)
+    out: dict[str, str] = {}
+    if not p.exists():
+        return out
+    for line in p.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        out[key.strip()] = value.strip().strip('"').strip("'")
+    return out
+
+
+# ---- Verbindung ----------------------------------------------------------
+class Transport(Protocol):
+    def call(self, method: str, payload: dict[str, Any]) -> dict[str, Any]: ...
+    def download(self, file_path: str) -> bytes: ...
+
+
+@dataclass
+class HttpTransport:
+    token: str
+    timeout: float = 70.0
+
+    def call(self, method: str, payload: dict[str, Any]) -> dict[str, Any]:
+        data = json.dumps(payload).encode("utf-8")
+        request = urllib.request.Request(
+            f"{API}/bot{self.token}/{method}", data=data,
+            headers={"Content-Type": "application/json"})
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as answer:
+                return json.loads(answer.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", "replace")[:300]
+            raise ConnectionError(f"Telegram antwortet {exc.code}: {body}") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise ConnectionError(f"Telegram nicht erreichbar: {exc}") from exc
+
+    def download(self, file_path: str) -> bytes:
+        url = f"{API}/file/bot{self.token}/{file_path}"
+        try:
+            with urllib.request.urlopen(url, timeout=self.timeout) as answer:
+                return answer.read()
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            raise ConnectionError(f"Datei nicht abrufbar: {exc}") from exc
+
+
+class FakeTransport:
+    """Für Tests: merkt sich alles und liefert vorbereitete Antworten."""
+
+    def __init__(self, updates: Sequence[dict[str, Any]] = (),
+                 files: dict[str, bytes] | None = None) -> None:
+        self.updates = list(updates)
+        self.files = files or {}
+        self.sent: list[dict[str, Any]] = []
+        self.calls: list[tuple[str, dict[str, Any]]] = []
+
+    def call(self, method, payload):
+        self.calls.append((method, payload))
+        if method == "getUpdates":
+            batch, self.updates = self.updates, []
+            return {"ok": True, "result": batch}
+        if method == "sendMessage":
+            self.sent.append(payload)
+            return {"ok": True, "result": {"message_id": len(self.sent)}}
+        if method == "getFile":
+            return {"ok": True, "result": {"file_path": "fotos/" + payload["file_id"]}}
+        return {"ok": True, "result": {}}
+
+    def download(self, file_path):
+        return self.files.get(file_path.split("/")[-1], b"")
+
+
+# ---- Der Bot --------------------------------------------------------------
+HILFE = """Schreib einfach normal, ich antworte.
+
+Befehle:
+/stand — Kapital, offene Positionen, Zahlen von heute
+/signale [heute|woche|monat|alles] — die letzten Signale
+/regeln [dauerlaeufer|swing|kopierer] — das Regelwerk im Klartext
+/aufgabe <text> — Problem oder Wunsch notieren
+/aufgaben — notierte Aufgaben zeigen
+/aus — Not-Aus setzen: alles zu, nichts Neues
+/an — Not-Aus wieder lösen
+/neu — Gesprächsfaden vergessen
+/hilfe — diese Liste"""
+
+
+class TelegramBot:
+    def __init__(self, config: Config, settings: TelegramSettings,
+                 transport: Transport, assistant: Assistant | None = None) -> None:
+        self.cfg = config
+        self.tg = settings
+        self.net = transport
+        self.ai = assistant or Assistant(AssistantSettings(
+            model=settings.model, effort=settings.effort,
+            max_tokens=settings.max_tokens))
+        self.offset = 0
+
+    # ---- Zugang ---------------------------------------------------------
+    def allowed(self, chat_id: str) -> bool:
+        return bool(self.tg.chat_id) and str(chat_id) == str(self.tg.chat_id)
+
+    # ---- Eine Nachricht --------------------------------------------------
+    def handle(self, update: dict[str, Any]) -> list[str]:
+        message = update.get("message") or update.get("edited_message") or {}
+        chat_id = str((message.get("chat") or {}).get("id", ""))
+        if not chat_id:
+            return []
+
+        if not self.allowed(chat_id):
+            if not self.tg.chat_id:
+                return ["Noch keine Chat-Kennung hinterlegt.\n\n"
+                        f"Deine lautet: {chat_id}\n\n"
+                        "Trag sie als TELEGRAM_CHAT_ID ein und starte mich neu. "
+                        "Bis dahin antworte ich nichts weiter."]
+            return ["Dieser Chat ist nicht freigegeben."]
+
+        text = (message.get("text") or message.get("caption") or "").strip()
+        bilder = self._images(message)
+
+        if text.startswith("/"):
+            return self._command(text)
+        if not text and not bilder:
+            return ["Damit kann ich nichts anfangen. /hilfe zeigt, was geht."]
+
+        lage = report.build(self.cfg).text()
+        return [self.ai.answer(text, lage, bilder)]
+
+    def _command(self, text: str) -> list[str]:
+        teile = text.split()
+        befehl = teile[0].split("@")[0].lower()
+        rest = " ".join(teile[1:]).strip()
+
+        if befehl in ("/start", "/hilfe", "/help"):
+            return [HILFE]
+
+        if befehl == "/stand":
+            return [report.build(self.cfg).text()]
+
+        if befehl == "/signale":
+            zeitraum = (rest or "heute").lower()
+            if zeitraum not in ("heute", "woche", "monat", "alles"):
+                return ["Zeitraum: heute, woche, monat oder alles."]
+            return [report.signale_text(self.cfg, zeitraum)]
+
+        if befehl == "/regeln":
+            name = (rest or self.cfg.bot.name).lower()
+            try:
+                return [rules_for(self.cfg, name)]
+            except ValueError as exc:
+                return [str(exc)]
+
+        if befehl == "/aufgabe":
+            if not rest:
+                return ["So: /aufgabe Der Bot schreibt seit gestern keine Signale."]
+            nummer = report.aufgabe_anlegen(self.cfg, rest)
+            return [f"Notiert als Aufgabe {nummer}. Claude Code arbeitet sie ab."]
+
+        if befehl == "/aufgaben":
+            liste = report.aufgaben_lesen(self.cfg)
+            offen = [a for a in liste if a.get("status") != "erledigt"]
+            if not offen:
+                return ["Keine offenen Aufgaben."]
+            zeilen = [f"{i + 1}. {a.get('text', '')}" for i, a in enumerate(offen)]
+            return ["Offene Aufgaben:\n" + "\n".join(zeilen)]
+
+        if befehl == "/aus":
+            p = Path(self.cfg.live.killswitch_file)
+            p.parent.mkdir(parents=True, exist_ok=True)
+            p.write_text("aus über Telegram\n", encoding="utf-8")
+            return ["Not-Aus gesetzt. Beim nächsten Durchlauf wird alles "
+                    "geschlossen und nichts Neues eröffnet. Lösen mit /an."]
+
+        if befehl == "/an":
+            p = Path(self.cfg.live.killswitch_file)
+            if p.exists():
+                p.unlink()
+                return ["Not-Aus gelöst. Der Bot darf wieder handeln."]
+            return ["Der Not-Aus war nicht gesetzt."]
+
+        if befehl == "/neu":
+            self.ai.reset()
+            return ["Gesprächsfaden vergessen."]
+
+        return [f"Den Befehl {befehl} kenne ich nicht. /hilfe zeigt die Liste."]
+
+    # ---- Bilder ----------------------------------------------------------
+    def _images(self, message: dict[str, Any]) -> list[tuple[str, str]]:
+        fotos = message.get("photo") or []
+        if not fotos:
+            return []
+        groesstes = max(fotos, key=lambda f: f.get("file_size") or f.get("width") or 0)
+        try:
+            antwort = self.net.call("getFile", {"file_id": groesstes["file_id"]})
+            pfad = (antwort.get("result") or {}).get("file_path")
+            if not pfad:
+                return []
+            daten = self.net.download(pfad)
+        except (ConnectionError, KeyError):
+            return []
+        if not daten:
+            return []
+        art = "image/png" if daten[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
+        return [(art, base64.standard_b64encode(daten).decode("ascii"))]
+
+    # ---- Betrieb ----------------------------------------------------------
+    def send(self, chat_id: str, text: str) -> None:
+        for stueck in _split(text):
+            self.net.call("sendMessage", {
+                "chat_id": chat_id, "text": stueck,
+                "disable_web_page_preview": True,
+            })
+
+    def poll_once(self) -> int:
+        antwort = self.net.call("getUpdates", {
+            "offset": self.offset, "timeout": self.tg.poll_timeout,
+            "allowed_updates": ["message", "edited_message"],
+        })
+        updates = antwort.get("result") or []
+        for update in updates:
+            self.offset = max(self.offset, int(update.get("update_id", 0)) + 1)
+            message = update.get("message") or update.get("edited_message") or {}
+            chat_id = str((message.get("chat") or {}).get("id", ""))
+            if not chat_id:
+                continue
+            try:
+                for text in self.handle(update):
+                    self.send(chat_id, text)
+            except Exception as exc:                      # nie an einer Nachricht sterben
+                self.send(chat_id, f"Da ist etwas schiefgegangen: {exc}")
+        return len(updates)
+
+    def run(self) -> None:
+        print(f"Telegram-Bot läuft. Bot: {self.cfg.bot.name}, "
+              f"freies Schreiben: {'ja' if self.ai.ready() else 'nein'}", flush=True)
+        while True:
+            try:
+                self.poll_once()
+            except ConnectionError as exc:
+                print(f"Verbindung weg ({exc}) — neuer Versuch in 15 s", flush=True)
+                time.sleep(15)
+
+
+def _split(text: str) -> list[str]:
+    if len(text) <= LIMIT:
+        return [text]
+    teile, rest = [], text
+    while len(rest) > LIMIT:
+        schnitt = rest.rfind("\n", 0, LIMIT)
+        if schnitt < LIMIT // 2:
+            schnitt = LIMIT
+        teile.append(rest[:schnitt])
+        rest = rest[schnitt:].lstrip("\n")
+    if rest:
+        teile.append(rest)
+    return teile

@@ -7,6 +7,7 @@
     python -m bengx_bot paper --loop              durchgängig laufen lassen
     python -m bengx_bot report                    Zahlen aus dem Protokoll
     python -m bengx_bot export                    signals.json neu schreiben
+    python -m bengx_bot telegram                  den Assistenten in Telegram betreiben
     python -m bengx_bot rules                     das Regelwerk im Klartext
     python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
     python -m bengx_bot --bot kopierer rules      das Regelwerk des Kopierers
@@ -117,9 +118,9 @@ def cmd_export(args) -> int:
     return 0
 
 
-def _rules_swing(cfg: Config) -> None:
+def _rules_swing(cfg: Config) -> str:
     w, r = cfg.swing, cfg.risk
-    print(f"""Swing — Regelwerk {cfg.fingerprint()}
+    return (f"""Swing — Regelwerk {cfg.fingerprint()}
 
 Vier Stufen, jede auf ihrem Zeitrahmen, jede mit einer Frist:
 
@@ -164,10 +165,10 @@ Risiko (steht über der Strategie):
 Der Swing-Bot braucht Minutenkerzen: 5m und 1h rechnet er selbst daraus.""")
 
 
-def _rules_copy(cfg: Config) -> None:
+def _rules_copy(cfg: Config) -> str:
     c, r = cfg.copy, cfg.risk
     quelle = c.url if c.source == "http" else c.path
-    print(f"""Signal-Kopierer — Regelwerk {cfg.fingerprint()}
+    return (f"""Signal-Kopierer — Regelwerk {cfg.fingerprint()}
 
 Er denkt sich nichts aus. Er liest Bens Signale und spiegelt sie.
 
@@ -197,16 +198,9 @@ Dazu gelten alle Risikogrenzen: höchstens {r.max_positions} Positionen,
 kein Einstieg ab {r.drawdown_stop:.1%}, Not-Aus über {cfg.live.killswitch_file}.""")
 
 
-def cmd_rules(args) -> int:
-    cfg = _load(args)
-    if cfg.bot.name == "kopierer":
-        _rules_copy(cfg)
-        return 0
-    if cfg.bot.name == "swing":
-        _rules_swing(cfg)
-        return 0
+def _rules_main(cfg: Config) -> str:
     s, r = cfg.strategy, cfg.risk
-    print(f"""Dauerläufer — Regelwerk {cfg.fingerprint()}
+    return (f"""Dauerläufer — Regelwerk {cfg.fingerprint()}
 
 Ein Signal entsteht nur, wenn alles zugleich zutrifft:
   Trend        Kurs über EMA({s.trend_ema}) und EMA steigt über {s.trend_slope_bars} Kerzen
@@ -231,6 +225,75 @@ Risiko (steht über der Strategie):
   Drawdown     ab {r.drawdown_halve:.1%} halbe Größe, ab {r.drawdown_stop:.1%} kein Einstieg
   Pause        {s.cooldown_bars} Kerzen nach {s.cooldown_after_losses} Verlusten in Folge
   Not-Aus      Datei {cfg.live.killswitch_file} anlegen — alles zu, nichts Neues""")
+
+
+def rules_for(config: Config, name: str | None = None) -> str:
+    """Das Regelwerk eines Bots als Text — benutzt von der Kommandozeile und
+    von der Telegram-Anbindung."""
+    gewaehlt = (name or config.bot.name).lower()
+    if gewaehlt == "kopierer":
+        return _rules_copy(config)
+    if gewaehlt == "swing":
+        return _rules_swing(config)
+    if gewaehlt == "dauerlaeufer":
+        return _rules_main(config)
+    raise ValueError(f"Unbekannter Bot: {name!r} "
+                     "(dauerlaeufer, swing oder kopierer)")
+
+
+def cmd_rules(args) -> int:
+    cfg = _load(args)
+    print(rules_for(cfg))
+    return 0
+
+
+def cmd_telegram(args) -> int:
+    import os
+
+    from .assistant import Assistant, AssistantSettings
+    from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
+                           load_env_file)
+
+    cfg = _load(args)
+    datei = load_env_file(args.env or ".env")
+    umgebung = {**datei, **{k: v for k, v in os.environ.items() if v}}
+    tg = TelegramSettings.from_env(umgebung)
+
+    if not tg.token:
+        print(
+            "Es fehlt TELEGRAM_TOKEN.\n\n"
+            "1. In Telegram @BotFather schreiben, /newbot, Namen vergeben.\n"
+            "2. Den Token in bot/.env eintragen:  TELEGRAM_TOKEN=123456:ABC...\n"
+            "3. Diesen Befehl noch einmal starten und dem Bot schreiben;\n"
+            "   er nennt dir deine Chat-Kennung für TELEGRAM_CHAT_ID.\n\n"
+            "Vorlage: .env.example. Die Datei gehört nicht ins Repository.",
+            file=sys.stderr)
+        return 1
+
+    schluessel = umgebung.get("ANTHROPIC_API_KEY", "")
+    assistent = Assistant(AssistantSettings(
+        api_key=schluessel, model=tg.model, effort=tg.effort,
+        max_tokens=tg.max_tokens))
+
+    if not tg.chat_id:
+        print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
+              "Schreiben deine Kennung und antwortet sonst nichts.", file=sys.stderr)
+    if not Assistant.sdk_available():
+        print("Das Paket anthropic fehlt — freies Schreiben ist aus, die "
+              "Befehle gehen. Nachinstallieren mit: pip install anthropic",
+              file=sys.stderr)
+    elif not schluessel and not os.environ.get("ANTHROPIC_API_KEY"):
+        print("ANTHROPIC_API_KEY ist nicht gesetzt — freies Schreiben ist aus.",
+              file=sys.stderr)
+
+    bot = TelegramBot(cfg, tg, HttpTransport(tg.token), assistent)
+    if args.once:
+        print(f"{bot.poll_once()} Nachricht(en) verarbeitet.")
+        return 0
+    try:
+        bot.run()
+    except KeyboardInterrupt:
+        print("\nBeendet.")
     return 0
 
 
@@ -311,6 +374,12 @@ def build_parser() -> argparse.ArgumentParser:
     ex = sub.add_parser("export", help="signals.json für die Website schreiben")
     ex.add_argument("--out")
     ex.set_defaults(func=cmd_export)
+
+    tg = sub.add_parser("telegram", help="den Assistenten in Telegram betreiben")
+    tg.add_argument("--env", help="Datei mit den Zugangsdaten (Standard: .env)")
+    tg.add_argument("--once", action="store_true",
+                    help="einmal abrufen statt dauerhaft zu laufen")
+    tg.set_defaults(func=cmd_telegram)
 
     sub.add_parser("rules", help="Regelwerk im Klartext").set_defaults(func=cmd_rules)
     sub.add_parser("selftest", help="Mechanik auf erfundenen Daten prüfen").set_defaults(

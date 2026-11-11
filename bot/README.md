@@ -9,8 +9,8 @@ Die drei Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
 | `kopierer` | **Signal-Kopierer** | beliebig | spiegelt Bens Signale aus einer `signals.json` |
 
 Beide erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
-Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11, keine
-Abhängigkeiten, kein `pip install`.
+Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11. Für den Handel selbst gibt es keine
+Abhängigkeiten; nur das freie Schreiben in Telegram braucht `anthropic`.
 
 ## Schnellstart
 
@@ -21,7 +21,7 @@ python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 171 Tests
+python3 -m unittest discover -s tests -t .   # 215 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -114,6 +114,55 @@ er ausgelassen hat.
 
 Schließt Ben, schließt der Kopierer mit (`close_with_source`). Der eigene Stop
 hat trotzdem Vorrang: wird er in derselben Kerze getroffen, gilt er.
+
+## Assistent in Telegram
+
+Ein Bot, dem man normal schreibt. Er läuft auf derselben Maschine wie der
+Handelsbot und liest dessen Protokoll, Zustand und Aufgaben.
+
+```bash
+cp .env.example .env     # ausfüllen, siehe unten
+pip install anthropic    # nur für freies Schreiben
+python3 -m bengx_bot --config config.toml telegram
+```
+
+**Was du brauchst — drei Dinge:**
+
+1. **Einen Bot-Token.** In Telegram [@BotFather](https://t.me/BotFather) anschreiben,
+   `/newbot`, Namen vergeben, Token kopieren → `TELEGRAM_TOKEN` in `.env`.
+2. **Deine Chat-Kennung.** `TELEGRAM_CHAT_ID` leer lassen, den Bot starten, ihm
+   schreiben — er nennt dir die Kennung. Eintragen, neu starten. **Nur dieser
+   Chat wird bedient**, alle anderen bekommen eine Absage. Ohne diesen Schritt
+   könnte jeder, der den Bot findet, deinen Not-Aus betätigen.
+3. **Einen Anthropic-Schlüssel**, wenn er frei antworten soll →
+   `ANTHROPIC_API_KEY`. Ohne ihn laufen die Befehle trotzdem.
+
+`.env` steht in `.gitignore` und gehört dort auch hin. Token und Schlüssel
+niemals in den Code.
+
+**Befehle:**
+
+| Befehl | Was er tut |
+| --- | --- |
+| `/stand` | Kapital, offene Positionen, Zahlen von heute und gesamt, Not-Aus |
+| `/signale [heute\|woche\|monat\|alles]` | die letzten Signale mit Pips und Grund |
+| `/regeln [bot]` | das Regelwerk im Klartext |
+| `/aufgabe <text>` | Problem notieren; Claude Code arbeitet die Liste ab |
+| `/aufgaben` | offene Aufgaben zeigen |
+| `/aus` / `/an` | Not-Aus setzen und wieder lösen |
+| `/neu` | Gesprächsfaden vergessen |
+
+Alles andere geht an Claude, zusammen mit einem Abschnitt **LAGE** aus den
+echten Zahlen des Bots. Die Anweisung verbietet ihm, Zahlen zu schätzen: steht
+etwas nicht in der Lage, sagt er das. **Bilder** sieht er sich an — ein
+Screenshot vom Chart oder von einer Fehlermeldung reicht.
+
+Der Bot fragt bei Telegram nach draußen (langer Abruf) und braucht deshalb
+**keine öffentliche Adresse**, keinen Server und keine Portfreigabe. Er muss
+nur laufen: auf deinem Rechner, einem Raspberry Pi oder einem kleinen Server.
+
+Das Modell ist `claude-opus-5-5` mit niedrigem Aufwand — schnell und günstig für
+kurze Antworten. Über `BENGX_MODEL` und `BENGX_EFFORT` änderbar.
 
 ## Risiko steht über der Strategie
 
@@ -226,6 +275,9 @@ nachrechnen, was die breiteren Spreads kosten.
 | `journal.py` | Protokoll als JSONL, Ausgabe für die Website |
 | `state.py` | Zustand über Neustarts hinweg |
 | `runner.py` | Betrieb, Not-Aus, Live-Sperre |
+| `report.py` | Lagebericht aus Protokoll, Zustand und Aufgaben |
+| `assistant.py` | der Chat-Teil über das Anthropic-SDK |
+| `telegram.py` | Telegram-Anbindung, langer Abruf, Befehle |
 | `cli.py` | Kommandozeile |
 
 Backtest und Live benutzen **dieselbe** `engine.py`. Was der Test prüft, läuft
@@ -237,7 +289,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-171 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+215 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

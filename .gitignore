@@ -3,3 +3,5 @@ __pycache__/
 bot/state/
 bot/config.toml
 bot/data/*.csv
+bot/.env
+*.png

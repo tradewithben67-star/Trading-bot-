@@ -14,11 +14,11 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.error
 import urllib.request
-from getpass import getpass
 from pathlib import Path
 
 HIER = Path(__file__).resolve().parent
@@ -65,6 +65,53 @@ def maskieren(geheim: str) -> str:
     if len(geheim) <= 8:
         return "*" * len(geheim)
     return geheim[:4] + "…" + geheim[-4:]
+
+
+def sieht_aus_wie_token(text: str) -> bool:
+    """Ein Telegram-Token ist Zahlen, Doppelpunkt, dann ein langer Rest."""
+    text = (text or "").strip()
+    if ":" not in text or len(text) < 20 or len(text) > 200:
+        return False
+    links, _, rechts = text.partition(":")
+    return links.isdigit() and len(rechts) >= 10 and " " not in text
+
+
+def zwischenablage() -> str:
+    """Liest die Zwischenablage — ohne Zusatzpakete, über das Bordmittel."""
+    if sys.platform.startswith("win"):
+        versuche = [["powershell", "-NoProfile", "-Command", "Get-Clipboard"]]
+    elif sys.platform == "darwin":
+        versuche = [["pbpaste"]]
+    else:
+        versuche = [["wl-paste"], ["xclip", "-o", "-selection", "clipboard"],
+                    ["xsel", "-b"]]
+    for befehl in versuche:
+        try:
+            fertig = subprocess.run(befehl, capture_output=True, text=True,
+                                    timeout=5)
+        except (OSError, subprocess.SubprocessError):
+            continue
+        if fertig.returncode == 0 and fertig.stdout.strip():
+            return fertig.stdout.strip()
+    return ""
+
+
+def geheimnis_abfragen(aufforderung: str, pruefung=None) -> str:
+    """Fragt etwas ab, das man eingefügt hat. Sichtbar — sonst weiß niemand,
+    ob der Rechtsklick etwas getan hat. Leere Eingabe schaut in der
+    Zwischenablage nach."""
+    eingabe = input(aufforderung).strip()
+    if eingabe:
+        return eingabe
+    gefunden = zwischenablage()
+    if not gefunden:
+        return ""
+    if pruefung is not None and not pruefung(gefunden):
+        return ""
+    if len(gefunden) > 120:
+        return ""
+    print(f"   In der Zwischenablage liegt: {maskieren(gefunden)}")
+    return gefunden if ja("   Das nehmen?", True) else ""
 
 
 def chat_aus_updates(antwort: dict) -> tuple[str, str] | None:
@@ -124,9 +171,16 @@ def main() -> int:
     print("\n1. Token")
     print("   In Telegram @BotFather schreiben, /newbot, Namen vergeben.")
     print("   Er antwortet mit einer Zeile wie 123456789:AAH...")
+    print()
+    print("   Einfügen geht in diesem Fenster mit RECHTSKLICK.")
+    print("   Strg+V tut hier oft nichts — das liegt an Windows, nicht an dir.")
+    print("   Oder: nur Enter drücken, dann hole ich ihn aus der Zwischenablage.")
     token = ""
     while not token:
-        token = getpass("   Token hier einfügen (bleibt unsichtbar): ").strip()
+        token = geheimnis_abfragen("   Token: ", sieht_aus_wie_token)
+        if not token:
+            print("   Nichts angekommen. Rechtsklick ins Fenster, dann Enter.")
+            continue
         if ":" not in token:
             print("   Das sieht nicht nach einem Token aus. Noch einmal.")
             token = ""
@@ -173,7 +227,9 @@ def main() -> int:
     # 3. Anthropic
     print("\n3. Schlüssel für freies Schreiben (optional)")
     print("   Ohne ihn gehen nur die Befehle. Anlegen unter platform.claude.com.")
-    schluessel = getpass("   Schlüssel einfügen oder Enter zum Überspringen: ").strip()
+    print("   Auch hier: Rechtsklick fügt ein.")
+    schluessel = geheimnis_abfragen(
+        "   Schlüssel einfügen oder Enter zum Überspringen: ")
     if schluessel:
         werte["ANTHROPIC_API_KEY"] = schluessel
         print(f"   Übernommen ({maskieren(schluessel)}).")

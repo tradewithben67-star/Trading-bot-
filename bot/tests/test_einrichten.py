@@ -101,3 +101,41 @@ class TestChatKennung(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTokenErkennen(unittest.TestCase):
+    def test_echte_form(self):
+        self.assertTrue(einrichten.sieht_aus_wie_token(
+            "123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw"))
+
+    def test_falsche_formen(self):
+        for text in ("", "kein-token", "abc:def", "123456789:kurz",
+                     "123456789 :AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw",
+                     "x" * 300):
+            self.assertFalse(einrichten.sieht_aus_wie_token(text), text)
+
+    def test_leerzeichen_aussen_stoeren_nicht(self):
+        self.assertTrue(einrichten.sieht_aus_wie_token(
+            "  123456789:AAHdqTcvCH1vGWJxfSeofSAs0K5PALDsaw  "))
+
+
+class TestZwischenablage(unittest.TestCase):
+    def test_gibt_leer_zurueck_wenn_nichts_geht(self):
+        import subprocess
+        echt = subprocess.run
+        subprocess.run = lambda *a, **k: (_ for _ in ()).throw(OSError("nope"))
+        try:
+            self.assertEqual(einrichten.zwischenablage(), "")
+        finally:
+            subprocess.run = echt
+
+    def test_liest_die_ausgabe(self):
+        import subprocess
+        from types import SimpleNamespace
+        echt = subprocess.run
+        subprocess.run = lambda *a, **k: SimpleNamespace(
+            returncode=0, stdout="  geheim  \n", stderr="")
+        try:
+            self.assertEqual(einrichten.zwischenablage(), "geheim")
+        finally:
+            subprocess.run = echt

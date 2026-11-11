@@ -3,927 +3,532 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BenGx fuehrt regelbasierte Handelsstrategien automatisch aus: feste Positionsgroesse, festes Risiko, protokollierter Ein- und Ausstieg.">
-<meta name="theme-color" content="#080C13">
-<title>BenGx</title>
+<meta name="description" content="BENGX - Ben: regelbasierter Handel, Gold und der XAU Bot. Entdecken, neue Mitglieder, Kontakt.">
+<meta name="theme-color" content="#000000">
+<title>BENGX</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap">
 <style>
-/* Layout: Terminal-Workspace — redaktioneller Hero-Block links, Instrumenten-Panel rechts, durchlaufendes Tape-Band, darunter ein Raster aus Panels */
+/* Layout: Buchstabenleiste BENGX links als feste Navigation, rechts jeweils eine Tafel — schwarz, Chrom, ein Gold-Akzent */
 :root{
-  --bg:#F3F6F8;
-  --surface:#FFFFFF;
-  --surface-2:#E7ECF1;
-  --fg:#0E141B;
-  --fg-dim:#55626F;
-  --line:#D2DAE2;
-  --accent:#9A5000;
-  --accent-soft:#F7E2C6;
-  --accent-ink:#FFFFFF;
-  --long:#0D6E50;
-  --short:#A8322A;
-  /* Ink-Band: in beiden Themes dunkel, das ist die Markenfläche */
-  --ink:#080C13;
-  --ink-2:#101822;
-  --ink-line:#22303F;
-  --ink-fg:#E9EEF4;
-  --ink-dim:#8593A3;
-  --ink-accent:#F5A524;
-  --ink-long:#33C98E;
-  --ink-short:#FF6F61;
-  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
-  --f-body:"IBM Plex Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-  --f-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --r:4px;
-  --maxw:1140px;
-}
-@media (prefers-color-scheme:dark){
-  :root:not([data-theme="light"]){
-    --bg:#070B11;
-    --surface:#0F161F;
-    --surface-2:#161F2A;
-    --fg:#E9EEF4;
-    --fg-dim:#8593A3;
-    --line:#212C3A;
-    --accent:#F5A524;
-    --accent-soft:#2A2113;
-    --accent-ink:#14100A;
-    --long:#33C98E;
-    --short:#FF6F61;
-    color-scheme:dark;
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#070B11;
-  --surface:#0F161F;
-  --surface-2:#161F2A;
-  --fg:#E9EEF4;
-  --fg-dim:#8593A3;
-  --line:#212C3A;
-  --accent:#F5A524;
-  --accent-soft:#2A2113;
-  --accent-ink:#14100A;
-  --long:#33C98E;
-  --short:#FF6F61;
   color-scheme:dark;
+  --black:#000000;
+  --ink:#09090A;
+  --ink-2:#0E0E10;
+  --fg:#D8DDE4;
+  --fg-dim:#868D96;
+  --line:rgba(255,255,255,.10);
+  --line-soft:rgba(255,255,255,.055);
+  --gold:#F0C35A;
+  --gold-soft:rgba(240,195,90,.14);
+  --chrome:linear-gradient(176deg,#FFFFFF 0%,#E6EBF1 14%,#9DA6B0 38%,#FFFFFF 50%,#C7CED6 64%,#848C96 84%,#F0F4F8 100%);
+  --gilt:linear-gradient(176deg,#FFF4CF 0%,#F3CB69 26%,#A07A1E 52%,#FFE9A8 64%,#D3A734 86%,#FFF0C2 100%);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
 }
-
 *{box-sizing:border-box}
 html{-webkit-text-size-adjust:100%}
-:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 img{max-width:100%}
 [hidden]{display:none!important}
 body{
   margin:0;
-  background:var(--bg);
+  background:var(--black);
   color:var(--fg);
   font-family:var(--f-body);
   font-size:16px;
-  line-height:1.6;
+  line-height:1.65;
   -webkit-font-smoothing:antialiased;
 }
-body::before{
-  content:"";
+/* Hintergrund: feines Raster, Gold-Schimmer, Korn */
+.bg{
   position:fixed;
-  inset:0 0 auto;
-  height:env(safe-area-inset-top,0px);
-  z-index:30;
-  background:var(--ink);
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  background-color:var(--black);
+  background-image:
+    radial-gradient(900px 520px at 8% 0%,rgba(240,195,90,.09),transparent 62%),
+    radial-gradient(760px 620px at 100% 100%,rgba(190,205,225,.06),transparent 60%),
+    repeating-linear-gradient(0deg,rgba(255,255,255,.035) 0 1px,transparent 1px 46px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.035) 0 1px,transparent 1px 46px),
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/></filter><rect width='180' height='180' filter='url(%23n)' opacity='0.34'/></svg>");
+  background-blend-mode:normal,normal,normal,normal,soft-light;
 }
-.wrap{
-  max-width:var(--maxw);
+.bg::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:radial-gradient(130% 100% at 50% 40%,transparent 44%,rgba(0,0,0,.6) 100%);
+}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;line-height:1.1;letter-spacing:-.02em;margin:0;text-wrap:balance}
+p{margin:0}
+a{color:var(--fg)}
+.chrome{
+  background:var(--chrome);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.gilt{
+  background:var(--gilt);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.kick{
+  font-family:var(--f-data);
+  font-size:10.5px;
+  letter-spacing:.24em;
+  text-transform:uppercase;
+  color:var(--gold);
+}
+:focus-visible{outline:1px solid var(--gold);outline-offset:4px}
+
+/* ---------- Gerüst ---------- */
+.shell{
+  min-height:100%;
+  max-width:1180px;
   margin:0 auto;
+  display:grid;
+  grid-template-columns:clamp(132px,16vw,210px) minmax(0,1fr);
+  gap:clamp(24px,5vw,72px);
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:clamp(26px,5vw,62px);
 }
-h1,h2,h3,h4{font-family:var(--f-display);font-weight:800;line-height:1.08;letter-spacing:-.02em;text-wrap:balance;margin:0}
-p{margin:0}
-a{color:inherit}
-.eyebrow{
-  font-family:var(--f-data);
-  font-size:11px;
-  font-weight:600;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-  color:var(--fg-dim);
-  margin:0;
-}
-.num{font-family:var(--f-data);font-variant-numeric:tabular-nums}
-:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 
-/* ---------- Header ---------- */
-.hdr{
-  position:sticky;
-  top:env(safe-area-inset-top,0px);
-  z-index:20;
-  background:var(--ink);
-  border-bottom:1px solid var(--ink-line);
-}
-.hdr__in{
-  display:flex;
-  align-items:center;
-  gap:20px;
-  padding-block:12px;
-}
-.mark{display:flex;align-items:center;gap:10px;text-decoration:none;flex:0 0 auto}
-.mark__glyph{
-  width:30px;height:30px;flex:0 0 auto;
-  background:var(--ink-2);
-  border:1px solid var(--ink-line);
-  border-radius:var(--r);
-  display:grid;place-items:center;
-}
-.mark__txt{
+/* ---------- Buchstabenleiste ---------- */
+.rail{position:sticky;top:clamp(26px,5vw,62px);align-self:start}
+.rail__list{list-style:none;margin:0;padding:0;display:grid;gap:clamp(2px,.6vw,8px)}
+.ltr{
+  appearance:none;
+  background:none;
+  border:0;
+  padding:0 0 0 18px;
+  margin:0;
+  width:100%;
+  text-align:left;
+  cursor:pointer;
+  position:relative;
   font-family:var(--f-display);
   font-weight:800;
-  font-size:19px;
-  letter-spacing:-.02em;
-  color:var(--ink-fg);
+  font-size:clamp(38px,5.6vw,66px);
+  line-height:1.02;
+  letter-spacing:-.04em;
+  background-image:var(--chrome);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  opacity:.68;
+  transition:opacity .22s ease;
 }
-.mark__txt b{color:var(--ink-accent);font-weight:800}
-.nav{display:flex;gap:22px;margin-left:auto}
-.nav a{
-  font-size:14px;
-  text-decoration:none;
-  color:var(--ink-dim);
-  padding-block:4px;
-  border-bottom:1px solid transparent;
+.ltr::before{
+  content:"";
+  position:absolute;
+  left:0;
+  top:16%;
+  bottom:16%;
+  width:2px;
+  background:var(--gold);
+  opacity:0;
+  transition:opacity .22s ease;
 }
-.nav a:hover{color:var(--ink-fg);border-bottom-color:var(--ink-accent)}
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  font-family:var(--f-body);font-size:14px;font-weight:600;
-  padding:10px 16px;border-radius:var(--r);
-  text-decoration:none;cursor:pointer;border:1px solid transparent;
-  transition:transform .12s ease,background .12s ease,border-color .12s ease;
+.ltr:hover{opacity:.88}
+.ltr[aria-current="true"]{opacity:1;background-image:var(--gilt)}
+.ltr[aria-current="true"]::before{opacity:1}
+.rail__word{
+  margin-top:20px;
+  padding-left:18px;
+  font-family:var(--f-data);
+  font-size:11px;
+  letter-spacing:.2em;
+  text-transform:uppercase;
+  color:var(--fg-dim);
 }
-.btn:active{transform:translateY(1px)}
-.btn--amber{background:var(--ink-accent);color:#14100A;border-color:var(--ink-accent)}
-.btn--amber:hover{background:#ffb93f}
-.btn--ghost{background:transparent;color:var(--ink-fg);border-color:var(--ink-line)}
-.btn--ghost:hover{border-color:var(--ink-dim)}
-.btn--solid{background:var(--accent);color:var(--accent-ink);border-color:var(--accent)}
-.btn--outline{background:transparent;color:var(--fg);border-color:var(--line)}
-.btn--outline:hover{border-color:var(--fg-dim)}
-.hdr .btn{flex:0 0 auto}
+.rail__hint{
+  margin-top:8px;
+  padding-left:18px;
+  font-family:var(--f-data);
+  font-size:10px;
+  letter-spacing:.1em;
+  color:rgba(134,141,150,.65);
+}
 
-/* ---------- Hero ---------- */
-.hero{background:var(--ink);color:var(--ink-fg);border-bottom:1px solid var(--ink-line)}
-.hero__in{
-  padding-block:clamp(40px,7vw,76px);
-  display:grid;
-  grid-template-columns:minmax(0,1.05fr) minmax(0,.95fr);
-  gap:clamp(28px,5vw,56px);
-  align-items:start;
-}
-.hero .eyebrow{color:var(--ink-accent)}
-.hero h1{
-  font-size:clamp(34px,6vw,60px);
-  margin-top:14px;
-  color:var(--ink-fg);
-}
-.hero h1 em{font-style:normal;color:var(--ink-accent)}
-.hero__lead{
-  margin-top:18px;
-  font-size:clamp(16px,1.6vw,18px);
-  color:var(--ink-dim);
-  max-width:46ch;
-}
-.hero__cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
-.hero__facts{
-  display:flex;flex-wrap:wrap;gap:0 32px;
-  margin-top:34px;padding-top:22px;
-  border-top:1px solid var(--ink-line);
-}
-.fact{min-width:0}
-.fact dt{font-family:var(--f-data);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-dim)}
-.fact dd{margin:4px 0 0;font-family:var(--f-data);font-size:20px;font-weight:600;color:var(--ink-fg);font-variant-numeric:tabular-nums}
-
-/* Terminal-Panel */
-.term{
-  background:var(--ink-2);
-  border:1px solid var(--ink-line);
-  border-radius:6px;
-  overflow:hidden;
-  min-width:0;
-}
-.term__bar{
-  display:flex;align-items:center;gap:10px;
-  padding:9px 14px;
-  border-bottom:1px solid var(--ink-line);
-  background:rgba(255,255,255,.02);
-}
-.term__dot{width:7px;height:7px;border-radius:50%;background:var(--ink-long);flex:0 0 auto}
-.term__title{font-family:var(--f-data);font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-dim)}
-.badge{
-  margin-left:auto;flex:0 0 auto;
-  font-family:var(--f-data);font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
-  padding:3px 7px;border-radius:3px;
-  background:var(--accent-soft);color:var(--accent);
-  border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
-}
-.hero .badge{background:rgba(245,165,36,.12);color:var(--ink-accent);border-color:rgba(245,165,36,.3)}
-.term__rows{display:grid}
-.trow{
-  display:grid;
-  grid-template-columns:minmax(0,1fr) auto auto;
-  gap:12px;align-items:center;
-  padding:11px 14px;
-  border-bottom:1px solid var(--ink-line);
-  font-family:var(--f-data);font-size:13px;font-variant-numeric:tabular-nums;
-}
-.trow:last-child{border-bottom:0}
-.trow__sym{color:var(--ink-fg);font-weight:500;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.trow__side{font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:2px 6px;border-radius:3px}
-.side--long{color:var(--ink-long);background:rgba(51,201,142,.12)}
-.side--short{color:var(--ink-short);background:rgba(255,111,97,.12)}
-.trow__pnl{text-align:right;min-width:74px}
-.up{color:var(--ink-long)}
-.down{color:var(--ink-short)}
-.term__foot{
-  display:flex;flex-wrap:wrap;gap:8px 18px;
-  padding:11px 14px;
-  background:rgba(0,0,0,.25);
-  font-family:var(--f-data);font-size:11px;color:var(--ink-dim);
-}
-.term__foot span{white-space:nowrap}
-
-/* ---------- Tape ---------- */
-.tape{
-  background:var(--ink-2);
-  border-bottom:1px solid var(--ink-line);
-  overflow:hidden;
-  position:relative;
-}
-.tape__track{
-  display:flex;
-  width:max-content;
-  animation:tape 46s linear infinite;
-}
-.tape__track:hover{animation-play-state:paused}
-@keyframes tape{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.tick{
-  display:flex;align-items:baseline;gap:8px;
-  padding:9px 18px;
-  border-right:1px solid var(--ink-line);
-  font-family:var(--f-data);font-size:12px;font-variant-numeric:tabular-nums;
+/* ---------- Tafeln ---------- */
+.stage{min-width:0;padding-top:clamp(0px,1vw,10px)}
+.panel{display:grid;gap:26px;min-width:0}
+.panel__head{display:grid;gap:12px}
+.panel h1{font-size:clamp(34px,5.4vw,58px)}
+.panel h2{font-size:clamp(26px,4vw,40px)}
+.lead{font-size:clamp(16px,1.7vw,19px);color:var(--fg);max-width:54ch}
+.body-text{display:grid;gap:14px;max-width:62ch;color:var(--fg-dim);font-size:15.5px}
+.body-text b{color:var(--fg);font-weight:500}
+.ph{
+  color:var(--gold);
+  font-family:var(--f-data);
+  font-size:.92em;
   white-space:nowrap;
 }
-.tick__sym{color:var(--ink-dim);letter-spacing:.06em}
-.tick__px{color:var(--ink-fg);font-weight:500}
-.tape__flag{
-  position:absolute;top:0;right:0;z-index:2;
-  padding:9px 14px;
-  background:var(--ink);
-  border-left:1px solid var(--ink-line);
-  font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--ink-dim);
-}
-@media (prefers-reduced-motion:reduce){
-  .tape{overflow-x:auto}
-  .tape__track{animation:none}
+@media (prefers-reduced-motion:no-preference){
+  .panel[data-enter]{animation:rise .34s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 }
 
-/* ---------- Sections ---------- */
-.sec{padding-block:clamp(44px,6vw,78px)}
-.sec--line{border-top:1px solid var(--line)}
-.sec__head{display:flex;flex-wrap:wrap;gap:16px 32px;align-items:end;justify-content:space-between;margin-bottom:30px}
-.sec__head h2{font-size:clamp(24px,3.4vw,34px);margin-top:10px}
-.sec__head p{color:var(--fg-dim);max-width:52ch;min-width:0}
-
-.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.panel{
-  background:var(--surface);
+/* Video */
+.video{
+  position:relative;
   border:1px solid var(--line);
-  border-radius:6px;
-  padding:22px;
-  display:flex;flex-direction:column;gap:14px;
-  min-width:0;
+  border-radius:3px;
+  background:var(--ink);
+  aspect-ratio:16/9;
+  max-width:100%;
+  overflow:hidden;
 }
-.panel h3{font-size:19px}
-.panel__kick{
-  font-family:var(--f-data);font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;
-  color:var(--accent);
+.video video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.video__ph{
+  position:absolute;
+  inset:0;
+  display:grid;
+  align-content:center;
+  justify-items:start;
+  gap:12px;
+  padding:clamp(18px,3vw,32px);
+  background:
+    radial-gradient(520px 320px at 20% 20%,rgba(240,195,90,.07),transparent 70%),
+    var(--ink);
 }
-.panel p{color:var(--fg-dim);font-size:15px}
-.spec{
-  margin:0;padding-top:14px;border-top:1px solid var(--line);
-  display:grid;grid-template-columns:auto minmax(0,1fr);gap:7px 14px;
-  font-family:var(--f-data);font-size:12.5px;
+.video__ph p{color:var(--fg-dim);font-size:14.5px;max-width:44ch}
+.video__ph code{font-family:var(--f-data);font-size:12.5px;color:var(--fg);background:rgba(255,255,255,.05);padding:2px 6px;border-radius:2px}
+.btn{
+  appearance:none;
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  font-family:var(--f-data);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  padding:10px 16px;
+  border-radius:2px;
+  border:1px solid rgba(240,195,90,.45);
+  background:var(--gold-soft);
+  color:var(--gold);
+  cursor:pointer;
+  text-decoration:none;
+  transition:border-color .18s ease,background .18s ease;
 }
-.spec dt{color:var(--fg-dim);letter-spacing:.02em;white-space:nowrap}
-.spec dd{margin:0;text-align:right;font-variant-numeric:tabular-nums}
+.btn:hover{border-color:var(--gold);background:rgba(240,195,90,.2)}
+.btn--plain{border-color:var(--line);background:transparent;color:var(--fg)}
+.btn--plain:hover{border-color:var(--fg-dim);background:rgba(255,255,255,.04)}
 
-/* Chart */
-.chart-row{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:18px;align-items:stretch}
-.chart-card{background:var(--surface);border:1px solid var(--line);border-radius:6px;overflow:hidden;min-width:0}
-.chart-card__bar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line)}
-.chart-card__bar h3{font-size:14px;font-weight:600;font-family:var(--f-body);letter-spacing:0}
-.chart-card__body{padding:14px 10px 6px}
-#eqchart{display:block;width:100%;height:auto;max-width:100%}
-.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.stat{background:var(--surface);padding:18px 16px;min-width:0}
-.stat dt{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim)}
-.stat dd{margin:6px 0 0;font-family:var(--f-data);font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.02em}
-.stat dd small{display:block;font-size:11px;font-weight:400;letter-spacing:0;color:var(--fg-dim);margin-top:4px;font-family:var(--f-body)}
-
-/* Steps */
-.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
-.step{background:var(--surface);padding:22px 20px;display:flex;flex-direction:column;gap:10px;min-width:0}
-.step__n{font-family:var(--f-data);font-size:12px;font-weight:600;color:var(--accent);letter-spacing:.08em}
-.step h3{font-size:16px;letter-spacing:-.01em}
-.step p{color:var(--fg-dim);font-size:14.5px}
-.step code{font-family:var(--f-data);font-size:12px;background:var(--surface-2);padding:1px 5px;border-radius:3px;color:var(--fg)}
-
-/* Risiko */
-.risk{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,48px);align-items:start}
-.rlist{list-style:none;margin:0;padding:0;display:grid;gap:2px}
-.rlist li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
-.rlist li:first-child{border-top:1px solid var(--line)}
-.rlist b{display:block;font-family:var(--f-body);font-weight:600;font-size:15px}
-.rlist span{color:var(--fg-dim);font-size:14.5px}
-.rlist i{
-  font-style:normal;font-family:var(--f-data);font-size:11px;font-weight:600;
-  color:var(--accent);padding-top:3px;
+/* Fakten / Listen */
+.facts{
+  list-style:none;margin:0;padding:0;
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:1px;background:var(--line-soft);
+  border:1px solid var(--line-soft);
 }
-.killbox{background:var(--ink);border:1px solid var(--ink-line);border-radius:6px;padding:24px;color:var(--ink-fg)}
-.killbox .eyebrow{color:var(--ink-accent)}
-.killbox h3{font-size:20px;margin-top:12px;color:var(--ink-fg)}
-.killbox p{color:var(--ink-dim);font-size:14.5px;margin-top:10px}
-.gauge{margin-top:20px;display:grid;gap:10px}
-.gauge__row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:12px;align-items:center;font-family:var(--f-data);font-size:11px;color:var(--ink-dim)}
-.gauge__bar{height:6px;border-radius:3px;background:rgba(255,255,255,.08);overflow:hidden}
-.gauge__fill{height:100%;border-radius:3px;background:var(--ink-accent)}
-.gauge__fill--long{background:var(--ink-long)}
-.gauge__val{color:var(--ink-fg);font-variant-numeric:tabular-nums}
+.facts li{background:var(--ink);padding:16px 18px;min-width:0}
+.facts dt,.facts .k{font-family:var(--f-data);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.facts .v{margin-top:6px;font-family:var(--f-data);font-size:15px;color:var(--fg);font-variant-numeric:tabular-nums}
+.rules{list-style:none;margin:0;padding:0;display:grid;gap:1px;background:var(--line-soft);border-block:1px solid var(--line-soft)}
+.rules li{background:var(--ink);padding:18px 20px;display:grid;grid-template-columns:auto minmax(0,1fr);gap:16px;align-items:baseline}
+.rules i{font-style:normal;font-family:var(--f-data);font-size:11px;color:var(--gold)}
+.rules b{display:block;font-weight:500;font-size:15.5px;color:var(--fg)}
+.rules span{color:var(--fg-dim);font-size:14.5px}
+.note{
+  font-family:var(--f-data);
+  font-size:11.5px;
+  line-height:1.7;
+  color:var(--fg-dim);
+  border-left:1px solid rgba(240,195,90,.4);
+  padding-left:14px;
+  max-width:60ch;
+}
+.linkrow{display:flex;flex-wrap:wrap;gap:10px}
+.copyline{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.copyline .val{font-family:var(--f-data);font-size:15px;color:var(--fg);user-select:all;word-break:break-all}
+.todo{
+  border:1px dashed rgba(240,195,90,.35);
+  border-radius:3px;
+  padding:18px 20px;
+  display:grid;
+  gap:8px;
+  background:rgba(240,195,90,.04);
+  max-width:62ch;
+}
+.todo p{color:var(--fg-dim);font-size:14.5px}
 
-/* Preise */
-.price{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
-.plan{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:24px;display:flex;flex-direction:column;gap:16px;min-width:0}
-.plan--pick{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
-.plan__top{display:flex;align-items:center;gap:10px}
-.plan h3{font-size:17px}
-.plan__px{font-family:var(--f-data);font-size:34px;font-weight:600;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
-.plan__px small{font-family:var(--f-body);font-size:13px;font-weight:400;color:var(--fg-dim);letter-spacing:0}
-.plan ul{list-style:none;margin:0;padding:0;display:grid;gap:9px;font-size:14.5px;color:var(--fg-dim)}
-.plan li{display:grid;grid-template-columns:auto minmax(0,1fr);gap:9px}
-.plan li::before{content:"→";color:var(--accent);font-family:var(--f-data)}
-.plan .btn{margin-top:auto}
+/* Fuß */
+.foot{
+  grid-column:1/-1;
+  margin-top:clamp(40px,7vw,86px);
+  padding-top:20px;
+  border-top:1px solid var(--line-soft);
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px 26px;
+  align-items:baseline;
+  font-family:var(--f-data);
+  font-size:11px;
+  letter-spacing:.08em;
+  color:var(--fg-dim);
+}
+.foot span{white-space:nowrap}
+.foot .copyline{gap:8px}
+.foot .copyline .val{font-size:12px;letter-spacing:0}
+.foot .btn{padding:5px 10px;font-size:10px}
 
-/* Formular */
-.join{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:clamp(22px,3.5vw,38px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(24px,4vw,44px);align-items:start}
-.form{display:grid;gap:14px}
-.field{display:grid;gap:6px;min-width:0}
-.field label{font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim)}
-.field input,.field select{
-  width:100%;font-family:var(--f-body);font-size:15px;
-  padding:11px 12px;border-radius:var(--r);
-  border:1px solid var(--line);background:var(--bg);color:var(--fg);
-}
-.field input:hover,.field select:hover{border-color:var(--fg-dim)}
-.form__note{font-size:12.5px;color:var(--fg-dim)}
-.ok{
-  display:grid;gap:4px;padding:14px 16px;border-radius:var(--r);
-  background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 35%,transparent);
-  font-size:14.5px;
-}
-.ok b{font-family:var(--f-body)}
-.contact{display:grid;gap:12px;font-size:14.5px;color:var(--fg-dim)}
-.mailrow{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.mail{font-family:var(--f-data);font-size:14px;color:var(--fg);user-select:all;word-break:break-all}
-.copy{
-  font-family:var(--f-data);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  padding:6px 10px;border-radius:3px;border:1px solid var(--line);background:var(--surface-2);color:var(--fg);cursor:pointer;
-}
-.copy:hover{border-color:var(--fg-dim)}
-
-/* Footer */
-.ftr{background:var(--ink);color:var(--ink-dim);border-top:1px solid var(--ink-line)}
-.ftr__in{padding-block:34px;display:grid;gap:22px}
-.ftr__top{display:flex;flex-wrap:wrap;gap:18px 34px;align-items:center;justify-content:space-between}
-.ftr__nav{display:flex;flex-wrap:wrap;gap:8px 22px;font-size:14px}
-.ftr__nav a{color:var(--ink-dim);text-decoration:none}
-.ftr__nav a:hover{color:var(--ink-fg)}
-.disc{
-  font-size:12.5px;line-height:1.65;color:var(--ink-dim);
-  border-top:1px solid var(--ink-line);padding-top:20px;max-width:88ch;
-}
-.disc b{color:var(--ink-fg);font-weight:600}
-
-/* Responsive */
-@media (max-width:980px){
-  .hero__in{grid-template-columns:minmax(0,1fr)}
-  .chart-row{grid-template-columns:minmax(0,1fr)}
-  .steps{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .risk{grid-template-columns:minmax(0,1fr)}
-  .join{grid-template-columns:minmax(0,1fr)}
-  .nav{display:none}
-}
+/* Schmal */
 @media (max-width:760px){
-  .grid-3,.price{grid-template-columns:minmax(0,1fr)}
-}
-@media (max-width:520px){
-  .steps,.stats{grid-template-columns:minmax(0,1fr)}
-  .hdr__in{gap:12px}
-  .hero__facts{gap:18px 26px}
+  .shell{grid-template-columns:minmax(0,1fr);gap:28px}
+  .rail{
+    position:sticky;
+    top:env(safe-area-inset-top,0px);
+    z-index:10;
+    margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px))) calc(-1 * max(16px,env(safe-area-inset-right,0px)));
+    padding-inline:max(16px,env(safe-area-inset-left,0px)) max(16px,env(safe-area-inset-right,0px));
+    padding-block:10px;
+    background:rgba(0,0,0,.86);
+    backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line-soft);
+  }
+  .rail__list{grid-auto-flow:column;grid-auto-columns:1fr;gap:4px}
+  .ltr{padding:0;text-align:center;font-size:clamp(30px,10vw,44px)}
+  .ltr::before{left:50%;transform:translateX(-50%);top:auto;bottom:-6px;width:18px;height:2px}
+  .rail__word{text-align:center;padding-left:0;margin-top:6px}
+  .rail__hint{display:none}
 }
 </style>
 </head>
 <body>
-<header class="hdr">
-  <div class="hdr__in wrap">
-    <a class="mark" href="#top" aria-label="BenGx Startseite">
-      <span class="mark__glyph" aria-hidden="true">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <rect x="2" y="5" width="3.4" height="7" rx="1" fill="#33C98E"></rect>
-          <rect x="3.3" y="2" width="0.8" height="12" rx="0.4" fill="#33C98E"></rect>
-          <rect x="9.6" y="4" width="3.4" height="5.4" rx="1" fill="#F5A524"></rect>
-          <rect x="10.9" y="1.6" width="0.8" height="12.8" rx="0.4" fill="#F5A524"></rect>
-        </svg>
-      </span>
-      <span class="mark__txt">Ben<b>Gx</b></span>
-    </a>
-    <nav class="nav" aria-label="Hauptnavigation">
-      <a href="#strategien">Strategien</a>
-      <a href="#ergebnis">Backtest</a>
-      <a href="#ablauf">Ablauf</a>
-      <a href="#risiko">Risiko</a>
-      <a href="#preise">Preise</a>
-    </nav>
-    <a class="btn btn--amber" href="#zugang">Zugang anfragen</a>
-  </div>
-</header>
+<div class="bg" aria-hidden="true"></div>
 
-<section class="hero" id="top">
-  <div class="hero__in wrap">
-    <div>
-      <p class="eyebrow">Regelbasierter Handel · Krypto, Forex, Indizes</p>
-      <h1>Dein Regelwerk handelt.<br>Nicht dein <em>Bauchgefühl</em>.</h1>
-      <p class="hero__lead">BenGx führt deine Handelsstrategie aus, wie du sie definiert hast: feste Positionsgröße, festes Risiko, protokollierter Ein- und Ausstieg. Jeder Trade ist nachvollziehbar – vom Signal bis zur Order-ID.</p>
-      <div class="hero__cta">
-        <a class="btn btn--amber" href="#zugang">Zugang anfragen</a>
-        <a class="btn btn--ghost" href="#ergebnis">Backtest ansehen</a>
+<div class="shell">
+  <nav class="rail" aria-label="Abschnitte">
+    <ul class="rail__list" id="rail">
+      <li><button class="ltr" type="button" data-key="ben" aria-current="true">B</button></li>
+      <li><button class="ltr" type="button" data-key="entdecken">E</button></li>
+      <li><button class="ltr" type="button" data-key="mitglieder">N</button></li>
+      <li><button class="ltr" type="button" data-key="gold">G</button></li>
+      <li><button class="ltr" type="button" data-key="xaubot">X</button></li>
+    </ul>
+    <p class="rail__word" id="railword">Ben</p>
+    <p class="rail__hint">Buchstabe drücken</p>
+  </nav>
+
+  <main class="stage" id="stage">
+
+    <section class="panel" id="p-ben" data-panel="ben">
+      <div class="panel__head">
+        <p class="kick">B — Ben</p>
+        <h1 class="chrome">Ben</h1>
+        <p class="lead">Ich handle die Märkte nach festen Regeln und zeige hier, wie ich das mache — ohne Geheimnisse und ohne Versprechen.</p>
       </div>
-      <dl class="hero__facts">
-        <div class="fact"><dt>Strategie-Vorlagen</dt><dd>3</dd></div>
-        <div class="fact"><dt>Signalprüfung</dt><dd>1&nbsp;min</dd></div>
-        <div class="fact"><dt>Risiko / Trade</dt><dd>0,25&nbsp;%</dd></div>
-        <div class="fact"><dt>Paper-Modus</dt><dd>immer</dd></div>
-      </dl>
+
+      <div class="video" id="videoBox">
+        <video id="vid" controls playsinline preload="metadata" hidden></video>
+        <div class="video__ph" id="vph">
+          <p class="kick">Vorstellungsvideo</p>
+          <p>Lege deine Datei als <code>media/ben-vorstellung.mp4</code> neben die Seite — sie läuft dann hier automatisch.</p>
+          <button class="btn" type="button" id="pickvid">Video jetzt ansehen</button>
+          <input id="vidfile" type="file" accept="video/*" hidden>
+        </div>
+      </div>
+
+      <div class="body-text">
+        <p>Mein Name ist Ben. Seit <span class="ph">[Jahr]</span> beschäftige ich mich mit den Märkten, angefangen bei <span class="ph">[womit du angefangen hast]</span>. Heute handle ich hauptsächlich <b>Krypto, Forex und Indizes</b> — nach einem Plan, den ich vor dem Einstieg aufschreibe und nach dem Trade kontrolliere.</p>
+        <p>Was mich verändert hat, war <span class="ph">[dein Wendepunkt]</span>. Seitdem gilt bei mir: erst das Risiko festlegen, dann die Position. Genau das gebe ich auf dieser Seite weiter.</p>
+      </div>
+
+      <ul class="facts">
+        <li><p class="k">Am Markt seit</p><p class="v"><span class="ph">[Jahr]</span></p></li>
+        <li><p class="k">Märkte</p><p class="v">Krypto · Forex · Indizes</p></li>
+        <li><p class="k">Stil</p><p class="v">Regelbasiert</p></li>
+        <li><p class="k">Standort</p><p class="v"><span class="ph">[Ort]</span></p></li>
+      </ul>
+    </section>
+
+    <section class="panel" id="p-entdecken" data-panel="entdecken" hidden>
+      <div class="panel__head">
+        <p class="kick">E — Entdecken</p>
+        <h2 class="chrome">Lernen, Schritt für Schritt</h2>
+        <p class="lead">Vom ersten Chart bis zum eigenen Regelwerk. Kein Hype, keine Abkürzung — der Weg, den ich selbst gegangen bin.</p>
+      </div>
+      <ul class="rules">
+        <li><i>01</i><div><b>Grundlagen</b><span>Wie ein Markt funktioniert, was eine Kerze wirklich sagt, wie du einen Chart liest, ohne dich zu verlieren.</span></div></li>
+        <li><i>02</i><div><b>Risiko</b><span>Positionsgröße, Stop und Tageslimit. Der Teil, den die meisten überspringen — und der entscheidet.</span></div></li>
+        <li><i>03</i><div><b>Praxis</b><span>Am Papierkonto üben, protokollieren, auswerten. Erst dann echtes Geld.</span></div></li>
+      </ul>
+      <p class="note">Inhalte und Funktionen folgen. Sag mir, was in diesen Bereich soll — Videos, Kurse, Texte, Downloads — dann baue ich es ein.</p>
+    </section>
+
+    <section class="panel" id="p-mitglieder" data-panel="mitglieder" hidden>
+      <div class="panel__head">
+        <p class="kick">N — Neue Mitglieder</p>
+        <h2 class="chrome">Neu dabei</h2>
+        <p class="lead">Hier startest du. In drei Schritten bist du drin und weißt, wo alles liegt.</p>
+      </div>
+      <ul class="rules">
+        <li><i>01</i><div><b>Anmelden</b><span>Zugang anfragen, Bestätigung abwarten, Profil einrichten.</span></div></li>
+        <li><i>02</i><div><b>Einrichten</b><span>Papierkonto verbinden, Risiko festlegen, erste Vorlage wählen.</span></div></li>
+        <li><i>03</i><div><b>Loslegen</b><span>Mitlesen, Fragen stellen, erste Trades protokollieren.</span></div></li>
+      </ul>
+      <div class="linkrow">
+        <a class="btn" href="#xaubot">Zum XAU Bot</a>
+        <button class="btn btn--plain" type="button" data-goto="ben">Wer ist Ben?</button>
+      </div>
+      <p class="note">Anmeldung, Preise und Mitgliederbereich folgen, sobald du mir sagst, wie der Zugang laufen soll.</p>
+    </section>
+
+    <section class="panel" id="p-gold" data-panel="gold" hidden>
+      <div class="panel__head">
+        <p class="kick">G — Gold</p>
+        <h2 class="gilt">Gold</h2>
+        <p class="lead">Ein Markt, den ich am besten kenne. Tief genug für klare Bewegungen, ruhig genug für klare Regeln.</p>
+      </div>
+      <ul class="facts">
+        <li><p class="k">Symbol</p><p class="v">XAU/USD</p></li>
+        <li><p class="k">Handelszeit</p><p class="v"><span class="ph">[Zeitfenster]</span></p></li>
+        <li><p class="k">Zeitrahmen</p><p class="v"><span class="ph">[z. B. 15m / 1h]</span></p></li>
+        <li><p class="k">Risiko / Trade</p><p class="v"><span class="ph">[%]</span></p></li>
+      </ul>
+      <div class="body-text">
+        <p>Warum Gold: <span class="ph">[dein Grund]</span>. Was ich beobachte: <span class="ph">[Sessions, News, Niveaus]</span>.</p>
+      </div>
+      <p class="note">Details zu Strategie und Zahlen folgen.</p>
+    </section>
+
+    <section class="panel" id="p-xaubot" data-panel="xaubot" hidden>
+      <div class="panel__head">
+        <p class="kick">X — XAU Bot</p>
+        <h2 class="gilt">XAU Bot</h2>
+        <p class="lead">Der Bot handelt Gold nach festen Regeln — er fragt nicht nach Meinung, nur nach Signal und Risiko.</p>
+      </div>
+      <ul class="facts">
+        <li><p class="k">Markt</p><p class="v">XAU/USD</p></li>
+        <li><p class="k">Status</p><p class="v"><span class="ph">[in Arbeit]</span></p></li>
+        <li><p class="k">Broker</p><p class="v"><span class="ph">[Anbieter]</span></p></li>
+        <li><p class="k">Modus</p><p class="v">Papier zuerst</p></li>
+      </ul>
+      <div class="body-text">
+        <p>Funktionen trägst du mir später nach: <span class="ph">[Signalquelle]</span>, <span class="ph">[Stop und Ziel]</span>, <span class="ph">[Positionsgröße]</span>, <span class="ph">[Not-Aus]</span>.</p>
+      </div>
+      <p class="note">Keine Anlageberatung. Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
+    </section>
+
+    <div class="foot">
+      <span>BENGX</span>
+      <span>Keine Anlageberatung</span>
+      <span class="copyline"><span class="val" id="mail">hallo@bengx.de</span>
+        <button class="btn btn--plain" type="button" id="copybtn">Kopieren</button></span>
+      <span>© <span id="yr">2026</span></span>
     </div>
-
-    <div class="term" aria-label="Beispielhafte Positionsübersicht">
-      <div class="term__bar">
-        <span class="term__dot" aria-hidden="true"></span>
-        <span class="term__title">Offene Positionen</span>
-        <span class="badge">Demo</span>
-      </div>
-      <div class="term__rows">
-        <div class="trow"><span class="trow__sym">BTC/USDT · Trend-Momentum</span><span class="trow__side side--long">Long</span><span class="trow__pnl up">+1,84&nbsp;%</span></div>
-        <div class="trow"><span class="trow__sym">ETH/USDT · Trend-Momentum</span><span class="trow__side side--long">Long</span><span class="trow__pnl up">+0,61&nbsp;%</span></div>
-        <div class="trow"><span class="trow__sym">EUR/USD · Mean Reversion</span><span class="trow__side side--short">Short</span><span class="trow__pnl down">−0,22&nbsp;%</span></div>
-        <div class="trow"><span class="trow__sym">GER40 · Vola-Breakout</span><span class="trow__side side--long">Long</span><span class="trow__pnl up">+0,47&nbsp;%</span></div>
-        <div class="trow"><span class="trow__sym">XAU/USD · Mean Reversion</span><span class="trow__side side--short">Short</span><span class="trow__pnl up">+0,93&nbsp;%</span></div>
-      </div>
-      <div class="term__foot">
-        <span>Exposure 38&nbsp;%</span>
-        <span>Tagesverlust-Limit 2,0&nbsp;%</span>
-        <span>Letzte Prüfung 14:32:08</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<div class="tape" aria-hidden="true">
-  <span class="tape__flag">Demo-Kurse</span>
-  <div class="tape__track" id="tape"></div>
+  </main>
 </div>
-
-<main>
-  <section class="sec" id="strategien">
-    <div class="wrap">
-      <div class="sec__head">
-        <div>
-          <p class="eyebrow">Strategie-Vorlagen</p>
-          <h2>Drei Regelwerke, die du anpassen kannst</h2>
-        </div>
-        <p>Jede Vorlage kommt mit offenen Parametern, einem Backtest-Protokoll und einem Paper-Konto. Du änderst Zeitrahmen, Märkte und Risiko – BenGx hält sich daran.</p>
-      </div>
-      <div class="grid-3">
-        <article class="panel">
-          <p class="panel__kick">01 · Trend folgen</p>
-          <h3>Trend-Momentum</h3>
-          <p>Kauft Stärke, wenn der Kurs über dem gleitenden Durchschnitt schließt und das Momentum bestätigt. Steigt aus, sobald der Trend bricht.</p>
-          <dl class="spec">
-            <dt>Zeitrahmen</dt><dd>4h / 1d</dd>
-            <dt>Märkte</dt><dd>Krypto, Indizes</dd>
-            <dt>Signal</dt><dd>EMA 50/200, RSI</dd>
-            <dt>Stop</dt><dd>2 × ATR</dd>
-            <dt>Positionen</dt><dd>max. 6</dd>
-          </dl>
-        </article>
-        <article class="panel">
-          <p class="panel__kick">02 · Rückkehr zum Mittel</p>
-          <h3>Mean Reversion</h3>
-          <p>Handelt Übertreibungen gegen den Markt, nur innerhalb der Haupt-Handelszeiten und nur wenn die Volatilität im definierten Band liegt.</p>
-          <dl class="spec">
-            <dt>Zeitrahmen</dt><dd>15m / 1h</dd>
-            <dt>Märkte</dt><dd>Forex, Gold</dd>
-            <dt>Signal</dt><dd>Bollinger, Z-Score</dd>
-            <dt>Stop</dt><dd>1,5 × ATR</dd>
-            <dt>Positionen</dt><dd>max. 4</dd>
-          </dl>
-        </article>
-        <article class="panel">
-          <p class="panel__kick">03 · Ausbruch</p>
-          <h3>Vola-Breakout</h3>
-          <p>Wartet auf eine Kompression der Spanne und handelt den Ausbruch mit Teilverkäufen. Pausiert automatisch um Termine wie Zinsentscheide.</p>
-          <dl class="spec">
-            <dt>Zeitrahmen</dt><dd>1h</dd>
-            <dt>Märkte</dt><dd>Indizes, Krypto</dd>
-            <dt>Signal</dt><dd>Donchian, ATR-Quetschung</dd>
-            <dt>Stop</dt><dd>Einstiegskerze</dd>
-            <dt>Positionen</dt><dd>max. 3</dd>
-          </dl>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec sec--line" id="ergebnis">
-    <div class="wrap">
-      <div class="sec__head">
-        <div>
-          <p class="eyebrow">Backtest-Protokoll</p>
-          <h2>Kapitalkurve, wie der Bericht sie ausgibt</h2>
-        </div>
-        <p>Beispielhafter Backtest der Vorlage „Trend-Momentum“ über 24 Monate, Startkapital 10.000&nbsp;€, inklusive Gebühren und Slippage. Reine Demo-Daten zur Veranschaulichung des Berichtsformats – keine erzielten Ergebnisse und keine Prognose.</p>
-      </div>
-      <div class="chart-row">
-        <div class="chart-card">
-          <div class="chart-card__bar">
-            <h3>Kapitalkurve · Trend-Momentum · 24 Monate</h3>
-            <span class="badge">Demo-Daten</span>
-          </div>
-          <div class="chart-card__body">
-            <svg id="eqchart" viewBox="0 0 720 280" role="img" aria-label="Kapitalkurve eines Beispiel-Backtests: Anstieg von 10.000 Euro auf 16.210 Euro über 24 Monate, mit einem Rückgang um 6,4 Prozent im zwölften bis fünfzehnten Monat."></svg>
-          </div>
-        </div>
-        <dl class="stats">
-          <div class="stat"><dt>Rendite p.&nbsp;a.</dt><dd>+27,3&nbsp;%<small>Backtest, 24 Monate</small></dd></div>
-          <div class="stat"><dt>Max. Drawdown</dt><dd>−6,4&nbsp;%<small>Monat 12 bis 15</small></dd></div>
-          <div class="stat"><dt>Trades</dt><dd>1.284<small>54,1&nbsp;% davon im Plus</small></dd></div>
-          <div class="stat"><dt>Gewinn / Verlust</dt><dd>1,38<small>Verhältnis Durchschnitte</small></dd></div>
-        </dl>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec sec--line" id="ablauf">
-    <div class="wrap">
-      <div class="sec__head">
-        <div>
-          <p class="eyebrow">Ablauf je Signal</p>
-          <h2>Vier Schritte, immer in dieser Reihenfolge</h2>
-        </div>
-        <p>BenGx überspringt keinen Schritt. Fällt die Risikoprüfung negativ aus, wird keine Order gesendet – der Vorgang landet trotzdem im Protokoll.</p>
-      </div>
-      <div class="steps">
-        <article class="step">
-          <p class="step__n">Schritt 01</p>
-          <h3>Daten einlesen</h3>
-          <p>Kerzen und Orderbuch-Tiefe über die Börsen-API, jede Minute geprüft. Lücken werden markiert statt geschätzt.</p>
-        </article>
-        <article class="step">
-          <p class="step__n">Schritt 02</p>
-          <h3>Signal berechnen</h3>
-          <p>Die Regeln der Vorlage laufen auf dem geschlossenen Zeitabschnitt. Kein Signal aus einer noch laufenden Kerze.</p>
-        </article>
-        <article class="step">
-          <p class="step__n">Schritt 03</p>
-          <h3>Risiko prüfen</h3>
-          <p>Positionsgröße, Tagesverlust-Limit, Korrelation und Exposure. Ein <code>nein</code> hier beendet den Vorgang.</p>
-        </article>
-        <article class="step">
-          <p class="step__n">Schritt 04</p>
-          <h3>Ausführen und protokollieren</h3>
-          <p>Order mit Limit und Stop, dann Eintrag mit Zeitstempel, Order-ID und Grund in das Handelsprotokoll.</p>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec sec--line" id="risiko">
-    <div class="wrap">
-      <div class="sec__head">
-        <div>
-          <p class="eyebrow">Risiko und Kontrolle</p>
-          <h2>Grenzen, die der Bot nicht überschreiten kann</h2>
-        </div>
-        <p>Die Limits liegen außerhalb der Strategie. Eine Vorlage kann sie anfragen, aber nicht erhöhen.</p>
-      </div>
-      <div class="risk">
-        <ul class="rlist">
-          <li><i>01</i><div><b>Risiko pro Trade in Prozent</b><span>Die Positionsgröße ergibt sich aus Kontostand und Stop-Abstand, nicht aus einer festen Stückzahl.</span></div></li>
-          <li><i>02</i><div><b>Tagesverlust-Limit</b><span>Ist das Limit erreicht, werden bis zum nächsten Handelstag keine neuen Positionen eröffnet.</span></div></li>
-          <li><i>03</i><div><b>Drawdown-Bremse</b><span>Ab dem eingestellten Rückgang halbiert BenGx die Positionsgröße, statt sie zu erhöhen.</span></div></li>
-          <li><i>04</i><div><b>Korrelations-Deckel</b><span>Mehrere Positionen in derselben Richtung auf verwandte Märkte zählen als eine Position.</span></div></li>
-          <li><i>05</i><div><b>Paper zuerst</b><span>Jede Änderung läuft erst auf dem Papierkonto. Live-Schaltung ist ein eigener, bestätigter Schritt.</span></div></li>
-        </ul>
-        <aside class="killbox">
-          <p class="eyebrow">Not-Aus</p>
-          <h3>Ein Schalter beendet alles</h3>
-          <p>Der Not-Aus storniert offene Orders, schließt Positionen zum Markt und sperrt neue Signale, bis du ihn selbst wieder löst. Er ist über Web, App und API erreichbar.</p>
-          <div class="gauge">
-            <div class="gauge__row">
-              <span>Exposure</span>
-              <span class="gauge__bar"><span class="gauge__fill gauge__fill--long" style="width:38%"></span></span>
-              <span class="gauge__val">38&nbsp;%</span>
-            </div>
-            <div class="gauge__row">
-              <span>Tagesverlust</span>
-              <span class="gauge__bar"><span class="gauge__fill" style="width:21%"></span></span>
-              <span class="gauge__val">0,42 / 2,00&nbsp;%</span>
-            </div>
-            <div class="gauge__row">
-              <span>Drawdown</span>
-              <span class="gauge__bar"><span class="gauge__fill" style="width:14%"></span></span>
-              <span class="gauge__val">1,4 / 10,0&nbsp;%</span>
-            </div>
-          </div>
-        </aside>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec sec--line" id="preise">
-    <div class="wrap">
-      <div class="sec__head">
-        <div>
-          <p class="eyebrow">Preise</p>
-          <h2>Monatlich, jederzeit kündbar</h2>
-        </div>
-        <p>Alle Pakete enthalten das Papierkonto, das Handelsprotokoll und den Not-Aus. Börsengebühren zahlst du direkt bei deinem Broker.</p>
-      </div>
-      <div class="price">
-        <article class="plan">
-          <div class="plan__top"><h3>Paper</h3></div>
-          <p class="plan__px">0&nbsp;€<small>dauerhaft kostenlos</small></p>
-          <ul>
-            <li>Alle drei Strategie-Vorlagen</li>
-            <li>Papierkonto ohne Zeitlimit</li>
-            <li>Backtest über 24 Monate</li>
-            <li>1 Markt gleichzeitig</li>
-          </ul>
-          <a class="btn btn--outline" href="#zugang">Kostenlos starten</a>
-        </article>
-        <article class="plan plan--pick">
-          <div class="plan__top"><h3>Pro</h3><span class="badge">Empfohlen</span></div>
-          <p class="plan__px">49&nbsp;€<small>pro Monat</small></p>
-          <ul>
-            <li>Live-Handel über API-Schlüssel</li>
-            <li>Bis zu 8 Märkte gleichzeitig</li>
-            <li>Eigene Parameter und Zeitfenster</li>
-            <li>Protokoll-Export als CSV</li>
-            <li>Benachrichtigung per Mail und Telegram</li>
-          </ul>
-          <a class="btn btn--solid" href="#zugang">Zugang anfragen</a>
-        </article>
-        <article class="plan">
-          <div class="plan__top"><h3>Desk</h3></div>
-          <p class="plan__px">149&nbsp;€<small>pro Monat</small></p>
-          <ul>
-            <li>Mehrere Konten und Unterkonten</li>
-            <li>Eigene Strategien per Python-Modul</li>
-            <li>Webhooks und REST-Zugriff</li>
-            <li>Prüfprotokoll für Dritte</li>
-          </ul>
-          <a class="btn btn--outline" href="#zugang">Beratung anfragen</a>
-        </article>
-      </div>
-    </div>
-  </section>
-
-  <section class="sec sec--line" id="zugang">
-    <div class="wrap">
-      <div class="join">
-        <div>
-          <p class="eyebrow">Zugang anfragen</p>
-          <h2 style="font-size:clamp(23px,3.2vw,31px);margin-top:10px">Starte im Papierkonto</h2>
-          <p style="color:var(--fg-dim);margin-top:14px;max-width:46ch">Sag uns, welchen Markt du handelst. Du bekommst einen Zugang zum Papierkonto und das Backtest-Protokoll deiner Vorlage – ohne API-Schlüssel, ohne Zahlungsdaten.</p>
-          <div class="contact" style="margin-top:26px">
-            <p>Lieber direkt schreiben? Diese Adresse kannst du kopieren:</p>
-            <div class="mailrow">
-              <span class="mail" id="mail">hallo@bengx.trade</span>
-              <button class="copy" type="button" id="copybtn">Kopieren</button>
-            </div>
-          </div>
-        </div>
-        <form class="form" id="joinform" novalidate>
-          <div class="field">
-            <label for="f-mail">E-Mail</label>
-            <input id="f-mail" name="mail" type="email" inputmode="email" autocomplete="email" placeholder="du@beispiel.de" required>
-          </div>
-          <div class="field">
-            <label for="f-market">Markt</label>
-            <select id="f-market" name="market">
-              <option>Krypto (Spot)</option>
-              <option>Krypto (Futures)</option>
-              <option>Forex</option>
-              <option>Indizes / CFDs</option>
-              <option>Aktien</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="f-tpl">Vorlage</label>
-            <select id="f-tpl" name="tpl">
-              <option>Trend-Momentum</option>
-              <option>Mean Reversion</option>
-              <option>Vola-Breakout</option>
-              <option>Noch unentschieden</option>
-            </select>
-          </div>
-          <button class="btn btn--solid" type="submit" id="f-submit">Papierkonto anfragen</button>
-          <p class="form__note">Wir melden uns per E-Mail. Keine Weitergabe an Dritte, Abmeldung jederzeit.</p>
-          <div class="ok" id="f-ok" hidden>
-            <b>Anfrage notiert.</b>
-            <span id="f-okdetail"></span>
-          </div>
-        </form>
-      </div>
-    </div>
-  </section>
-</main>
-
-<footer class="ftr">
-  <div class="ftr__in wrap">
-    <div class="ftr__top">
-      <a class="mark" href="#top">
-        <span class="mark__glyph" aria-hidden="true">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <rect x="2" y="5" width="3.4" height="7" rx="1" fill="#33C98E"></rect>
-            <rect x="3.3" y="2" width="0.8" height="12" rx="0.4" fill="#33C98E"></rect>
-            <rect x="9.6" y="4" width="3.4" height="5.4" rx="1" fill="#F5A524"></rect>
-            <rect x="10.9" y="1.6" width="0.8" height="12.8" rx="0.4" fill="#F5A524"></rect>
-          </svg>
-        </span>
-        <span class="mark__txt">Ben<b>Gx</b></span>
-      </a>
-      <nav class="ftr__nav" aria-label="Fußnavigation">
-        <a href="#strategien">Strategien</a>
-        <a href="#ergebnis">Backtest</a>
-        <a href="#ablauf">Ablauf</a>
-        <a href="#risiko">Risiko</a>
-        <a href="#preise">Preise</a>
-        <a href="#zugang">Zugang</a>
-      </nav>
-    </div>
-    <p class="disc">
-      <b>Risikohinweis.</b> Der Handel mit Kryptowerten, Devisen und Hebelprodukten ist mit erheblichen Verlustrisiken verbunden; ein Totalverlust des eingesetzten Kapitals ist möglich. BenGx ist ein Werkzeug zur Ausführung eigener Regeln und <b>keine Anlageberatung, keine Vermögensverwaltung und keine Empfehlung</b> einzelner Finanzinstrumente. Alle Kurse, Positionen und Kennzahlen auf dieser Seite sind Demo-Daten zur Veranschaulichung. Backtest-Ergebnisse beruhen auf historischen Daten und sind kein Hinweis auf künftige Entwicklungen.
-    </p>
-  </div>
-</footer>
 
 <script>
 (function(){
   "use strict";
 
-  /* ---- Tape ---- */
-  var ticks=[
-    ["BTC/USDT","67.412",0.84],["ETH/USDT","3.148",1.27],["SOL/USDT","172,40",-0.63],
-    ["EUR/USD","1,0824",-0.11],["GBP/USD","1,2693",0.19],["USD/JPY","151,38",0.42],
-    ["GER40","18.247",0.57],["NAS100","20.118",-0.34],["US500","5.642",0.21],
-    ["XAU/USD","2.391,60",0.72],["BRENT","82,14",-0.95],["BNB/USDT","592,80",0.38]
-  ];
-  function tickHTML(t){
-    var cls=t[2]>=0?"up":"down";
-    var sign=t[2]>=0?"+":"−";
-    var val=Math.abs(t[2]).toFixed(2).replace(".",",");
-    return '<span class="tick"><span class="tick__sym">'+t[0]+'</span>'+
-           '<span class="tick__px">'+t[1]+'</span>'+
-           '<span class="'+cls+'">'+sign+val+'&thinsp;%</span></span>';
-  }
-  var tape=document.getElementById("tape");
-  if(tape){
-    var one=ticks.map(tickHTML).join("");
-    tape.innerHTML=one+one;
-  }
+  var keys=["ben","entdecken","mitglieder","gold","xaubot"];
+  var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Gold",xaubot:"XAU Bot"};
+  var letters={b:"ben",e:"entdecken",n:"mitglieder",g:"gold",x:"xaubot"};
+  var buttons=Array.prototype.slice.call(document.querySelectorAll(".ltr"));
+  var word=document.getElementById("railword");
 
-  /* ---- Kapitalkurve (Demo-Backtest) ---- */
-  var eq=[10000,10240,10105,10480,10920,10760,11310,11690,11520,12040,12610,12480,
-          13050,12640,12210,12480,13070,13640,14080,13890,14520,15180,15640,16210];
-  var svg=document.getElementById("eqchart");
-  if(svg){
-    var W=720,H=280,L=58,R=18,T=18,B=34;
-    var yMin=9600,yMax=16800;
-    var ticksY=[10000,12000,14000,16000];
-    var x=function(i){return L+i*(W-L-R)/(eq.length-1);};
-    var y=function(v){return T+(yMax-v)*(H-T-B)/(yMax-yMin);};
-    var nf=function(v){return v.toLocaleString("de-DE");};
-
-    var parts=[];
-    parts.push('<defs><linearGradient id="eqfill" x1="0" y1="0" x2="0" y2="1">'+
-      '<stop offset="0%" stop-color="var(--accent)" stop-opacity="0.22"/>'+
-      '<stop offset="100%" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>');
-
-    /* Gitter + Y-Achse */
-    ticksY.forEach(function(v){
-      var yy=y(v).toFixed(1);
-      parts.push('<line x1="'+L+'" y1="'+yy+'" x2="'+(W-R)+'" y2="'+yy+
-        '" stroke="var(--line)" stroke-width="1" fill="none"/>');
-      parts.push('<text x="'+(L-10)+'" y="'+(y(v)+4).toFixed(1)+'" text-anchor="end" '+
-        'font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--fg-dim)">'+nf(v)+'</text>');
+  function show(key,push){
+    if(keys.indexOf(key)<0){key="ben";}
+    buttons.forEach(function(b){
+      b.setAttribute("aria-current",b.getAttribute("data-key")===key?"true":"false");
     });
-
-    /* Flächen- und Linienpfad */
-    var line="",area="";
-    for(var i=0;i<eq.length;i++){
-      line+=(i?" L":"M")+x(i).toFixed(1)+" "+y(eq[i]).toFixed(1);
-    }
-    area=line+" L"+x(eq.length-1).toFixed(1)+" "+y(yMin).toFixed(1)+
-         " L"+x(0).toFixed(1)+" "+y(yMin).toFixed(1)+" Z";
-    parts.push('<path d="'+area+'" fill="url(#eqfill)" stroke="none"/>');
-    parts.push('<path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2.2" '+
-      'stroke-linejoin="round" stroke-linecap="round"/>');
-
-    /* Drawdown markieren: Hoch Monat 13 bis Tief Monat 15 */
-    var pIdx=12,tIdx=14;
-    parts.push('<line x1="'+x(pIdx).toFixed(1)+'" y1="'+y(eq[pIdx]).toFixed(1)+
-      '" x2="'+x(tIdx).toFixed(1)+'" y2="'+y(eq[tIdx]).toFixed(1)+
-      '" stroke="var(--short)" stroke-width="1.4" stroke-dasharray="3 3" fill="none"/>');
-    parts.push('<circle cx="'+x(tIdx).toFixed(1)+'" cy="'+y(eq[tIdx]).toFixed(1)+
-      '" r="3.4" fill="var(--short)"/>');
-    parts.push('<text x="'+(x(tIdx)+8).toFixed(1)+'" y="'+(y(eq[tIdx])+16).toFixed(1)+
-      '" font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--short)">−6,4&#160;% DD</text>');
-
-    /* Endpunkt */
-    var last=eq.length-1;
-    parts.push('<circle cx="'+x(last).toFixed(1)+'" cy="'+y(eq[last]).toFixed(1)+
-      '" r="4" fill="var(--accent)"/>');
-    parts.push('<text x="'+(x(last)-6).toFixed(1)+'" y="'+(y(eq[last])-12).toFixed(1)+
-      '" text-anchor="end" font-family="IBM Plex Mono, monospace" font-size="12" '+
-      'font-weight="600" fill="var(--fg)">'+nf(eq[last])+'&#160;€</text>');
-
-    /* X-Achse */
-    parts.push('<line x1="'+L+'" y1="'+y(yMin).toFixed(1)+'" x2="'+(W-R)+'" y2="'+
-      y(yMin).toFixed(1)+'" stroke="var(--line)" stroke-width="1" fill="none"/>');
-    [0,5,11,17,23].forEach(function(i){
-      parts.push('<text x="'+x(i).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" '+
-        'font-family="IBM Plex Mono, monospace" font-size="11" fill="var(--fg-dim)">M'+(i+1)+'</text>');
-    });
-
-    svg.innerHTML=parts.join("");
-  }
-
-  /* ---- Formular ---- */
-  var form=document.getElementById("joinform");
-  if(form){
-    form.addEventListener("submit",function(e){
-      e.preventDefault();
-      var mail=document.getElementById("f-mail");
-      var ok=document.getElementById("f-ok");
-      var detail=document.getElementById("f-okdetail");
-      var val=(mail.value||"").trim();
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(val)){
-        mail.setAttribute("aria-invalid","true");
-        mail.style.borderColor="var(--short)";
-        detail.textContent="";
-        ok.hidden=true;
-        mail.focus();
-        return;
+    keys.forEach(function(k){
+      var el=document.getElementById("p-"+k);
+      if(!el){return;}
+      if(k===key){
+        el.hidden=false;
+        el.removeAttribute("data-enter");
+        void el.offsetWidth;
+        el.setAttribute("data-enter","");
+      }else{
+        el.hidden=true;
       }
-      mail.removeAttribute("aria-invalid");
-      mail.style.borderColor="";
-      detail.textContent="Wir schicken den Zugang zum Papierkonto an "+val+
-        " – Vorlage „"+document.getElementById("f-tpl").value+
-        "“ für "+document.getElementById("f-market").value+".";
-      ok.hidden=false;
-      document.getElementById("f-submit").textContent="Anfrage gesendet";
     });
+    word.textContent=words[key];
+    if(push&&location.hash.slice(1)!==key){
+      try{location.hash=key;}catch(e){}
+    }
+    window.scrollTo({top:0,behavior:"auto"});
   }
 
-  /* ---- Adresse kopieren ---- */
-  var btn=document.getElementById("copybtn");
-  if(btn){
+  buttons.forEach(function(b){
+    b.addEventListener("click",function(){show(b.getAttribute("data-key"),true);});
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll("[data-goto]"),function(el){
+    el.addEventListener("click",function(){show(el.getAttribute("data-goto"),true);});
+  });
+
+  document.addEventListener("keydown",function(e){
+    if(e.metaKey||e.ctrlKey||e.altKey){return;}
+    var t=e.target;
+    if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT")){return;}
+    var k=(e.key||"").toLowerCase();
+    if(letters[k]){e.preventDefault();show(letters[k],true);}
+  });
+
+  window.addEventListener("hashchange",function(){show(location.hash.slice(1),false);});
+  show(location.hash.slice(1)||"ben",false);
+
+  var y=document.getElementById("yr");
+  if(y){y.textContent=String(new Date().getFullYear());}
+
+  /* Video: lokale Datei, sonst Platzhalter */
+  var vid=document.getElementById("vid"),vph=document.getElementById("vph");
+  if(vid&&vph){
+    var reveal=function(){vid.hidden=false;vph.hidden=true;};
+    vid.addEventListener("loadeddata",reveal);
+    vid.addEventListener("error",function(){vid.hidden=true;vph.hidden=false;});
+    vid.src="media/ben-vorstellung.mp4";
+
+    var pick=document.getElementById("pickvid"),file=document.getElementById("vidfile");
+    if(pick&&file){
+      pick.addEventListener("click",function(){file.click();});
+      file.addEventListener("change",function(){
+        var f=file.files&&file.files[0];
+        if(!f){return;}
+        vid.src=URL.createObjectURL(f);
+        vid.load();
+        reveal();
+      });
+    }
+  }
+
+  /* Adresse kopieren */
+  var btn=document.getElementById("copybtn"),mail=document.getElementById("mail");
+  if(btn&&mail){
     btn.addEventListener("click",function(){
-      var text=document.getElementById("mail").textContent.trim();
-      var done=function(){
-        btn.textContent="Kopiert";
+      var txt=mail.textContent.trim();
+      var back=function(label){
+        btn.textContent=label;
         setTimeout(function(){btn.textContent="Kopieren";},1600);
       };
-      var fallback=function(){
+      var mark=function(){
         var r=document.createRange();
-        r.selectNodeContents(document.getElementById("mail"));
+        r.selectNodeContents(mail);
         var s=window.getSelection();
         s.removeAllRanges();
         s.addRange(r);
-        btn.textContent="Markiert";
-        setTimeout(function(){btn.textContent="Kopieren";},1600);
+        back("Markiert");
       };
       if(navigator.clipboard&&navigator.clipboard.writeText){
-        navigator.clipboard.writeText(text).then(done,fallback);
+        navigator.clipboard.writeText(txt).then(function(){back("Kopiert");},mark);
       }else{
-        fallback();
+        mark();
       }
     });
   }

@@ -16,6 +16,11 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 | **G** | Signale | Das neueste Signal, Winrate und Pips von heute, dahinter die Historie |
 | **X** | Bots | Drei Bots zur Auswahl, einzeln oder mehrere zugleich |
 
+Dazu kommt ein sechster, **nicht öffentlicher** Abschnitt: der **Assistent**
+(Taste `a` oder der Eintrag im Fuß). Er erscheint nur, wenn die Seite erkennt,
+dass jemand sie bearbeiten darf; Besucher sehen ihn nicht und erreichen ihn auch
+nicht über die Adresse.
+
 Jeder Abschnitt hat eine eigene Adresse (`#ben`, `#entdecken`, `#mitglieder`, `#gold`, `#xaubot`),
 lässt sich also direkt verlinken. Mit den Pfeiltasten blättert man durch die Abschnitte,
 unten rechts führt eine Weiter-Zeile zum nächsten.
@@ -62,6 +67,30 @@ Ein Signal hat diese Felder:
 
 Die Winrate zählt nur geschlossene Signale und lässt Break-even außen vor.
 „Heute" richtet sich nach dem Ausstieg, bei offenen Signalen nach dem Einstieg.
+
+## Assistent
+
+Ein Chat auf der Seite selbst, der mit Claude spricht und dabei **die echten
+Daten dieser Seite liest**. Er hat fünf Werkzeuge:
+
+| Werkzeug | Was es tut |
+| --- | --- |
+| `kennzahlen` | rechnet Anzahl, Trefferquote, Pips und offene Positionen für heute, Woche, Monat oder alles |
+| `signale_lesen` | gibt einzelne Signale mit Richtung, Einstieg, Stop, Ziel und Ergebnis zurück |
+| `seitenstand` | Überblick: letztes Signal, wie lange es her ist, offene Positionen, offene Aufgaben |
+| `aufgabe_anlegen` | notiert ein Problem oder einen Wunsch in der Sammlung `tasks` |
+| `aufgaben_lesen` | listet die Aufgaben auf |
+
+Er darf nichts erfinden: für jede Zahl muss er ein Werkzeug benutzen. Ändern
+kann er nichts — er notiert, und Claude Code liest die Liste später aus.
+
+Bilder versteht er; aus einem Video holt die Seite bis zu drei Einzelbilder und
+schickt die mit. An WhatsApp, Instagram, E-Mail oder Besucherzahlen kommt er
+nicht heran, und er sagt das auch.
+
+Chatverlauf und Aufgaben liegen in der Datenbank der Seite unter Regeln, die
+beides auf Bearbeiter beschränken — ein Besucher sieht sie nicht, selbst wenn
+die Seite öffentlich geteilt wird.
 
 ## Bots (X)
 

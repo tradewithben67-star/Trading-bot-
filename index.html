@@ -273,6 +273,47 @@ a{color:var(--fg)}
 }
 .next button:hover{opacity:1}
 
+/* ---------- Assistent ---------- */
+.chat{display:grid;gap:14px;min-width:0}
+.chat__log{display:grid;gap:13px;max-height:min(54vh,580px);overflow-y:auto;padding-right:6px;scrollbar-width:thin}
+.chat__empty{color:var(--fg-dim);font-size:14.5px;border:1px dashed var(--line);padding:18px 20px;background:rgba(10,10,12,.6)}
+.msg{display:grid;gap:5px;min-width:0}
+.msg__who{font-family:var(--f-data);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.msg--me .msg__who{color:var(--gold)}
+.msg__body{
+  white-space:pre-wrap;word-break:break-word;font-size:15px;line-height:1.65;color:var(--fg);
+  border:1px solid var(--line-soft);background:rgba(10,10,12,.78);padding:13px 16px;min-width:0;
+}
+.msg--me .msg__body{background:rgba(239,196,94,.06);border-color:rgba(239,196,94,.26)}
+.msg--tool .msg__body{font-family:var(--f-data);font-size:12px;color:var(--fg-dim);background:rgba(0,0,0,.4)}
+.chat__files{display:flex;flex-wrap:wrap;gap:8px}
+.thumb{position:relative;width:56px;height:56px;border:1px solid var(--line);overflow:hidden;flex:0 0 auto}
+.thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.thumb button{
+  position:absolute;top:0;right:0;width:18px;height:18px;line-height:16px;text-align:center;
+  background:rgba(0,0,0,.72);border:0;border-left:1px solid var(--line);border-bottom:1px solid var(--line);
+  color:var(--fg-mid);cursor:pointer;font-size:12px;padding:0;
+}
+.thumb button:hover{color:var(--bad,#FF8E7E)}
+.chat__bar{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:10px;align-items:end}
+.chat__bar textarea{
+  width:100%;min-width:0;resize:none;font-family:var(--f-body);font-size:15px;line-height:1.5;
+  padding:11px 13px;border-radius:2px;border:1px solid var(--line);background:rgba(0,0,0,.6);color:var(--fg);
+  max-height:160px;
+}
+.chat__bar textarea:hover{border-color:rgba(255,255,255,.26)}
+.chat__state{font-family:var(--f-data);font-size:11px;letter-spacing:.06em;color:var(--fg-dim);min-height:1.2em}
+.chat__state--bad{color:#FF8E7E}
+.foot__link{
+  appearance:none;background:none;border:0;padding:0;cursor:pointer;
+  font-family:var(--f-data);font-size:11px;letter-spacing:.1em;color:var(--fg-dim);
+}
+.foot__link:hover{color:var(--gold)}
+@media (max-width:620px){
+  .chat__bar{grid-template-columns:minmax(0,1fr)}
+  .chat__bar .btn{width:100%;justify-content:center}
+}
+
 /* Fuß */
 .foot{
   grid-column:1/-1;
@@ -654,8 +695,38 @@ a{color:var(--fg)}
       <nav class="next"><span class="next__lbl">Zurück zum Anfang</span><button type="button" data-goto="ben">B — Ben →</button></nav>
     </section>
 
+    <section class="panel" id="p-assistent" data-panel="assistent" hidden>
+      <header class="phead">
+        <div class="phead__top"><p class="kick">A — Assistent</p><p class="idx num">intern</p></div>
+        <h2 class="chrome">Assistent</h2>
+        <p class="lead">Schreib normal. Er liest deine Signale, rechnet nach, schaut sich Bilder an und notiert, was repariert werden muss.</p>
+      </header>
+      <div class="rule"></div>
+
+      <div class="chat">
+        <div class="chat__log" id="chatlog"></div>
+        <div class="chat__files" id="chatfiles" hidden></div>
+        <div class="chat__bar">
+          <textarea id="chatinput" rows="1" placeholder="Zum Beispiel: Wie waren die Signale heute?"></textarea>
+          <button class="btn btn--plain" type="button" id="chatattach">Bild</button>
+          <input id="chatfile" type="file" accept="image/*,video/*" multiple hidden>
+          <button class="btn" type="button" id="chatsend">Senden</button>
+        </div>
+        <p class="chat__state" id="chatstate"></p>
+      </div>
+
+      <div class="todo">
+        <p class="kick">Was er erreicht — und was nicht</p>
+        <p><b>Erreicht:</b> deine Signale samt Zahlen, die Aufgabenliste, Bilder und einzelne Bilder aus Videos, die du ihm gibst.</p>
+        <p><b>Erreicht nicht:</b> WhatsApp, Instagram oder E-Mail — eine Webseite kommt an fremde Postfächer nicht heran. Schick ihm die Nachricht als Text oder Bild, dann formuliert er die Antwort. Besucherzahlen fehlen ebenfalls; dafür braucht die Seite einen Zähldienst.</p>
+      </div>
+
+      <nav class="next"><span class="next__lbl">Zurück</span><button type="button" data-goto="ben">B — Ben →</button></nav>
+    </section>
+
     <div class="foot">
       <span class="foot__mark">BENGX</span>
+      <button class="foot__link" type="button" id="toassist" hidden>Assistent</button>
       <span>Keine Anlageberatung</span>
       <span class="copyline"><span class="val" id="mail">hallo@bengx.de</span>
         <button class="btn btn--plain" type="button" id="copybtn">Kopieren</button></span>
@@ -668,14 +739,16 @@ a{color:var(--fg)}
 (function(){
   "use strict";
 
-  var keys=["ben","entdecken","mitglieder","gold","xaubot"];
-  var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Signale",xaubot:"Bots"};
-  var letters={b:"ben",e:"entdecken",n:"mitglieder",g:"gold",x:"xaubot"};
+  var keys=["ben","entdecken","mitglieder","gold","xaubot","assistent"];
+  var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Signale",xaubot:"Bots",assistent:"Assistent"};
+  var letters={b:"ben",e:"entdecken",n:"mitglieder",g:"gold",x:"xaubot",a:"assistent"};
   var buttons=Array.prototype.slice.call(document.querySelectorAll(".ltr"));
   var word=document.getElementById("railword");
 
   function show(key,push){
     if(keys.indexOf(key)<0){key="ben";}
+    /* Der Assistent ist Bens Werkzeug, keine Seite für Besucher. */
+    if(key==="assistent"&&!window.__bengxEditor){key="ben";}
     buttons.forEach(function(b){
       b.setAttribute("aria-current",b.getAttribute("data-key")===key?"true":"false");
     });
@@ -711,10 +784,11 @@ a{color:var(--fg)}
     if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT")){return;}
     var k=(e.key||"").toLowerCase();
     if(letters[k]){e.preventDefault();show(letters[k],true);return;}
-    var i=keys.indexOf(location.hash.slice(1));
+    var ring=keys.slice(0,5);
+    var i=ring.indexOf(location.hash.slice(1));
     if(i<0){i=0;}
-    if(e.key==="ArrowDown"||e.key==="ArrowRight"){e.preventDefault();show(keys[(i+1)%keys.length],true);}
-    if(e.key==="ArrowUp"||e.key==="ArrowLeft"){e.preventDefault();show(keys[(i+keys.length-1)%keys.length],true);}
+    if(e.key==="ArrowDown"||e.key==="ArrowRight"){e.preventDefault();show(ring[(i+1)%ring.length],true);}
+    if(e.key==="ArrowUp"||e.key==="ArrowLeft"){e.preventDefault();show(ring[(i+ring.length-1)%ring.length],true);}
   });
 
   window.addEventListener("hashchange",function(){show(location.hash.slice(1),false);});
@@ -1004,8 +1078,16 @@ a{color:var(--fg)}
         if(!u){return null;}
         return Promise.resolve(u.canEdit());
       }).then(function(ok){
+        if(ok!==true){return;}
+        window.__bengxEditor=true;
         var box=document.getElementById("vph-edit");
-        if(ok===true&&box){box.hidden=false;}
+        if(box){box.hidden=false;}
+        var link=document.getElementById("toassist");
+        if(link){
+          link.hidden=false;
+          link.addEventListener("click",function(){show("assistent",true);});
+        }
+        if(location.hash.slice(1)==="assistent"){show("assistent",false);}
       },function(){});
     }
 
@@ -1499,6 +1581,509 @@ a{color:var(--fg)}
         save();
       }
     }catch(e){}
+  })();
+})();
+</script>
+<script>
+/* Assistent: schreibt mit Claude, liest dabei die Signale dieser Seite und
+   legt Aufgaben an. Nur für Bearbeiter sichtbar. */
+(function(){
+  "use strict";
+
+  var MAX_TURNS = 40;
+  var MAX_CHARS = 90000;
+
+  var log = document.getElementById("chatlog");
+  var input = document.getElementById("chatinput");
+  var sendBtn = document.getElementById("chatsend");
+  var attachBtn = document.getElementById("chatattach");
+  var fileInput = document.getElementById("chatfile");
+  var filesBox = document.getElementById("chatfiles");
+  var stateLine = document.getElementById("chatstate");
+  if (!log || !input || !sendBtn) return;
+
+  var ask = null, DB = null, verlauf = null;
+  var turns = [];
+  var pending = [];          // Bilder für die nächste Nachricht
+  var busy = false, control = null, imageLimit = 0;
+
+  function el(t, c, x){
+    var e = document.createElement(t);
+    if (c) e.className = c;
+    if (x != null) e.textContent = x;
+    return e;
+  }
+  function state(text, bad){
+    stateLine.textContent = text || "";
+    stateLine.className = "chat__state" + (bad ? " chat__state--bad" : "");
+  }
+  function scroll(){ log.scrollTop = log.scrollHeight; }
+
+  function bubble(who, text, kind){
+    var wrap = el("div", "msg" + (kind ? " msg--" + kind : ""));
+    wrap.appendChild(el("p", "msg__who", who));
+    var body = el("div", "msg__body", text);
+    wrap.appendChild(body);
+    log.appendChild(wrap);
+    scroll();
+    return body;
+  }
+
+  function drawLog(){
+    log.textContent = "";
+    if (!turns.length){
+      var hint = el("div", "chat__empty",
+        "Frag ihn, was du wissen willst — etwa: Wie waren die Signale heute? " +
+        "Was läuft gerade schief? Schreib mir eine Antwort auf diese Nachricht.");
+      log.appendChild(hint);
+      return;
+    }
+    turns.forEach(function(t){
+      bubble(t.role === "user" ? "Du" : "Assistent", t.content,
+             t.role === "user" ? "me" : "");
+    });
+  }
+
+  /* ---- Verlauf sichern ---- */
+  function trim(){
+    while (turns.length > MAX_TURNS) turns.shift();
+    var total = 0;
+    for (var i = turns.length - 1; i >= 0; i--){
+      total += turns[i].content.length;
+      if (total > MAX_CHARS){ turns = turns.slice(i + 1); break; }
+    }
+    if (turns.length && turns[0].role === "assistant") turns.shift();
+  }
+  function save(){
+    if (!verlauf) return;
+    verlauf.set({turns: turns, updatedAt: new Date().toISOString()})
+      .then(null, function(){});
+  }
+
+  /* ---- Bilder ---- */
+  function addImage(blob, label){
+    if (pending.length >= Math.max(1, imageLimit)) return;
+    var url = URL.createObjectURL(blob);
+    var box = el("div", "thumb");
+    var img = document.createElement("img");
+    img.src = url;
+    img.alt = label || "Anhang";
+    var x = el("button", null, "×");
+    x.type = "button";
+    x.title = "entfernen";
+    x.addEventListener("click", function(){
+      var i = pending.indexOf(blob);
+      if (i >= 0) pending.splice(i, 1);
+      URL.revokeObjectURL(url);
+      box.remove();
+      filesBox.hidden = !pending.length;
+    });
+    box.appendChild(img);
+    box.appendChild(x);
+    filesBox.appendChild(box);
+    filesBox.hidden = false;
+    pending.push(blob);
+  }
+
+  function framesFromVideo(file, count){
+    return new Promise(function(done){
+      var video = document.createElement("video");
+      video.preload = "metadata";
+      video.muted = true;
+      video.playsInline = true;
+      var url = URL.createObjectURL(file);
+      var out = [], marks = [], at = 0;
+
+      var fail = function(){ URL.revokeObjectURL(url); done(out); };
+      video.addEventListener("error", fail);
+      video.addEventListener("loadedmetadata", function(){
+        var d = video.duration;
+        if (!isFinite(d) || d <= 0){ fail(); return; }
+        for (var i = 1; i <= count; i++) marks.push(d * (i / (count + 1)));
+        video.currentTime = marks[0];
+      });
+      video.addEventListener("seeked", function(){
+        var c = document.createElement("canvas");
+        var w = video.videoWidth, h = video.videoHeight;
+        if (!w || !h){ fail(); return; }
+        var k = Math.min(1, 1280 / Math.max(w, h));
+        c.width = Math.round(w * k); c.height = Math.round(h * k);
+        c.getContext("2d").drawImage(video, 0, 0, c.width, c.height);
+        c.toBlob(function(blob){
+          if (blob) out.push(blob);
+          at++;
+          if (at < marks.length){ video.currentTime = marks[at]; }
+          else { URL.revokeObjectURL(url); done(out); }
+        }, "image/jpeg", 0.85);
+      });
+      video.src = url;
+    });
+  }
+
+  function takeFiles(list){
+    var files = Array.prototype.slice.call(list || []);
+    files.forEach(function(f){
+      if (f.type.indexOf("image/") === 0){
+        addImage(f, f.name);
+      } else if (f.type.indexOf("video/") === 0){
+        state("Bilder aus dem Video werden geholt …");
+        framesFromVideo(f, Math.min(3, Math.max(1, imageLimit - pending.length)))
+          .then(function(frames){
+            if (!frames.length){
+              state("Aus diesem Video ließ sich kein Bild holen.", true);
+              return;
+            }
+            frames.forEach(function(b){ addImage(b, "Videobild"); });
+            state(frames.length + " Bild" + (frames.length > 1 ? "er" : "") +
+                  " aus dem Video übernommen.");
+          });
+      }
+    });
+  }
+
+  attachBtn.addEventListener("click", function(){ fileInput.click(); });
+  fileInput.addEventListener("change", function(){
+    takeFiles(fileInput.files);
+    fileInput.value = "";
+  });
+  input.addEventListener("paste", function(e){
+    var items = e.clipboardData && e.clipboardData.files;
+    if (items && items.length){ takeFiles(items); }
+  });
+
+  input.addEventListener("input", function(){
+    input.style.height = "auto";
+    input.style.height = Math.min(160, input.scrollHeight) + "px";
+  });
+  input.addEventListener("keydown", function(e){
+    if (e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(); }
+  });
+  sendBtn.addEventListener("click", function(){
+    if (busy && control){ control.abort(); return; }
+    send();
+  });
+
+  /* ---- Werkzeuge, die Claude benutzen darf ---- */
+  function tagOf(iso){
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return "";
+    return d.getFullYear() + "-" + (d.getMonth() + 1) + "-" + d.getDate();
+  }
+  function heute(){ return tagOf(new Date().toISOString()); }
+
+  function readSignals(){
+    if (!DB) return Promise.resolve([]);
+    return DB.collection("signals").orderBy("openedAt", "desc").limit(400).get()
+      .then(function(snap){
+        return snap.docs.map(function(d){
+          var o = Object.assign({}, d.data() || {});
+          o.id = d.id;
+          return o;
+        });
+      }, function(){ return []; });
+  }
+
+  function within(row, zeitraum){
+    var ref = (row.status && row.status !== "offen" && row.closedAt)
+      ? row.closedAt : row.openedAt;
+    var d = new Date(ref);
+    if (isNaN(d.getTime())) return false;
+    if (zeitraum === "alles" || !zeitraum) return true;
+    if (zeitraum === "heute") return tagOf(ref) === heute();
+    var days = zeitraum === "woche" ? 7 : zeitraum === "monat" ? 30 : 0;
+    if (!days) return true;
+    return (Date.now() - d.getTime()) <= days * 86400000;
+  }
+
+  var tools = [
+    {
+      name: "kennzahlen",
+      description: "Rechnet die Zahlen der Signale für einen Zeitraum aus: " +
+        "Anzahl, gewonnen, verloren, Trefferquote in Prozent, Pips gesamt, offene Positionen. " +
+        "Benutze das für jede Frage nach Ergebnissen.",
+      inputSchema: {type: "object", properties: {
+        zeitraum: {type: "string", enum: ["heute", "woche", "monat", "alles"],
+                   description: "Welcher Zeitraum. Standard: heute."}
+      }},
+      execute: function(args){
+        var z = String((args && args.zeitraum) || "heute");
+        return readSignals().then(function(rows){
+          var w = 0, l = 0, p = 0, n = 0, offen = 0;
+          rows.forEach(function(r){
+            var isOpen = !r.status || r.status === "offen";
+            if (isOpen){ offen++; }
+            if (!within(r, z)) return;
+            n++;
+            if (!isOpen){
+              p += Number(r.pips) || 0;
+              if (r.status === "gewonnen") w++;
+              else if (r.status === "verloren") l++;
+            }
+          });
+          return {
+            zeitraum: z, signale: n, gewonnen: w, verloren: l,
+            trefferquote_prozent: (w + l) ? Math.round(w / (w + l) * 100) : null,
+            pips: Math.round(p * 10) / 10,
+            offene_positionen: offen
+          };
+        });
+      }
+    },
+    {
+      name: "signale_lesen",
+      description: "Gibt die letzten Signale als Liste zurück: Richtung, Einstieg, Stop, " +
+        "Ziel, Status, Pips, Zeiten, Notiz. Für Fragen nach einzelnen Trades.",
+      inputSchema: {type: "object", properties: {
+        zeitraum: {type: "string", enum: ["heute", "woche", "monat", "alles"]},
+        anzahl: {type: "number", description: "Wie viele, höchstens 25."}
+      }},
+      execute: function(args){
+        var z = String((args && args.zeitraum) || "alles");
+        var n = Math.max(1, Math.min(25, Number(args && args.anzahl) || 10));
+        return readSignals().then(function(rows){
+          return rows.filter(function(r){ return within(r, z); })
+            .slice(0, n)
+            .map(function(r){
+              return {
+                id: r.id, richtung: r.side, einstieg: r.entry, stop: r.sl,
+                ziel: r.tp, status: r.status || "offen",
+                pips: Number(r.pips) || 0, geoeffnet: r.openedAt,
+                geschlossen: r.closedAt || null,
+                notiz: String(r.note || "").slice(0, 160)
+              };
+            });
+        });
+      }
+    },
+    {
+      name: "seitenstand",
+      description: "Überblick über den Stand: wie viele Signale es gibt, wann das letzte kam, " +
+        "ob gerade etwas offen ist und wie viele Aufgaben offen sind. " +
+        "Benutze das bei Fragen wie „wie läuft es“ oder „gibt es Probleme“.",
+      execute: function(){
+        return Promise.all([readSignals(), readTasks()]).then(function(both){
+          var rows = both[0], tasks = both[1];
+          var letztes = rows.length ? rows[0].openedAt : null;
+          var stunden = letztes
+            ? Math.round((Date.now() - new Date(letztes).getTime()) / 3600000)
+            : null;
+          return {
+            signale_gesamt: rows.length,
+            letztes_signal: letztes,
+            stunden_seit_letztem_signal: stunden,
+            offene_positionen: rows.filter(function(r){
+              return !r.status || r.status === "offen";
+            }).length,
+            offene_aufgaben: tasks.filter(function(t){ return t.status !== "erledigt"; }).length,
+            hinweis: "Besucherzahlen liegen nicht vor; dafür fehlt der Seite ein Zähldienst."
+          };
+        });
+      }
+    },
+    {
+      name: "aufgabe_anlegen",
+      description: "Notiert ein Problem oder einen Wunsch als Aufgabe. Claude Code liest diese " +
+        "Liste später aus und arbeitet sie ab. Benutze das, wenn etwas kaputt ist oder " +
+        "geändert werden soll — und sage danach, dass es notiert ist.",
+      inputSchema: {type: "object", properties: {
+        titel: {type: "string", description: "Kurz, ein Satz."},
+        beschreibung: {type: "string", description: "Was genau passiert, was erwartet wird."},
+        dringlichkeit: {type: "string", enum: ["niedrig", "normal", "hoch"]}
+      }, required: ["titel"]},
+      execute: function(args){
+        if (!DB) throw new Error("Kein Speicher erreichbar, Aufgabe nicht notiert.");
+        var titel = String((args && args.titel) || "").slice(0, 160);
+        if (!titel) throw new Error("Ohne Titel keine Aufgabe.");
+        var id = "t-" + Date.now().toString(36);
+        return DB.collection("tasks").doc(id).set({
+          titel: titel,
+          beschreibung: String((args && args.beschreibung) || "").slice(0, 2000),
+          dringlichkeit: String((args && args.dringlichkeit) || "normal"),
+          status: "offen",
+          angelegt: new Date().toISOString()
+        }).then(function(){
+          return {angelegt: true, id: id, titel: titel};
+        }, function(e){
+          throw new Error("Konnte nicht gespeichert werden (" + (e && e.code || "Fehler") + ").");
+        });
+      }
+    },
+    {
+      name: "aufgaben_lesen",
+      description: "Gibt die notierten Aufgaben zurück, offene zuerst.",
+      execute: function(){ return readTasks(); }
+    }
+  ];
+
+  function readTasks(){
+    if (!DB) return Promise.resolve([]);
+    return DB.collection("tasks").limit(60).get().then(function(snap){
+      return snap.docs.map(function(d){
+        var o = Object.assign({}, d.data() || {});
+        o.id = d.id;
+        return o;
+      }).sort(function(a, b){
+        if ((a.status === "offen") !== (b.status === "offen")) return a.status === "offen" ? -1 : 1;
+        return String(b.angelegt || "").localeCompare(String(a.angelegt || ""));
+      });
+    }, function(){ return []; });
+  }
+
+  /* ---- Die stehende Anweisung ---- */
+  var RULES =
+    "Du bist der Assistent von Ben auf seiner Seite BENGX. Ben ist 18, kommt aus " +
+    "Deutschland und handelt seit einem Jahr ausschließlich Gold (XAU/USD). Sein " +
+    "Broker ist Tradequo, der über MetaTrader 5 läuft.\n\n" +
+    "Antworte auf Deutsch, in Bens Ton: direkt, ruhig, ohne Werbesprache und ohne " +
+    "Ausrufezeichen. Kurz, wenn die Frage kurz ist.\n\n" +
+    "Zu dieser Seite gehören: B Ben, E Entdecken (Lernen), N Neue Mitglieder, " +
+    "G Signale (das neueste Signal, Zahlen von heute, Historie) und X Bots " +
+    "(Signal-Kopierer, Dauerläufer, Swing). Die Bots liegen als Python-Programm im " +
+    "Repository und handeln bisher nur auf dem Papierkonto.\n\n" +
+    "WERKZEUGE: Für jede Frage nach Zahlen, Signalen, Stand oder Aufgaben benutzt du " +
+    "die Werkzeuge. Erfinde niemals eine Zahl und schätze nicht. Hast du keine Daten, " +
+    "sag das.\n\n" +
+    "Meldet Ben ein Problem oder wünscht eine Änderung, lege eine Aufgabe an und sag " +
+    "ihm, dass sie notiert ist. Du kannst selbst keinen Code ändern und nichts am Bot " +
+    "umstellen — das macht Claude Code, das diese Liste ausliest.\n\n" +
+    "Du kommst NICHT an WhatsApp, Instagram, E-Mail oder Besucherzahlen. Wenn Ben " +
+    "danach fragt: sag es klar und biete an, was geht — eine Nachricht, die er dir als " +
+    "Text oder Bild gibt, formulierst du gern.\n\n" +
+    "Schickt Ben ein Bild, sieh es dir an und antworte darauf. Bilder aus früheren " +
+    "Nachrichten siehst du nicht mehr; beziehe dich auf das, was im Text steht.\n\n" +
+    "Rede niemandem nach dem Mund. Sieht eine Zahl schlecht aus, sag es.";
+
+  /* ---- Senden ---- */
+  function send(){
+    if (busy) return;
+    var text = input.value.trim();
+    if (!text && !pending.length) return;
+    if (!ask){ state("Claude ist für diese Seite nicht freigegeben.", true); return; }
+
+    if (!text) text = "Schau dir das an.";
+    if (pending.length) text += "\n\n[" + pending.length + " Bild(er) angehängt]";
+
+    turns.push({role: "user", content: text});
+    trim();
+    if (log.querySelector(".chat__empty")) log.textContent = "";
+    bubble("Du", text, "me");
+    input.value = "";
+    input.style.height = "auto";
+
+    var images = pending.slice();
+    pending = [];
+    filesBox.textContent = "";
+    filesBox.hidden = true;
+
+    busy = true;
+    sendBtn.textContent = "Stop";
+    state("Denkt nach …");
+    var body = bubble("Assistent", "…");
+    control = new AbortController();
+
+    var opts = {
+      signal: control.signal,
+      cache: false,
+      tools: tools,
+      onText: function(u){ body.textContent = u.text; scroll(); }
+    };
+    if (images.length) opts.images = images;
+
+    var finish = function(){
+      busy = false;
+      control = null;
+      sendBtn.textContent = "Senden";
+      input.focus();
+    };
+
+    ask([{role: "user", content: RULES}].concat(turns), opts).then(function(res){
+      body.textContent = res.text;
+      turns.push({role: "assistant", content: res.text});
+      trim();
+      save();
+      state(res.truncated ? "Antwort war zu lang und wurde abgeschnitten." : "");
+      finish();
+    }, function(e){
+      var code = e && e.code;
+      var keep = e && e.text;
+      if (keep){
+        body.textContent = keep;
+        turns.push({role: "assistant", content: keep});
+        trim();
+        save();
+      } else if (body.parentNode){
+        body.parentNode.remove();
+        turns.pop();
+      }
+      state(code === "cancelled" ? "Abgebrochen." : meldung(code),
+            code !== "cancelled");
+      finish();
+    });
+  }
+
+  function meldung(code){
+    switch (code){
+      case "not_granted": return "Du hast der Seite nicht erlaubt, Claude zu benutzen.";
+      case "rate_limited": return "Zu viele Anfragen. Gleich noch einmal versuchen.";
+      case "session_expired": return "Bitte neu anmelden.";
+      case "image_rejected": return "Mit diesem Bild kommt er nicht zurecht.";
+      case "images_unavailable": return "Bilder gehen hier nicht.";
+      case "tools_unavailable": return "Der Zugriff auf die Signale geht hier nicht.";
+      case "refused": return "Diese Anfrage hat er abgelehnt. Formulier sie anders.";
+      case "prompt_too_large": return "Zu viel auf einmal. Frag kleiner.";
+      default: return "Hat nicht geklappt (" + (code || "Fehler") + ").";
+    }
+  }
+
+  /* ---- Start ---- */
+  drawLog();
+
+  (async function(){
+    var C = window.claude;
+    if (!C || typeof C.use !== "function"){
+      state("Der Assistent läuft nur auf der veröffentlichten Seite.");
+      sendBtn.disabled = true;
+      attachBtn.disabled = true;
+      return;
+    }
+    try { ask = await C.use("sample"); } catch (e) { ask = null; }
+    try { DB = await C.use("db"); } catch (e) { DB = null; }
+
+    if (!ask){
+      state("Claude ist für diese Seite nicht verfügbar.", true);
+      sendBtn.disabled = true;
+      attachBtn.disabled = true;
+    } else {
+      var lim = null;
+      try { lim = await ask.limits(); } catch (e) { lim = null; }
+      imageLimit = (lim && lim.images && lim.images.maxCount) || 0;
+      attachBtn.hidden = !imageLimit;
+      if (lim && lim.images && lim.images.mediaTypes){
+        fileInput.accept = lim.images.mediaTypes.join(",") + ",video/*";
+      }
+      if (!lim || !lim.tools){
+        state("Die Signale kann er hier nicht lesen — Werkzeuge sind nicht verfügbar.");
+      }
+    }
+
+    if (DB){
+      verlauf = DB.doc("chat/verlauf");
+      try {
+        var snap = await verlauf.get();
+        if (snap && snap.exists){
+          var stored = (snap.data() || {}).turns;
+          if (Array.isArray(stored) && stored.length){
+            turns = stored.filter(function(t){
+              return t && (t.role === "user" || t.role === "assistant") &&
+                     typeof t.content === "string" && t.content;
+            });
+            trim();
+            drawLog();
+            scroll();
+          }
+        }
+      } catch (e) {}
+    }
   })();
 })();
 </script>

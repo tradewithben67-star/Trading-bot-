@@ -12,7 +12,7 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 | --- | --- | --- |
 | **B** | Ben | Über Ben und das Vorstellungsvideo |
 | **E** | Entdecken | Lernen: Grundlagen, Risiko, Praxis |
-| **N** | Neue Mitglieder | Einstieg in drei Schritten |
+| **N** | Neue Mitglieder | Einstieg in drei Schritten, Konto bei Tradequo |
 | **G** | Signale | Das neueste Signal, Winrate und Pips von heute, dahinter die Historie |
 | **X** | Bots | Drei Bots zur Auswahl, einzeln oder mehrere zugleich |
 

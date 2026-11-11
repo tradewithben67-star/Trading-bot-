@@ -163,7 +163,10 @@ warmup_bars = 260
 
 [live]
 enabled = false           # bewusst einschalten, sonst läuft nichts echt
-broker = "paper"          # der einzige fertige Anschluss
+# "paper" ist der einzige fertige Anschluss. Das Konto liegt bei Tradequo,
+# dort läuft MetaTrader 5 — eine Anbindung gehört in eine eigene Klasse
+# nach dem Vorbild von broker.Broker, mit Zugangsdaten aus der Umgebung.
+broker = "paper"
 poll_seconds = 60
 state_dir = "state"
 journal = "state/trades.jsonl"

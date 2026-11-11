@@ -401,7 +401,7 @@ pre b{color:var(--fg);font-weight:500}
        note: "Echtes Geld bleibt gesperrt, bis ein Backtest zum Fingerabdruck vorliegt und ein Broker angebunden ist.",
        f: [
         flag("enabled", "Live freigeben", "Muss bewusst eingeschaltet werden. Ohne Broker-Anschluss passiert trotzdem nichts."),
-        txt("broker", "Broker", "„paper“ ist der einzige fertige Anschluss."),
+        txt("broker", "Broker", "„paper“ ist der einzige fertige Anschluss. Das Konto liegt bei Tradequo, das über MetaTrader 5 läuft — die Anbindung dorthin fehlt noch."),
         num("poll_seconds", "Takt", "Abstand zwischen zwei Durchläufen im Dauerbetrieb.", {min: 1, max: 86400, unit: "Sekunden"}),
         txt("state_dir", "Zustandsordner", "Hier liegen Zustand, Protokoll und Not-Aus."),
         txt("journal", "Protokoll", "Jeder abgeschlossene Trade als eine Zeile."),

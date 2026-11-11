@@ -8,6 +8,11 @@ Papierkonto.
 bewusst klein gehalten. Eine echte Anbindung gehört in eine eigene Klasse mit
 den Zugangsdaten aus der Umgebung — niemals in diese Datei und niemals ins
 Repository.
+
+Für **Tradequo** führt der Weg über **MetaTrader 5**: dort läuft das Konto.
+Eine Anbindung braucht das offizielle Paket `MetaTrader5` (nur Windows) oder
+eine Brücke zu einem Expert Advisor. Zu implementieren sind genau die vier
+Methoden unten; `PaperBroker` zeigt, was sie zurückgeben müssen.
 """
 
 from __future__ import annotations

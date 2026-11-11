@@ -245,6 +245,19 @@ a{color:var(--fg)}
 .copyline{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .copyline .val{font-family:var(--f-data);font-size:15px;color:var(--fg);user-select:all;word-break:break-all}
 
+.goal{
+  border:1px solid rgba(239,196,94,.4);
+  background:linear-gradient(180deg,rgba(239,196,94,.08),transparent 58%),rgba(10,10,12,.74);
+  padding:clamp(20px,2.8vw,28px);
+  display:grid;gap:13px;max-width:64ch;min-width:0;
+}
+.goal h3{font-size:clamp(24px,3.4vw,34px);letter-spacing:-.03em}
+.goal p{color:var(--fg-mid);font-size:15.5px}
+.goal__small{
+  font-family:var(--f-data);font-size:11.5px;line-height:1.75;color:var(--fg-dim);
+  border-top:1px solid var(--line-soft);padding-top:12px;
+}
+
 /* Weiter */
 .next{
   margin-top:4px;padding-top:20px;
@@ -510,19 +523,26 @@ a{color:var(--fg)}
       <header class="phead">
         <div class="phead__top"><p class="kick">N — Neue Mitglieder</p><p class="idx num">03 / 05</p></div>
         <h2 class="chrome">Neu dabei</h2>
-        <p class="lead">Hier startest du. In drei Schritten bist du drin und weißt, wo alles liegt.</p>
+        <p class="lead">Konto bei Tradequo, Bot verbinden, laufen lassen. Danach brauchst du nichts weiter als Empfang.</p>
       </header>
       <div class="rule"></div>
       <ul class="rules">
-        <li><i>01</i><div><b>Anmelden</b><span>Zugang anfragen, Bestätigung abwarten, Profil einrichten.</span></div></li>
-        <li><i>02</i><div><b>Einrichten</b><span>Papierkonto verbinden, Risiko festlegen, erste Vorlage wählen.</span></div></li>
-        <li><i>03</i><div><b>Loslegen</b><span>Mitlesen, Fragen stellen, erste Trades protokollieren.</span></div></li>
+        <li><i>01</i><div><b>Konto eröffnen</b><span>Zugang anfragen und ein Konto bei <b>Tradequo</b> anlegen. Dort läuft der Handel und dort liegt dein Geld — nicht bei mir.</span></div></li>
+        <li><i>02</i><div><b>Einrichten</b><span>Konto verbinden, Risiko festlegen, Bot wählen. Erst das Papierkonto; echtes Geld ist ein eigener, bewusster Schritt.</span></div></li>
+        <li><i>03</i><div><b>Laufen lassen</b><span>Der Bot arbeitet nach seinen Regeln, du schaust drauf. Vom Handy, von unterwegs, von wo du willst.</span></div></li>
       </ul>
+
+      <div class="goal">
+        <p class="kick">Das Ziel</p>
+        <h3 class="gilt">WiFi Money</h3>
+        <p>Kein Chef, keine Stechuhr, kein fester Ort. Die Regeln stehen, der Bot führt sie aus, und du brauchst nichts weiter als Empfang. Genau darauf arbeite ich hin — und genau das gebe ich hier weiter.</p>
+        <p class="goal__small">Ein Ziel ist kein Versprechen. Niemand kann dir sagen, was am Ende herauskommt, und es kann weniger als null sein. Wer dir etwas anderes erzählt, verkauft dir etwas.</p>
+      </div>
       <div class="linkrow">
         <button class="btn" type="button" data-goto="xaubot">Zu den Bots</button>
         <button class="btn btn--plain" type="button" data-goto="ben">Wer ist Ben?</button>
       </div>
-      <p class="note">Anmeldung, Preise und Mitgliederbereich folgen, sobald du mir sagst, wie der Zugang laufen soll.</p>
+      <p class="note">Preise und Mitgliederbereich folgen. Der Handel läuft über dein eigenes Konto bei Tradequo — ich fasse dein Geld nie an und kann es auch nicht. Keine Anlageberatung; Verluste bis zum Totalverlust sind möglich.</p>
       <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="gold">G — Signale →</button></nav>
     </section>
 

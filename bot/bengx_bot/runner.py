@@ -71,9 +71,17 @@ class Runner:
                     "eigene Klasse nach dem Vorbild von broker.Broker. Bis dahin "
                     "läuft der Bot auf dem Papierkonto."
                 )
+            hinweis = ""
+            if config.live.broker.lower() in ("tradequo", "mt5", "metatrader5"):
+                hinweis = (
+                    "\nTradequo läuft über MetaTrader 5. Eine Anbindung braucht "
+                    "das Paket MetaTrader5 (nur Windows) oder eine Brücke zu "
+                    "einem Expert Advisor, und muss die vier Methoden von "
+                    "broker.Broker erfüllen."
+                )
             raise LiveGateError(
                 f"Für live.broker = {config.live.broker!r} ist kein Anschluss "
-                "hinterlegt. Siehe bengx_bot/broker.py."
+                "hinterlegt. Siehe bengx_bot/broker.py." + hinweis
             )
 
         self.broker = PaperBroker(config)

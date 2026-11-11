@@ -195,6 +195,18 @@ eine eigene Klasse nach dem Vorbild von `Broker` in `broker.py` — mit den
 Schlüsseln aus der Umgebung, niemals im Repository. Bis dahin läuft alles auf
 dem Papierkonto, mit demselben Code.
 
+**Das Konto liegt bei Tradequo**, und Tradequo läuft über **MetaTrader 5**. Der
+Weg dorthin führt also über MT5: entweder das offizielle Paket `MetaTrader5`
+(nur Windows) oder eine Brücke zu einem Expert Advisor. Zu bauen sind genau vier
+Methoden — `open`, `reduce`, `close` und ein Kontostand. `PaperBroker` zeigt, was
+sie zurückgeben müssen, und die 171 Tests laufen gegen dieselbe Schnittstelle.
+
+Ein Hinweis zum Wochenende: Tradequo bietet mit **GOLD247** seit September 2026
+auch samstags und sonntags Gold an. Beide Bots stellen freitags trotzdem glatt
+(`friday_cutoff_hour`), weil am Wochenende die Spreads weiter und die Umsätze
+dünner sind. Wer das ändern will, setzt die Stunde hoch — und sollte vorher
+nachrechnen, was die breiteren Spreads kosten.
+
 ## Aufbau
 
 | Datei | Aufgabe |

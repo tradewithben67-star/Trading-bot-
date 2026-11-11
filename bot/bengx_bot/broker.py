@@ -60,7 +60,8 @@ class PaperBroker:
     # ---- Order ----------------------------------------------------------
     def open(self, side: Side, size: float, price: float, when: datetime,
              bar: int, stop: float, target: float, note: str = "",
-             final_target: float | None = None) -> Position:
+             final_target: float | None = None,
+             source_id: str | None = None) -> Position:
         fill = self._fill(price, side, entering=True)
         pos = Position(
             id=f"sig-{when:%Y%m%d-%H%M}-{next(self._ids):03d}",
@@ -73,6 +74,7 @@ class PaperBroker:
             opened_bar=bar,
             initial_risk=abs(fill - stop),
             final_target=final_target,
+            source_id=source_id,
             original_size=size,
             note=note,
         )
@@ -119,7 +121,10 @@ class PaperBroker:
             side=position.side,
             size=position.original_size,
             entry=position.entry,
-            stop=position.stop,
+            # der Stop, mit dem der Trade eröffnet wurde — nicht der
+            # nachgezogene: sonst steht im Protokoll bei jedem Gewinner ein
+            # Stop auf der falschen Seite des Einstiegs
+            stop=position.entry_stop,
             target=position.target,
             exit_price=fill,
             opened_at=position.opened_at,
@@ -131,7 +136,7 @@ class PaperBroker:
             r_multiple=r,
             reason=reason,
             note=position.note,
-            tags={"partial": position.partial_done},
+            tags={"partial": position.partial_done, "source_id": position.source_id},
         )
 
     def mark_to_market(self, price: float) -> float:

@@ -88,6 +88,30 @@ class SwingConfig:
 
 
 @dataclass
+class CopyConfig:
+    """Der Signal-Kopierer: woher die Signale kommen und wie streng er folgt."""
+
+    source: str = "file"              # file | http
+    path: str = "../signals.json"     # bei source = "file"
+    url: str = ""                     # bei source = "http"
+    timeout_seconds: float = 10.0
+    entry_mode: str = "limit"         # limit = nur nahe am Originalkurs, market = sofort
+    max_slippage_pips: float = 30.0   # wie weit der Kurs weg sein darf
+    max_age_minutes: float = 30.0     # wie alt ein Signal sein darf
+    follow_stop: bool = True          # Bens Stop übernehmen
+    follow_target: bool = True        # Bens Ziel übernehmen
+    fallback_stop_atr: float = 2.0    # falls kein Stop mitkommt
+    min_stop_pips: float = 10.0
+    max_stop_pips: float = 400.0
+    close_with_source: bool = True    # mitschließen, wenn Ben schließt
+    partial_fraction: float = 0.0     # 0 = kein Teilverkauf, reine Kopie
+    trail_atr: float = 2.0
+    max_hold_bars: int = 480
+    friday_cutoff_hour: int = 19
+    atr_period: int = 14
+
+
+@dataclass
 class RiskConfig:
     risk_per_trade: float = 0.005     # 0,5 % des Kontos je Position
     max_positions: int = 2
@@ -122,6 +146,7 @@ class Config:
     costs: CostConfig = field(default_factory=CostConfig)
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     swing: SwingConfig = field(default_factory=SwingConfig)
+    copy: CopyConfig = field(default_factory=CopyConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     data: DataConfig = field(default_factory=DataConfig)
     live: LiveConfig = field(default_factory=LiveConfig)
@@ -153,6 +178,7 @@ class Config:
             costs=build(CostConfig, "costs"),
             strategy=build(StrategyConfig, "strategy"),
             swing=build(SwingConfig, "swing"),
+            copy=build(CopyConfig, "copy"),
             risk=build(RiskConfig, "risk"),
             data=build(DataConfig, "data"),
             live=build(LiveConfig, "live"),
@@ -162,10 +188,11 @@ class Config:
 
     def validate(self) -> None:
         s, r, m = self.strategy, self.risk, self.market
-        if self.bot.name not in ("dauerlaeufer", "swing"):
+        if self.bot.name not in ("dauerlaeufer", "swing", "kopierer"):
             raise ValueError(f"unbekannter Bot: {self.bot.name!r} "
-                             "(erlaubt: dauerlaeufer, swing)")
+                             "(erlaubt: dauerlaeufer, swing, kopierer)")
         self._validate_swing()
+        self._validate_copy()
         if m.pip <= 0:
             raise ValueError("market.pip muss größer als 0 sein")
         if s.breakout < 2:
@@ -208,6 +235,23 @@ class Config:
         if not 0 <= w.session_start_hour < w.session_end_hour <= 24:
             raise ValueError("swing: die Handelszeit muss innerhalb eines Tages liegen")
 
+    def _validate_copy(self) -> None:
+        c = self.copy
+        if c.source not in ("file", "http"):
+            raise ValueError("copy.source muss file oder http sein")
+        if c.entry_mode not in ("limit", "market"):
+            raise ValueError("copy.entry_mode muss limit oder market sein")
+        if c.min_stop_pips >= c.max_stop_pips:
+            raise ValueError("copy.min_stop_pips muss kleiner als max_stop_pips sein")
+        if not 0 <= c.partial_fraction < 1:
+            raise ValueError("copy.partial_fraction muss zwischen 0 und 1 liegen")
+        if c.max_age_minutes < 0 or c.max_slippage_pips < 0:
+            raise ValueError("copy: Alter und Slippage dürfen nicht negativ sein")
+        if c.max_hold_bars < 1:
+            raise ValueError("copy.max_hold_bars muss mindestens 1 sein")
+        if self.bot.name == "kopierer" and c.source == "http" and not c.url:
+            raise ValueError("copy.source ist \"http\", aber copy.url ist leer")
+
     def to_dict(self) -> dict[str, Any]:
         return {k: asdict(v) for k, v in asdict(self).items()} if False else asdict(self)
 
@@ -223,6 +267,7 @@ class Config:
             "costs": asdict(self.costs),
             "strategy": asdict(self.strategy),
             "swing": asdict(self.swing),
+            "copy": asdict(self.copy),
             "risk": asdict(self.risk),
         }
         blob = json.dumps(relevant, sort_keys=True, separators=(",", ":"))

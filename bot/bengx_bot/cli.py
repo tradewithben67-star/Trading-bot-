@@ -9,10 +9,12 @@
     python -m bengx_bot export                    signals.json neu schreiben
     python -m bengx_bot rules                     das Regelwerk im Klartext
     python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
+    python -m bengx_bot --bot kopierer rules      das Regelwerk des Kopierers
 
 Welcher Bot läuft, steht in der Konfiguration unter [bot] name und lässt sich
 mit --bot überschreiben. Der Dauerläufer arbeitet auf Stundenkerzen, der
-Swing-Bot auf Minutenkerzen, aus denen er 5m und 1h selbst rechnet.
+Swing-Bot auf Minutenkerzen, aus denen er 5m und 1h selbst rechnet, und der
+Kopierer spiegelt fremde Signale aus einer signals.json.
 """
 
 from __future__ import annotations
@@ -162,8 +164,44 @@ Risiko (steht über der Strategie):
 Der Swing-Bot braucht Minutenkerzen: 5m und 1h rechnet er selbst daraus.""")
 
 
+def _rules_copy(cfg: Config) -> None:
+    c, r = cfg.copy, cfg.risk
+    quelle = c.url if c.source == "http" else c.path
+    print(f"""Signal-Kopierer — Regelwerk {cfg.fingerprint()}
+
+Er denkt sich nichts aus. Er liest Bens Signale und spiegelt sie.
+
+  Quelle       {c.source}: {quelle}
+  Format       dieselbe signals.json, die die Website im Bereich G liest
+
+Übernommen wird:
+  Richtung     eins zu eins
+  Stop         {"Bens Stop" if c.follow_stop else f"eigener, {c.fallback_stop_atr:g} × ATR"}
+  Ziel         {"Bens Ziel" if c.follow_target else "keins, es gilt nur der Stop"}
+  Ausstieg     {"mitschließen, sobald Ben schließt" if c.close_with_source else "nur eigener Stop und eigenes Ziel"}
+
+Nicht übernommen wird:
+  Größe        aus dem eigenen Konto: {r.risk_per_trade:.2%} Risiko je Trade.
+               Bens Größe passt auf Bens Konto, nicht auf deins.
+  Nachlaufen   {"nur innerhalb von " + format(c.max_slippage_pips, "g") + " Pips um Bens Kurs" if c.entry_mode == "limit" else "Einstieg zum aktuellen Kurs (market)"}
+
+Ausgelassen wird ein Signal, wenn:
+  * es älter als {c.max_age_minutes:g} Minuten ist
+  * der Kurs zu weit weggelaufen ist
+  * es beim Eintreffen schon geschlossen war
+  * der Stop-Abstand außerhalb von {c.min_stop_pips:g} bis {c.max_stop_pips:g} Pips liegt
+  * Bens Stop auf der falschen Seite des eigenen Einstiegs läge
+
+Dazu gelten alle Risikogrenzen: höchstens {r.max_positions} Positionen,
+{r.daily_loss_limit:.1%} Tagesverlust, Drawdown-Bremse ab {r.drawdown_halve:.1%},
+kein Einstieg ab {r.drawdown_stop:.1%}, Not-Aus über {cfg.live.killswitch_file}.""")
+
+
 def cmd_rules(args) -> int:
     cfg = _load(args)
+    if cfg.bot.name == "kopierer":
+        _rules_copy(cfg)
+        return 0
     if cfg.bot.name == "swing":
         _rules_swing(cfg)
         return 0
@@ -197,8 +235,13 @@ Risiko (steht über der Strategie):
 
 
 def cmd_selftest(args) -> int:
+    import tempfile
+
+    from .copier import FileSource, Kopierer
+
     print("Selbsttest auf erfundenen Daten — kein Aussagewert über den Markt.\n")
     ok = True
+    first = None
     for name, bars, seed in (("dauerlaeufer", 3000, 3), ("swing", 30000, 9)):
         cfg = Config()
         cfg.bot.name = name
@@ -207,7 +250,28 @@ def cmd_selftest(args) -> int:
         print(result.report())
         print()
         ok = ok and result.bars == bars
-    print("Mechanik:", "läuft" if ok else "FEHLER")
+        if first is None:
+            first = result
+
+    # Der Kopierer bekommt die Signale des ersten Laufs zu sehen.
+    candles = synthetic(3000, seed=3, minutes=1)
+    with tempfile.TemporaryDirectory() as d:
+        path = Path(d) / "signals.json"
+        write_signals(path, signals_payload(first.trades, pip=0.1))
+        cfg = Config()
+        cfg.bot.name = "kopierer"
+        cfg.copy.path = str(path)
+        cfg.risk.start_equity = 2000.0
+        cfg.validate()
+        copy = run_backtest(cfg, candles, strategy=Kopierer(cfg, FileSource(path)))
+        print(copy.report())
+        print()
+        same = len(copy.trades) == len(first.trades)
+        print(f"Kopiert: {len(copy.trades)} von {len(first.trades)} Signalen",
+              "— vollständig" if same else "— unvollständig")
+        ok = ok and same
+
+    print("\nMechanik:", "läuft" if ok else "FEHLER")
     return 0 if ok else 1
 
 
@@ -217,7 +281,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="BENGX Dauerläufer — regelbasierter Bot für XAU/USD",
     )
     p.add_argument("--config", help="Pfad zur TOML-Konfiguration")
-    p.add_argument("--bot", choices=("dauerlaeufer", "swing"),
+    p.add_argument("--bot", choices=("dauerlaeufer", "swing", "kopierer"),
                    help="welcher Bot (überschreibt bot.name)")
     sub = p.add_subparsers(dest="command", required=True)
 

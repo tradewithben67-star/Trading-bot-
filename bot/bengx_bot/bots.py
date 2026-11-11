@@ -8,6 +8,7 @@ from __future__ import annotations
 from typing import Protocol, Sequence
 
 from .config import Config
+from .copier import Kopierer
 from .model import Candle, Signal
 from .strategy import Dauerlaeufer, ExitRules
 from .swing import SwingTrader
@@ -25,6 +26,7 @@ class Strategy(Protocol):
 BOTS = {
     "dauerlaeufer": Dauerlaeufer,
     "swing": SwingTrader,
+    "kopierer": Kopierer,
 }
 
 

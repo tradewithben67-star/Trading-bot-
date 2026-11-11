@@ -74,18 +74,26 @@ class TradeEngine:
                     closed.append(trade)
                     continue
 
-            # 4. Stop nachziehen, sobald das Teilziel gelaufen ist.
+            # 4. Ausstieg, den die Strategie selbst anordnet — der Kopierer
+            #    schließt damit, sobald das Original geschlossen wird.
+            forced = self._forced_exit(pos, candles, ctx, i)
+            if forced is not None:
+                trade = self.broker.close(pos, candle.close, candle.ts, forced)
+                closed.append(trade)
+                continue
+
+            # 5. Stop nachziehen, sobald das Teilziel gelaufen ist.
             if pos.partial_done and atr:
                 trail = self._trail_for(pos, float(atr))
                 pos.stop = max(pos.stop, trail) if long else min(pos.stop, trail)
 
-            # 5. Zeitstop: was sich nach N Kerzen nicht bewegt hat, blockiert nur Kapital.
+            # 6. Zeitstop: was sich nach N Kerzen nicht bewegt hat, blockiert nur Kapital.
             if held >= p.time_stop_bars:
                 trade = self.broker.close(pos, candle.close, candle.ts, ExitReason.TIME)
                 closed.append(trade)
                 continue
 
-            # 6. Vor dem Wochenende glattstellen — über Nacht von Freitag auf
+            # 7. Vor dem Wochenende glattstellen — über Nacht von Freitag auf
             #    Montag reißen Kurslücken jeden Stop.
             if candle.ts.weekday() == 4 and candle.ts.hour >= p.friday_cutoff_hour:
                 trade = self.broker.close(pos, candle.close, candle.ts, ExitReason.SESSION)
@@ -95,6 +103,10 @@ class TradeEngine:
             self.risk.on_trade_closed(t, i)
             self.on_event("close", {"trade": t})
         return closed
+
+    def _forced_exit(self, pos, candles, ctx, i):
+        hook = getattr(self.strategy, "exit_now", None)
+        return None if hook is None else hook(pos, candles, ctx, i)
 
     # ---- Einstiege -----------------------------------------------------
     def _enter(self, candles: Sequence[Candle], ctx: Context, i: int) -> Position | None:
@@ -116,6 +128,7 @@ class TradeEngine:
             target=signal.target,
             note=signal.reason,
             final_target=signal.final_target,
+            source_id=signal.source_id,
         )
         self.on_event("open", {"position": pos, "signal": signal})
         return pos

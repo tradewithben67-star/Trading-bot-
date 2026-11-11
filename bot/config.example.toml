@@ -3,6 +3,7 @@
 # Kopieren als config.toml und anpassen. Jede Änderung an [bot]
 # "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
 # "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
+# "kopierer" spiegelt fremde Signale aus einer signals.json.
 name = "dauerlaeufer"
 
 [market], [costs],
@@ -34,12 +35,34 @@ session_start_hour = 7
 session_end_hour = 20
 friday_cutoff_hour = 19
 
+[copy]
+# Nur für bot.name = "kopierer".
+source = "file"                  # file = Datei auf der Platte, http = Adresse im Netz
+path = "../signals.json"         # bei source = "file"
+url = ""                         # bei source = "http", z. B. die Seite auf GitHub Pages
+timeout_seconds = 10.0
+entry_mode = "limit"             # limit = nur nahe an Bens Kurs, market = sofort
+max_slippage_pips = 30.0         # wie weit der Kurs von Bens Einstieg weg sein darf
+max_age_minutes = 30.0           # älteren Signalen wird nicht hinterhergelaufen
+follow_stop = true               # Bens Stop übernehmen
+follow_target = true             # Bens Ziel übernehmen
+fallback_stop_atr = 2.0          # falls kein Stop mitkommt
+min_stop_pips = 10.0
+max_stop_pips = 400.0
+close_with_source = true         # mitschließen, sobald Ben schließt
+partial_fraction = 0.0           # 0 = kein Teilverkauf, reine Kopie
+trail_atr = 2.0
+max_hold_bars = 480
+friday_cutoff_hour = 19
+atr_period = 14
+
 [risk] ändert den Fingerabdruck des Regelwerks — danach
 # verlangt der Live-Betrieb einen neuen Backtest.
 
 [bot]
 # "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
 # "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
+# "kopierer" spiegelt fremde Signale aus einer signals.json.
 name = "dauerlaeufer"
 
 [market]
@@ -103,6 +126,27 @@ max_hold_minutes = 480
 session_start_hour = 7
 session_end_hour = 20
 friday_cutoff_hour = 19
+
+[copy]
+# Nur für bot.name = "kopierer".
+source = "file"                  # file = Datei auf der Platte, http = Adresse im Netz
+path = "../signals.json"         # bei source = "file"
+url = ""                         # bei source = "http", z. B. die Seite auf GitHub Pages
+timeout_seconds = 10.0
+entry_mode = "limit"             # limit = nur nahe an Bens Kurs, market = sofort
+max_slippage_pips = 30.0         # wie weit der Kurs von Bens Einstieg weg sein darf
+max_age_minutes = 30.0           # älteren Signalen wird nicht hinterhergelaufen
+follow_stop = true               # Bens Stop übernehmen
+follow_target = true             # Bens Ziel übernehmen
+fallback_stop_atr = 2.0          # falls kein Stop mitkommt
+min_stop_pips = 10.0
+max_stop_pips = 400.0
+close_with_source = true         # mitschließen, sobald Ben schließt
+partial_fraction = 0.0           # 0 = kein Teilverkauf, reine Kopie
+trail_atr = 2.0
+max_hold_bars = 480
+friday_cutoff_hour = 19
+atr_period = 14
 
 [risk]
 start_equity = 10000.0

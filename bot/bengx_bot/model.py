@@ -62,6 +62,7 @@ class Signal:
     adx: float
     reason: str
     final_target: float | None = None   # das eigentliche Ziel; `target` ist das Teilziel
+    source_id: str | None = None        # bei kopierten Signalen: die Kennung des Originals
 
     @property
     def risk_per_unit(self) -> float:
@@ -82,7 +83,9 @@ class Position:
     opened_bar: int
     initial_risk: float
     final_target: float | None = None
+    source_id: str | None = None
     original_size: float = 0.0
+    entry_stop: float = 0.0          # der Stop bei Eröffnung; `stop` wandert mit
     partial_done: bool = False
     realised_pnl: float = 0.0
     high_water: float = 0.0
@@ -92,6 +95,8 @@ class Position:
     def __post_init__(self) -> None:
         if self.original_size <= 0:
             self.original_size = self.size
+        if self.entry_stop == 0.0:
+            self.entry_stop = self.stop
         if self.high_water <= 0:
             self.high_water = self.entry
         if self.low_water <= 0:

@@ -1,11 +1,12 @@
 # Die Bots
 
-Zwei Bots aus dem Bereich **X** der Website, beide auf XAU/USD:
+Die drei Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
 
 | `[bot] name` | Bot | Zeitrahmen | Idee |
 | --- | --- | --- | --- |
 | `dauerlaeufer` | **Dauerläufer** | 1h | Trendfolge: Ausbruch im gerichteten Markt |
 | `swing` | **Swing** | 1m (+5m, 1h) | Liquiditäts-Sweep, Fortsetzung, Einstieg in die Lücke |
+| `kopierer` | **Signal-Kopierer** | beliebig | spiegelt Bens Signale aus einer `signals.json` |
 
 Beide erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
 Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11, keine
@@ -18,8 +19,9 @@ cd bot
 
 python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
+python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 133 Tests
+python3 -m unittest discover -s tests -t .   # 171 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -87,6 +89,31 @@ ablehnt, und genau das soll die Grenze leisten. Ziel: 3 R, Teilverkauf bei
 Der Swing-Bot braucht **Minutenkerzen** in `data.csv`. Die Fünf-Minuten- und
 Stundenkerzen rechnet er selbst daraus, auf vollen Vielfachen ausgerichtet; eine
 noch laufende Kerze benutzt er nie.
+
+## Signal-Kopierer
+
+Er denkt sich nichts aus: er liest Bens Signale und spiegelt sie. Die Quelle ist
+dieselbe `signals.json`, die die Website im Bereich **G** liest — als Datei auf
+der Platte oder über eine Adresse im Netz (`copy.source = "http"`).
+
+**Übernommen** werden Richtung, Stop und Ziel. **Nicht übernommen** werden zwei
+Dinge, und das ist der Kern:
+
+* **Die Positionsgröße.** Sie kommt aus dem eigenen Kontostand und dem eigenen
+  Risiko je Trade. Bens Größe passt auf Bens Konto, nicht auf deins.
+* **Der Einstiegskurs um jeden Preis.** Ist der Kurs seit Bens Einstieg
+  weggelaufen, steigt der Bot nicht hinterher, sondern lässt das Signal aus
+  (`entry_mode = "limit"`, Toleranz über `max_slippage_pips`). Wer chasen will,
+  stellt auf `"market"`.
+
+Ein Signal wird ausgelassen, wenn es älter als `max_age_minutes` ist, der Kurs
+zu weit weg ist, es beim Eintreffen schon geschlossen war, der Stop-Abstand
+außerhalb der Grenzen liegt oder Bens Stop auf der falschen Seite des eigenen
+Einstiegs läge. Jeder Grund steht im Protokoll — der Bot verschweigt nicht, was
+er ausgelassen hat.
+
+Schließt Ben, schließt der Kopierer mit (`close_with_source`). Der eigene Stop
+hat trotzdem Vorrang: wird er in derselben Kerze getroffen, gilt er.
 
 ## Risiko steht über der Strategie
 
@@ -177,6 +204,7 @@ dem Papierkonto, mit demselben Code.
 | `config.py` | TOML laden, prüfen, Fingerabdruck bilden |
 | `strategy.py` | Regelwerk des Dauerläufers |
 | `swing.py` | Regelwerk des Swing-Bots |
+| `copier.py` | Signal-Kopierer samt Datei- und HTTP-Quelle |
 | `timeframes.py` | 5m und 1h aus Minutenkerzen, Swing-Punkte, Sweeps, FVGs |
 | `bots.py` | welcher Bot läuft |
 | `risk.py` | Positionsgröße und alle Grenzen |
@@ -197,11 +225,15 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-133 Tests. Sie decken die Indikatoren, jede einzelne Regel beider Bots, die
+171 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die
 Live-Sperre ab.
+
+Beim Kopierer läuft ein Test die ganze Kette: der Dauerläufer handelt, seine
+Signale gehen als `signals.json` hinaus, der Kopierer liest sie und spiegelt
+jedes einzelne — mit anderem Konto und anderer Größe.
 
 Beim Swing-Bot prüft ein Test ausdrücklich, dass derselbe Einstieg entsteht,
 wenn man die Daten vorher abschneidet: der Ablauf wird aus den Kerzen
@@ -210,7 +242,7 @@ Bot deshalb genauso wie im Backtest.
 
 ## Was dieser Bot nicht ist
 
-Sie sind **kein Versprechen auf Gewinn**. Beide Regelwerke sind sauber umgesetzt
+Sie sind **kein Versprechen auf Gewinn**. Die Regelwerke sind sauber umgesetzt
 und getestet — ob sie auf echten Golddaten Geld verdienen, zeigt erst ein
 Backtest auf echten Kursen und danach ein langer Lauf auf dem Papierkonto. Die Zahlen aus
 `selftest` und `--synthetic` stammen aus einem Zufallspfad und sagen über den

@@ -68,7 +68,7 @@ Drei Bots stehen zur Auswahl:
 
 | Bot | Arbeitsweise |
 | --- | --- |
-| Signal-Kopierer | Übernimmt jedes Signal aus **G** eins zu eins |
+| Signal-Kopierer | Spiegelt jedes Signal aus **G**, mit eigener Positionsgröße — **gebaut, liegt unter `bot/`** |
 | Dauerläufer | Trendfolge auf Stundenkerzen — **gebaut, liegt unter `bot/`** |
 | Swing | 1h-Liquiditäts-Sweep, 5m-Fortsetzung, Einstieg in die 1m-Lücke — **gebaut, liegt unter `bot/`** |
 
@@ -76,15 +76,14 @@ Wer die Seite besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich di
 im eigenen, privaten Bereich des Datenspeichers (den sonst niemand sieht, auch der
 Inhaber nicht), sonst im Browser des Besuchers.
 
-**Dauerläufer** und **Swing** sind fertig gebaut und liegen als Python-Programm
-unter [`bot/`](bot/README.md): zwei Regelwerke auf gemeinsamer Maschine, dazu
-Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 133 Tests. Er schreibt `signals.json` in genau dem
+Alle drei Bots sind fertig gebaut und liegen als Python-Programm unter
+[`bot/`](bot/README.md): drei Regelwerke auf gemeinsamer Maschine, dazu
+Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 171 Tests. Er schreibt `signals.json` in genau dem
 Format, das der Bereich **G** liest — die Kette vom Signal bis zur Seite ist
 damit geschlossen. Echtes Geld fasst er erst an, wenn ein Backtest über echte
 Golddaten vorliegt und ein Broker angebunden ist; beides erzwingt er selbst.
 
-Der Signal-Kopierer folgt. Die Auswahl auf der Seite ist bis dahin eine
-Merkliste.
+Die Auswahl auf der Seite ist bis zur Broker-Anbindung eine Merkliste.
 
 ## Lokal ansehen
 

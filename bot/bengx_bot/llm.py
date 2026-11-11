@@ -19,6 +19,7 @@ hängt also nicht daran, wer antwortet — nur wie gut.
 from __future__ import annotations
 
 import base64
+import re
 import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, Sequence
@@ -206,7 +207,7 @@ class GeminiProvider:
             for m in self.client.models.list():
                 name = (getattr(m, "name", "") or "").split("/")[-1]
                 aktionen = getattr(m, "supported_actions", None) or []
-                if not name or "embedding" in name or "imagen" in name:
+                if not name or not nur_text(name):
                     continue
                 if aktionen and "generateContent" not in aktionen:
                     continue
@@ -214,23 +215,12 @@ class GeminiProvider:
         except Exception:
             return []
 
-        def rang(name: str) -> tuple[int, float, int]:
-            # Erst die kleinen — die haben das großzügigste Kontingent —,
-            # darunter die neueste Version zuerst.
-            art = 3
-            for i, muster in enumerate(("flash-lite", "flash", "pro")):
-                if muster in name:
-                    art = i
-                    break
-            version = 0.0
-            for stueck in name.replace("-", " ").split():
-                try:
-                    version = max(version, float(stueck))
-                except ValueError:
-                    continue
-            return (art, -version, len(name))
-
         return sorted(dict.fromkeys(namen), key=rang)
+
+    def hinweis_modell(self, meldung: str) -> str:
+        """Google nennt im Fehlertext oft das Modell, das man nehmen soll."""
+        treffer = re.search(r"use\s+models/([A-Za-z0-9.\-]+)", meldung)
+        return treffer.group(1) if treffer else ""
 
     def _naechstes_modell(self) -> str:
         if not self._kandidaten:
@@ -239,6 +229,21 @@ class GeminiProvider:
             if name not in self.versucht:
                 return name
         return ""
+
+    def testen(self, name: str) -> str:
+        """Eine winzige Anfrage an ein Modell — ohne Werkzeuge, ohne Suche.
+        So lässt sich trennen, ob das Modell geht oder die Ausstattung."""
+        from google.genai import errors
+
+        try:
+            antwort = self._verbinden().models.generate_content(
+                model=name, contents="Antworte nur mit: ok")
+            text = (getattr(antwort, "text", "") or "").strip()
+            return f"geht ({text[:30]})" if text else "antwortet leer"
+        except errors.ClientError as exc:
+            return _kurz(str(exc), 150)
+        except Exception as exc:
+            return _kurz(str(exc), 150)
 
     def _inhalte(self, verlauf, nachricht, bilder):
         from google.genai import types
@@ -274,6 +279,7 @@ class GeminiProvider:
         inhalte = self._inhalte(verlauf, nachricht, bilder)
         mit_suche = self.s.websuche and not self.ohne_suche
         letzter_fehler = ""
+        gescheitert: list[str] = []
 
         for runde in range(3):
             self.versucht.add(self.modell)
@@ -286,6 +292,16 @@ class GeminiProvider:
                 roh = str(exc)
                 text = roh.lower()
                 letzter_fehler = _kurz(roh)
+                gescheitert.append(f"{self.modell}: {letzter_fehler[:140]}")
+
+                # Google nennt im Text oft das Nachfolgemodell.
+                empfohlen = self.hinweis_modell(roh)
+                if empfohlen and empfohlen not in self.versucht:
+                    self.notizen.append(
+                        f"{self.modell} ist abgelöst, nehme {empfohlen}.")
+                    self.modell = empfohlen
+                    time.sleep(1)
+                    continue
 
                 if mit_suche and ("tool" in text or "search" in text):
                     self.ohne_suche = True
@@ -335,9 +351,36 @@ class GeminiProvider:
             except Exception as exc:
                 return f"Keine Antwort von Google: {_kurz(str(exc))}"
 
-        return (f"Nach mehreren Versuchen keine Antwort.\n\n"
-                f"Versucht: {', '.join(sorted(self.versucht)) or '—'}\n\n"
-                f"Letzte Meldung: {letzter_fehler}")
+        return ("Nach mehreren Versuchen keine Antwort.\n\n"
+                + "\n".join(gescheitert[-3:]))
+
+
+NICHT_TEXT = ("embedding", "imagen", "veo", "-tts", "-image", "-audio",
+              "-live", "-vision", "-dialog", "-thinking-exp")
+
+
+def nur_text(name: str) -> bool:
+    """Schließt Modelle aus, die keine Unterhaltung führen — Sprachausgabe,
+    Bildmalen, Live-Verbindungen."""
+    return not any(teil in name for teil in NICHT_TEXT)
+
+
+def rang(name: str) -> tuple[int, float, int, int]:
+    """Erst die kleinen Modelle — die haben das großzügigste Kontingent —,
+    darunter die neueste Version, und fertige vor Vorschauen."""
+    art = 3
+    for i, muster in enumerate(("flash-lite", "flash", "pro")):
+        if muster in name:
+            art = i
+            break
+    version = 0.0
+    for stueck in name.replace("-", " ").split():
+        try:
+            version = max(version, float(stueck))
+        except ValueError:
+            continue
+    vorschau = 1 if any(w in name for w in ("preview", "exp", "latest")) else 0
+    return (art, -version, vorschau, len(name))
 
 
 def _kurz(text: str, laenge: int = 300) -> str:

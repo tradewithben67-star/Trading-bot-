@@ -498,3 +498,46 @@ class TestModellwahl(unittest.TestCase):
         g.client = object()
         g._verbinden()
         self.assertEqual(g.modell, "gemini-eigenes")
+
+
+class TestModellfilter(unittest.TestCase):
+    """Nicht jedes Modell kann sich unterhalten."""
+
+    def test_sprachausgabe_und_bilder_fliegen_raus(self):
+        from bengx_bot.llm import nur_text
+        for name in ("gemini-3.8-flash-lite-tts", "gemini-3.1-flash-lite-image",
+                     "text-embedding-004", "imagen-3.0", "veo-2",
+                     "gemini-2.0-flash-live"):
+            self.assertFalse(nur_text(name), name)
+
+    def test_echte_modelle_bleiben(self):
+        from bengx_bot.llm import nur_text
+        for name in ("gemini-3.5-flash-lite", "gemini-3.1-flash-lite",
+                     "gemini-2.5-flash", "gemini-3.5-pro"):
+            self.assertTrue(nur_text(name), name)
+
+    def test_neuestes_flash_lite_gewinnt(self):
+        from bengx_bot.llm import nur_text, rang
+        echt = ["gemini-2.5-flash-lite", "gemini-3.1-flash-lite",
+                "gemini-3.1-flash-lite-image", "gemini-3.1-flash-lite-preview",
+                "gemini-3.5-flash-lite", "gemini-3.8-flash-lite-tts"]
+        uebrig = sorted([n for n in echt if nur_text(n)], key=rang)
+        self.assertEqual(uebrig[0], "gemini-3.5-flash-lite")
+
+    def test_fertiges_vor_vorschau(self):
+        from bengx_bot.llm import rang
+        self.assertLess(rang("gemini-3.1-flash-lite"),
+                        rang("gemini-3.1-flash-lite-preview"))
+
+    def test_hinweis_auf_nachfolger_wird_gelesen(self):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        self.assertEqual(g.hinweis_modell(
+            "This model models/gemini-2.5-flash-lite is no longer available. "
+            "Please update your code to use models/gemini-3.5-flash-lite for "
+            "the latest features."), "gemini-3.5-flash-lite")
+
+    def test_ohne_hinweis_leer(self):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        self.assertEqual(g.hinweis_modell("irgendein anderer Fehler"), "")

@@ -362,6 +362,14 @@ def cmd_pruefen(args) -> int:
                 print(f"\n   Achtung: das eingestellte {llm.gemini_model} ist "
                       "nicht dabei.")
 
+            if namen and not args.schnell:
+                import time as _zeit
+                print("\n   Jedes Modell einzeln geprüft "
+                      "(ohne Werkzeuge, ohne Suche):")
+                for name in namen[:6]:
+                    print(f"     {name}: {anbieter.testen(name)}", flush=True)
+                    _zeit.sleep(1)
+
         print("\n3. Eine Testfrage")
         text = assistent.answer("Antworte nur mit dem Wort: bereit",
                                 "LAGE\nnichts Besonderes")
@@ -465,6 +473,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     pr = sub.add_parser("pruefen", help="prüft Token, Schlüssel und Modelle")
     pr.add_argument("--env", help="Datei mit den Zugangsdaten (Standard: .env)")
+    pr.add_argument("--schnell", action="store_true",
+                    help="die Modelle nicht einzeln anfragen")
     pr.set_defaults(func=cmd_pruefen)
 
     sub.add_parser("rules", help="Regelwerk im Klartext").set_defaults(func=cmd_rules)

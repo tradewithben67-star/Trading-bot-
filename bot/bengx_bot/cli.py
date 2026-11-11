@@ -251,6 +251,7 @@ def cmd_telegram(args) -> int:
     import os
 
     from .assistant import Assistant, AssistantSettings
+    from .coder import Coder, CoderSettings
     from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
                            load_env_file)
 
@@ -271,9 +272,11 @@ def cmd_telegram(args) -> int:
         return 1
 
     schluessel = umgebung.get("ANTHROPIC_API_KEY", "")
-    assistent = Assistant(AssistantSettings(
-        api_key=schluessel, model=tg.model, effort=tg.effort,
-        max_tokens=tg.max_tokens))
+    coder = Coder(CoderSettings.from_env(umgebung))
+    assistent = Assistant(
+        AssistantSettings(api_key=schluessel, model=tg.model, effort=tg.effort,
+                          max_tokens=tg.max_tokens, websuche=tg.websuche),
+        config=cfg, coder=coder)
 
     if not tg.chat_id:
         print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
@@ -286,7 +289,11 @@ def cmd_telegram(args) -> int:
         print("ANTHROPIC_API_KEY ist nicht gesetzt — freies Schreiben ist aus.",
               file=sys.stderr)
 
-    bot = TelegramBot(cfg, tg, HttpTransport(tg.token), assistent)
+    hindernis = coder.status()
+    print("Weiterbauen: " + (hindernis or
+          f"an, Ordner {Path(coder.settings.repo).resolve()}"), file=sys.stderr)
+
+    bot = TelegramBot(cfg, tg, HttpTransport(tg.token), assistent, coder)
     if args.once:
         print(f"{bot.poll_once()} Nachricht(en) verarbeitet.")
         return 0

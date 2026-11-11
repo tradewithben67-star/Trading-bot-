@@ -21,7 +21,7 @@ python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 215 Tests
+python3 -m unittest discover -s tests -t .   # 237 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -139,6 +139,40 @@ python3 -m bengx_bot --config config.toml telegram
 
 `.env` steht in `.gitignore` und gehört dort auch hin. Token und Schlüssel
 niemals in den Code.
+
+Er sucht auch im Netz, wenn es um Kurse, Termine oder Nachrichten geht — das
+läuft über Claudes eingebaute Suche und über denselben Schlüssel. **Ein
+Google-Schlüssel oder ein anderer Suchdienst wird nirgends gebraucht.**
+
+### Am Code weiterbauen
+
+Schreibst du „baue an der Website weiter“ oder „repariere das“, startet auf
+derselben Maschine ein richtiger Coding-Agent ([Claude Agent
+SDK](https://code.claude.com/docs/en/agent-sdk)): er liest die Dateien, ändert
+sie, führt die Tests aus und committet.
+
+```bash
+pip install claude-agent-sdk
+# in .env:  BENGX_CODER=1
+```
+
+**Standardmäßig aus.** Vier Grenzen sind eingebaut, weil beim Bauen niemand
+danebensitzt:
+
+| Grenze | Standard |
+| --- | --- |
+| Muss eingeschaltet werden | `BENGX_CODER=1` |
+| Arbeitet nur in einem Ordner | `BENGX_REPO`, sonst nirgends |
+| Höchstens so viele Schritte | 40 |
+| Höchstens so viel Geld je Auftrag | 2 US-Dollar |
+| Abbruch nach | 15 Minuten |
+
+Dazu steht in seiner Anweisung: **kein `git push`**, keine Zugangsdaten
+anfassen, nichts unter `state/` ändern, und nach jeder Änderung am Bot die
+Tests laufen lassen. Committen darf er; nach außen schiebst du selbst.
+
+Weil das Minuten dauert, meldet er sich sofort („ich fange an“) und schickt am
+Ende, was er geändert hat.
 
 **Befehle:**
 
@@ -289,7 +323,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-215 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+237 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

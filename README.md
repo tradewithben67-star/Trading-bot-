@@ -108,11 +108,12 @@ Inhaber nicht), sonst im Browser des Besuchers.
 
 Alle drei Bots sind fertig gebaut und liegen als Python-Programm unter
 [`bot/`](bot/README.md): drei Regelwerke auf gemeinsamer Maschine, dazu
-Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 215 Tests.
+Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 237 Tests.
 
-Dort liegt auch der **Telegram-Assistent**: ein Bot, dem man normal schreibt,
-der die echten Zahlen aus dem Protokoll liest, Bilder ansieht, Aufgaben notiert
-und den Not-Aus bedienen kann. Er schreibt `signals.json` in genau dem
+Dort liegt auch der **Telegram-Assistent**: ein Bot, dem man normal schreibt —
+keine Befehle. Er liest die echten Zahlen aus dem Protokoll, sieht sich Bilder
+an, sucht bei Bedarf im Netz, bedient den Not-Aus und kann auf Zuruf einen
+Coding-Agenten starten, der am Repository weiterbaut. Er schreibt `signals.json` in genau dem
 Format, das der Bereich **G** liest — die Kette vom Signal bis zur Seite ist
 damit geschlossen. Echtes Geld fasst er erst an, wenn ein Backtest über echte
 Golddaten vorliegt und ein Broker angebunden ist; beides erzwingt er selbst.

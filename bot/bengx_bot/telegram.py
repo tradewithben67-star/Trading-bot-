@@ -30,6 +30,7 @@ from typing import Any, Protocol, Sequence
 from . import report
 from .assistant import Assistant, AssistantSettings
 from .cli import rules_for
+from .coder import Coder, CoderSettings
 from .config import Config
 
 API = "https://api.telegram.org"
@@ -44,6 +45,7 @@ class TelegramSettings:
     model: str = "claude-opus-5-5"
     effort: str = "low"
     max_tokens: int = 1200
+    websuche: bool = True
 
     @staticmethod
     def from_env(env: dict[str, str] | None = None) -> "TelegramSettings":
@@ -55,6 +57,8 @@ class TelegramSettings:
             model=e.get("BENGX_MODEL", "claude-opus-5-5").strip() or "claude-opus-5-5",
             effort=e.get("BENGX_EFFORT", "low").strip() or "low",
             max_tokens=int(e.get("BENGX_MAX_TOKENS", "1200") or 1200),
+            websuche=str(e.get("BENGX_WEBSUCHE", "1")).strip().lower()
+            not in ("0", "aus", "false", "nein"),
         )
 
 
@@ -134,29 +138,34 @@ class FakeTransport:
 
 
 # ---- Der Bot --------------------------------------------------------------
-HILFE = """Schreib einfach normal, ich antworte.
+HILFE = """Schreib einfach normal, ich mache den Rest. Zum Beispiel:
 
-Befehle:
-/stand — Kapital, offene Positionen, Zahlen von heute
-/signale [heute|woche|monat|alles] — die letzten Signale
-/regeln [dauerlaeufer|swing|kopierer] — das Regelwerk im Klartext
-/aufgabe <text> — Problem oder Wunsch notieren
-/aufgaben — notierte Aufgaben zeigen
-/aus — Not-Aus setzen: alles zu, nichts Neues
-/an — Not-Aus wieder lösen
-/neu — Gesprächsfaden vergessen
-/hilfe — diese Liste"""
+„wie läuft es gerade“
+„wie waren die signale heute“
+„zeig mir die letzten fünf trades“
+„was sind die regeln vom swing bot“
+„mach den bot aus“
+„merk dir: seit gestern kommen keine signale mehr“
+
+Bilder kannst du auch schicken — Chart oder Fehlermeldung, ich schau es mir an.
+
+Falls ich mal nicht antworte, gehen diese Befehle immer:
+/stand /signale /regeln /aufgabe /aufgaben /aus /an /neu"""
 
 
 class TelegramBot:
     def __init__(self, config: Config, settings: TelegramSettings,
-                 transport: Transport, assistant: Assistant | None = None) -> None:
+                 transport: Transport, assistant: Assistant | None = None,
+                 coder: Coder | None = None) -> None:
         self.cfg = config
         self.tg = settings
         self.net = transport
-        self.ai = assistant or Assistant(AssistantSettings(
-            model=settings.model, effort=settings.effort,
-            max_tokens=settings.max_tokens))
+        self.coder = coder
+        self.ai = assistant or Assistant(
+            AssistantSettings(model=settings.model, effort=settings.effort,
+                              max_tokens=settings.max_tokens,
+                              websuche=settings.websuche),
+            config=config, coder=coder)
         self.offset = 0
 
     # ---- Zugang ---------------------------------------------------------
@@ -186,8 +195,10 @@ class TelegramBot:
         if not text and not bilder:
             return ["Damit kann ich nichts anfangen. /hilfe zeigt, was geht."]
 
+        self.typing(chat_id)
         lage = report.build(self.cfg).text()
-        return [self.ai.answer(text, lage, bilder)]
+        melden = lambda nachricht: self.send(chat_id, nachricht)
+        return [self.ai.answer(text, lage, bilder, melden=melden)]
 
     def _command(self, text: str) -> list[str]:
         teile = text.split()
@@ -267,6 +278,14 @@ class TelegramBot:
         return [(art, base64.standard_b64encode(daten).decode("ascii"))]
 
     # ---- Betrieb ----------------------------------------------------------
+    def typing(self, chat_id: str) -> None:
+        """Zeigt „schreibt …“ an. Mit Werkzeugen dauert eine Antwort länger,
+        da soll Ben nicht ins Leere schauen."""
+        try:
+            self.net.call("sendChatAction", {"chat_id": chat_id, "action": "typing"})
+        except ConnectionError:
+            pass
+
     def send(self, chat_id: str, text: str) -> None:
         for stueck in _split(text):
             self.net.call("sendMessage", {

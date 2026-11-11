@@ -26,8 +26,9 @@ class StubAI(Assistant):
     def ready(self):
         return True
 
-    def answer(self, frage, lage, bilder=()):
-        self.gefragt.append({"frage": frage, "lage": lage, "bilder": list(bilder)})
+    def answer(self, frage, lage, bilder=(), melden=None):
+        self.gefragt.append({"frage": frage, "lage": lage,
+                             "bilder": list(bilder), "melden": melden})
         return "Antwort des Assistenten"
 
     def reset(self):
@@ -254,3 +255,169 @@ class TestOhneSDK(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNatuerlichSchreiben(Base):
+    """Ben gibt keine Befehle — der Assistent führt aus, was er meint."""
+
+    def test_hilfe_fuehrt_mit_normalem_schreiben(self):
+        text = self.say("/hilfe")[0]
+        self.assertIn("Schreib einfach normal", text.splitlines()[0])
+        self.assertIn("mach den bot aus", text)
+
+    def test_schreibt_anzeige_vor_der_antwort(self):
+        self.say("wie läuft es")
+        aktionen = [p for m, p in self.net.calls if m == "sendChatAction"]
+        self.assertEqual(len(aktionen), 1)
+        self.assertEqual(aktionen[0]["action"], "typing")
+
+    def test_befehle_zeigen_keine_anzeige(self):
+        self.say("/stand")
+        self.assertFalse([m for m, _ in self.net.calls if m == "sendChatAction"])
+
+
+class TestWerkzeuge(unittest.TestCase):
+    """Was die Werkzeuge tun, wenn Claude sie ruft."""
+
+    def setUp(self):
+        from bengx_bot.assistant import Werkzeuge
+        self.dir = tempfile.TemporaryDirectory()
+        d = self.dir.name
+        self.cfg = Config()
+        self.cfg.live.state_dir = d
+        self.cfg.live.journal = str(Path(d) / "trades.jsonl")
+        self.cfg.live.killswitch_file = str(Path(d) / "KILLSWITCH")
+        self.w = Werkzeuge(self.cfg)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_stand(self):
+        self.assertIn("Kapital", self.w.stand())
+
+    def test_signale_mit_unsinnigem_zeitraum_gibt_alles(self):
+        self.assertIn("alles", self.w.signale("irgendwann"))
+
+    def test_signale_begrenzt_die_anzahl(self):
+        self.assertIn("heute", self.w.signale("heute", 10_000))
+        self.assertIn("heute", self.w.signale("heute", "kaputt"))
+
+    def test_regeln_je_bot(self):
+        self.assertIn("Dauerläufer", self.w.regeln(""))
+        self.assertIn("Swing", self.w.regeln("swing"))
+        with self.assertRaises(ValueError):
+            self.w.regeln("quatsch")
+
+    def test_aufgabe_braucht_text(self):
+        with self.assertRaises(ValueError):
+            self.w.aufgabe("   ")
+        self.assertIn("notiert", self.w.aufgabe("Etwas klemmt"))
+        self.assertIn("Etwas klemmt", self.w.aufgaben())
+
+    def test_stoppen_ist_umkehrbar(self):
+        datei = Path(self.cfg.live.killswitch_file)
+        self.assertIn("Not-Aus gesetzt", self.w.stoppen())
+        self.assertTrue(datei.exists())
+        self.assertIn("schon gestoppt", self.w.stoppen())
+        self.assertIn("gelöst", self.w.erlauben())
+        self.assertFalse(datei.exists())
+        self.assertIn("gar nicht gestoppt", self.w.erlauben())
+
+    def test_jede_benutzung_wird_vermerkt(self):
+        self.w.stand()
+        self.w.aufgaben()
+        self.assertEqual(self.w.benutzt, ["stand", "aufgaben"])
+
+
+class TestWebsuche(unittest.TestCase):
+    def test_standard_ist_an(self):
+        self.assertTrue(TelegramSettings.from_env({}).websuche)
+
+    def test_laesst_sich_abschalten(self):
+        for wert in ("0", "aus", "false", "nein"):
+            self.assertFalse(TelegramSettings.from_env({"BENGX_WEBSUCHE": wert}).websuche)
+
+    def test_wird_an_den_assistenten_gereicht(self):
+        from bengx_bot.telegram import TelegramBot as TB
+        cfg = Config()
+        bot = TB(cfg, TelegramSettings(token="t", chat_id="1", websuche=False),
+                 FakeTransport())
+        self.assertFalse(bot.ai.settings.websuche)
+
+
+class TestWeiterbauen(unittest.TestCase):
+    """Der Coding-Agent: aus, bis er eingeschaltet wird."""
+
+    def setUp(self):
+        from bengx_bot.assistant import Werkzeuge
+        from bengx_bot.coder import Coder, CoderSettings
+        self.dir = tempfile.TemporaryDirectory()
+        self.cfg = Config()
+        self.cfg.live.state_dir = self.dir.name
+        self.cfg.live.journal = str(Path(self.dir.name) / "t.jsonl")
+        self.cfg.live.killswitch_file = str(Path(self.dir.name) / "KS")
+        self.Werkzeuge = Werkzeuge
+        self.Coder = Coder
+        self.Settings = CoderSettings
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_standard_ist_aus(self):
+        s = self.Settings.from_env({})
+        self.assertFalse(s.enabled)
+        self.assertIn("ausgeschaltet", self.Coder(s).status())
+
+    def test_einschalten_ueber_die_umgebung(self):
+        for wert in ("1", "an", "true", "ja"):
+            self.assertTrue(self.Settings.from_env({"BENGX_CODER": wert}).enabled)
+
+    def test_grenzen_kommen_aus_der_umgebung(self):
+        s = self.Settings.from_env({
+            "BENGX_CODER": "1", "BENGX_CODER_TURNS": "7",
+            "BENGX_CODER_BUDGET": "0.5", "BENGX_REPO": "/tmp"})
+        self.assertEqual(s.max_turns, 7)
+        self.assertAlmostEqual(s.max_budget_usd, 0.5)
+        self.assertEqual(s.repo, "/tmp")
+
+    def test_fehlender_ordner_wird_gemeldet(self):
+        c = self.Coder(self.Settings(enabled=True, repo="/gibt/es/nicht"),
+                       runner=lambda a, s: "nie")
+        self.assertIn("gibt es nicht", c.status())
+        self.assertFalse(c.ready())
+
+    def test_ausgeschaltet_wirft_mit_begruendung(self):
+        w = self.Werkzeuge(self.cfg, coder=self.Coder(self.Settings()))
+        with self.assertRaises(RuntimeError) as cm:
+            w.bauen("mach was")
+        self.assertIn("BENGX_CODER=1", str(cm.exception))
+
+    def test_ohne_coder_wirft(self):
+        w = self.Werkzeuge(self.cfg)
+        with self.assertRaises(RuntimeError):
+            w.bauen("mach was")
+
+    def test_leerer_auftrag_wird_abgelehnt(self):
+        c = self.Coder(self.Settings(enabled=True, repo=self.dir.name),
+                       runner=lambda a, s: "nie")
+        with self.assertRaises(ValueError):
+            c.run("   ")
+
+    def test_auftrag_geht_durch_und_meldet_zwischendurch(self):
+        gemeldet = []
+        c = self.Coder(self.Settings(enabled=True, repo=self.dir.name),
+                       runner=lambda auftrag, s: f"fertig: {auftrag}")
+        w = self.Werkzeuge(self.cfg, coder=c, melden=gemeldet.append)
+        antwort = w.bauen("Fuss der Website aufraeumen")
+        self.assertEqual(antwort, "fertig: Fuss der Website aufraeumen")
+        self.assertEqual(len(gemeldet), 1)
+        self.assertIn("fange an", gemeldet[0])
+        self.assertEqual(c.verlauf, ["Fuss der Website aufraeumen"])
+        self.assertIn("bauen", w.benutzt)
+
+    def test_der_bot_reicht_den_coder_weiter(self):
+        from bengx_bot.telegram import TelegramBot as TB
+        c = self.Coder(self.Settings(enabled=True, repo=self.dir.name))
+        bot = TB(self.cfg, TelegramSettings(token="t", chat_id="1"),
+                 FakeTransport(), coder=c)
+        self.assertIs(bot.ai.coder, c)

@@ -120,6 +120,9 @@ hat trotzdem Vorrang: wird er in derselben Kerze getroffen, gilt er.
 Ein Bot, dem man normal schreibt. Er läuft auf derselben Maschine wie der
 Handelsbot und liest dessen Protokoll, Zustand und Aufgaben.
 
+**Unter Windows:** `einrichten.bat` doppelklicken, danach `starten.bat`.
+**Unter macOS oder Linux:**
+
 ```bash
 python3 einrichten.py    # legt .env an und holt die Chat-Kennung selbst
 python3 -m bengx_bot telegram
@@ -320,6 +323,7 @@ nachrechnen, was die breiteren Spreads kosten.
 | `telegram.py` | Telegram-Anbindung, langer Abruf, Befehle |
 | `cli.py` | Kommandozeile |
 | `einrichten.py` | Einrichtung: .env anlegen, Token prüfen, Chat-Kennung holen |
+| `einrichten.bat`, `starten.bat` | zum Doppelklicken unter Windows |
 
 Backtest und Live benutzen **dieselbe** `engine.py`. Was der Test prüft, läuft
 später auch wirklich so.

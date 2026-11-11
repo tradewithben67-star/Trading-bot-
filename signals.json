@@ -1,0 +1,24 @@
+{
+  "_hinweis": "Signale für die Fassung auf dem eigenen Server (GitHub Pages). Auf der claude.ai-Seite kommen die Signale stattdessen aus dem Datenspeicher der Seite und werden dort direkt eingetragen.",
+  "_felder": {
+    "side": "long oder short",
+    "status": "offen, gewonnen, verloren oder be",
+    "pips": "Zahl, bei Verlust negativ, bei offenen Signalen 0",
+    "openedAt": "Zeitpunkt des Einstiegs, ISO-8601",
+    "closedAt": "Zeitpunkt des Ausstiegs, ISO-8601, sonst null"
+  },
+  "_beispiel": {
+    "id": "sig-001",
+    "pair": "XAU/USD",
+    "side": "long",
+    "entry": 4210.4,
+    "sl": 4196.0,
+    "tp": 4248.0,
+    "note": "kurze Begründung",
+    "status": "offen",
+    "pips": 0,
+    "openedAt": "2026-11-11T08:40:00.000Z",
+    "closedAt": null
+  },
+  "signals": []
+}

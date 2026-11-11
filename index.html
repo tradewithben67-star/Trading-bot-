@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BENGX - Ben: regelbasierter Handel, Gold und der XAU Bot. Entdecken, neue Mitglieder, Kontakt.">
+<meta name="description" content="BENGX - Ben, Entdecken, neue Mitglieder, Signale auf XAU/USD und drei Bots zur Auswahl.">
 <meta name="theme-color" content="#000000">
 <title>BENGX</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -314,6 +314,134 @@ a{color:var(--fg)}
 @media (max-width:430px){
   .facts{grid-template-columns:minmax(0,1fr)}
 }
+/* ---------- Signale ---------- */
+.tabs{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.tab{
+  appearance:none;background:rgba(255,255,255,.015);
+  border:1px solid var(--line);color:var(--fg-dim);
+  font-family:var(--f-data);font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;
+  padding:9px 16px;border-radius:2px;cursor:pointer;
+  transition:color .2s ease,border-color .2s ease,background .2s ease;
+}
+.tab:hover{color:var(--fg);border-color:rgba(255,255,255,.26)}
+.tab[aria-selected="true"]{color:var(--gold);border-color:rgba(239,196,94,.5);background:var(--gold-soft)}
+.tabs__state{
+  margin-left:auto;font-family:var(--f-data);font-size:10px;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim);
+}
+.vstack{display:grid;gap:clamp(18px,2.6vw,26px)}
+
+.sig{
+  border:1px solid var(--line);
+  background:linear-gradient(180deg,rgba(239,196,94,.055),transparent 48%),rgba(10,10,12,.78);
+  padding:clamp(18px,2.6vw,26px);
+  display:grid;gap:17px;min-width:0;
+}
+.sig__top{display:flex;flex-wrap:wrap;align-items:center;gap:10px 13px}
+.sig__side{
+  font-family:var(--f-data);font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;
+  padding:5px 11px;border-radius:2px;border:1px solid;
+}
+.sig__side--long{color:#55D6A6;border-color:rgba(85,214,166,.45);background:rgba(85,214,166,.1)}
+.sig__side--short{color:#FF8E7E;border-color:rgba(255,142,126,.45);background:rgba(255,142,126,.1)}
+.sig__pair{
+  font-family:var(--f-display);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(20px,2.6vw,27px);
+  background-image:var(--gilt);-webkit-background-clip:text;background-clip:text;color:transparent;
+}
+.sig__st{
+  font-family:var(--f-data);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--fg-dim);border:1px solid var(--line);padding:4px 10px;border-radius:100px;
+}
+.sig__time{margin-left:auto;font-family:var(--f-data);font-size:11px;color:var(--fg-dim);white-space:nowrap}
+.sig__levels{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));
+  gap:1px;background:var(--line-soft);border:1px solid var(--line-soft);
+}
+.sig__levels>div{background:rgba(0,0,0,.42);padding:13px 15px;min-width:0}
+.sig__note{color:var(--fg-mid);font-size:14.5px}
+.sig--empty{
+  border:1px dashed var(--line);background:rgba(10,10,12,.6);
+  padding:clamp(20px,3vw,30px);display:grid;gap:7px;
+}
+.sig--empty b{font-family:var(--f-display);font-weight:600;font-size:17px;color:var(--fg)}
+.sig--empty span{color:var(--fg-dim);font-size:14.5px}
+
+.tbl-wrap{overflow-x:auto;border:1px solid var(--line-soft)}
+.tbl{width:100%;border-collapse:collapse;font-family:var(--f-data);font-size:13px;min-width:560px}
+.tbl th{
+  text-align:left;font-weight:400;font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--fg-dim);padding:12px 15px;border-bottom:1px solid var(--line-soft);background:rgba(0,0,0,.55);
+}
+.tbl td{padding:12px 15px;border-bottom:1px solid var(--line-soft);color:var(--fg-mid);white-space:nowrap}
+.tbl tr:last-child td{border-bottom:0}
+.tbl tbody tr:hover td{background:rgba(255,255,255,.03)}
+.tbl .n{text-align:right;font-variant-numeric:tabular-nums}
+.pos{color:#55D6A6}
+.neg{color:#FF8E7E}
+.facts .v.pos,.facts .v.neg{font-weight:500}
+
+.adminbox{
+  border:1px dashed rgba(239,196,94,.32);
+  background:rgba(239,196,94,.035);
+  padding:clamp(16px,2.4vw,22px);
+  display:grid;gap:14px;min-width:0;
+}
+.adminbox__h{font-family:var(--f-data);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:12px}
+.field{display:grid;gap:6px;min-width:0}
+.field label{font-family:var(--f-data);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.field input,.field select{
+  width:100%;font-family:var(--f-data);font-size:14px;
+  padding:10px 12px;border-radius:2px;
+  border:1px solid var(--line);background:rgba(0,0,0,.55);color:var(--fg);
+}
+.field input:hover,.field select:hover{border-color:rgba(255,255,255,.26)}
+.field--wide{grid-column:1/-1}
+.msg{font-family:var(--f-data);font-size:11.5px;color:var(--gold)}
+.msg--bad{color:#FF8E7E}
+.tbl .del{
+  appearance:none;background:none;border:0;padding:0;cursor:pointer;
+  font-family:var(--f-data);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--fg-dim);
+}
+.tbl .del:hover{color:#FF8E7E}
+
+/* gemeinsame Kennwerte */
+.k{font-family:var(--f-data);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--fg-dim)}
+.v{margin-top:7px;font-family:var(--f-data);font-size:15px;color:var(--fg);font-variant-numeric:tabular-nums}
+.v+.k{margin-top:6px}
+
+/* ---------- Bots ---------- */
+.bots{display:grid;gap:14px}
+.bot{
+  border:1px solid var(--line);background:rgba(10,10,12,.72);
+  padding:clamp(18px,2.4vw,25px);display:grid;gap:15px;min-width:0;
+  transition:border-color .22s ease,background .22s ease;
+}
+.bot[data-on="true"]{
+  border-color:rgba(239,196,94,.5);
+  background:linear-gradient(180deg,rgba(239,196,94,.07),transparent 52%),rgba(10,10,12,.8);
+}
+.bot__top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 13px}
+.bot__n{font-family:var(--f-data);font-size:11px;letter-spacing:.1em;color:var(--gold)}
+.bot__name{font-family:var(--f-display);font-weight:700;letter-spacing:-.025em;font-size:clamp(19px,2.3vw,25px);color:var(--fg)}
+.bot[data-on="true"] .bot__name{background-image:var(--gilt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.bot__tag{
+  margin-left:auto;font-family:var(--f-data);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--fg-dim);border:1px solid var(--line);padding:4px 10px;border-radius:100px;white-space:nowrap;
+}
+.bot__d{color:var(--fg-mid);font-size:15px;max-width:62ch}
+.bot__spec{display:grid;grid-template-columns:repeat(auto-fit,minmax(118px,1fr));gap:1px;background:var(--line-soft);border:1px solid var(--line-soft)}
+.bot__spec>div{background:rgba(0,0,0,.42);padding:12px 14px;min-width:0}
+.bot__foot{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.pick[aria-pressed="true"]{background:rgba(239,196,94,.2);border-color:var(--gold);color:var(--gold)}
+.selbar{
+  display:flex;flex-wrap:wrap;gap:8px 20px;align-items:baseline;
+  border:1px solid var(--line-soft);background:rgba(0,0,0,.42);
+  padding:15px 18px;font-family:var(--f-data);font-size:11.5px;letter-spacing:.06em;color:var(--fg-dim);
+}
+.selbar b{color:var(--gold);font-weight:400}
+
 </style>
 </head>
 <body>
@@ -414,51 +542,115 @@ a{color:var(--fg)}
         <li><i>03</i><div><b>Loslegen</b><span>Mitlesen, Fragen stellen, erste Trades protokollieren.</span></div></li>
       </ul>
       <div class="linkrow">
-        <button class="btn" type="button" data-goto="xaubot">Zum XAU Bot</button>
+        <button class="btn" type="button" data-goto="xaubot">Zu den Bots</button>
         <button class="btn btn--plain" type="button" data-goto="ben">Wer ist Ben?</button>
       </div>
       <p class="note">Anmeldung, Preise und Mitgliederbereich folgen, sobald du mir sagst, wie der Zugang laufen soll.</p>
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="gold">G — Gold →</button></nav>
+      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="gold">G — Signale →</button></nav>
     </section>
 
     <section class="panel" id="p-gold" data-panel="gold" hidden>
       <header class="phead">
-        <div class="phead__top"><p class="kick">G — Gold</p><p class="idx num">04 / 05</p></div>
-        <h2 class="gilt">Gold</h2>
-        <p class="lead">Der Markt, den ich am besten kenne. Tief genug für klare Bewegungen, ruhig genug für klare Regeln.</p>
+        <div class="phead__top"><p class="kick">G — Signale</p><p class="idx num">04 / 05</p></div>
+        <h2 class="gilt">Signale</h2>
+        <p class="lead">Oben steht immer nur das neueste Signal auf XAU/USD, dazu die Winrate und die Pips von heute. Alles Ältere liegt in der Historie.</p>
       </header>
       <div class="rule"></div>
-      <ul class="facts">
-        <li><p class="k">Symbol</p><p class="v">XAU/USD</p></li>
-        <li><p class="k">Handelszeit</p><p class="v"><span class="ph">[Zeitfenster]</span></p></li>
-        <li><p class="k">Zeitrahmen</p><p class="v"><span class="ph">[15m / 1h]</span></p></li>
-        <li><p class="k">Risiko / Trade</p><p class="v"><span class="ph">[%]</span></p></li>
-      </ul>
-      <div class="body-text">
-        <p>Warum Gold: <span class="ph">[dein Grund]</span>. Was ich beobachte: <span class="ph">[Sessions, Termine, Niveaus]</span>.</p>
+
+      <div class="tabs" role="tablist" aria-label="Ansicht">
+        <button class="tab" type="button" role="tab" data-view="aktuell" aria-selected="true">Aktuell</button>
+        <button class="tab" type="button" role="tab" data-view="historie" aria-selected="false">Historie</button>
+        <span class="tabs__state" id="sigstate">Lädt …</span>
       </div>
-      <p class="note">Details zu Strategie und Zahlen folgen.</p>
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="xaubot">X — XAU Bot →</button></nav>
+
+      <div class="vstack" id="view-aktuell">
+        <div id="sigcard"></div>
+        <ul class="facts" id="todaystats"></ul>
+        <div id="adminnew"></div>
+      </div>
+
+      <div class="vstack" id="view-historie" hidden>
+        <ul class="facts" id="allstats"></ul>
+        <div id="sightable"></div>
+      </div>
+
+      <p class="note">Keine Anlageberatung. Ein Signal ist meine eigene Entscheidung, keine Empfehlung an dich. Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
+      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="xaubot">X — Bots →</button></nav>
     </section>
 
     <section class="panel" id="p-xaubot" data-panel="xaubot" hidden>
       <header class="phead">
-        <div class="phead__top"><p class="kick">X — XAU Bot</p><p class="idx num">05 / 05</p></div>
-        <h2 class="gilt">XAU Bot</h2>
-        <p class="lead">Der Bot handelt Gold nach festen Regeln. Er fragt nicht nach Meinung, nur nach Signal und Risiko.</p>
+        <div class="phead__top"><p class="kick">X — Bots</p><p class="idx num">05 / 05</p></div>
+        <h2 class="gilt">Bots</h2>
+        <p class="lead">Drei Bots, drei Arbeitsweisen. Nimm einen — oder lass mehrere gleichzeitig laufen.</p>
       </header>
       <div class="rule"></div>
-      <div class="linkrow"><span class="chip"><i></i><span class="ph">[in Arbeit]</span></span></div>
-      <ul class="facts">
-        <li><p class="k">Markt</p><p class="v">XAU/USD</p></li>
-        <li><p class="k">Broker</p><p class="v"><span class="ph">[Anbieter]</span></p></li>
-        <li><p class="k">Modus</p><p class="v">Papier zuerst</p></li>
-        <li><p class="k">Not-Aus</p><p class="v">Immer erreichbar</p></li>
-      </ul>
-      <div class="body-text">
-        <p>Die Funktionen trägst du mir später nach: <span class="ph">[Signalquelle]</span>, <span class="ph">[Stop und Ziel]</span>, <span class="ph">[Positionsgröße]</span>, <span class="ph">[Tageslimit]</span>.</p>
+
+      <div class="selbar">
+        <span>Deine Auswahl: <b id="selcount">0 von 3</b></span>
+        <span id="selhint">Du kannst einen Bot nehmen oder mehrere gleichzeitig.</span>
       </div>
-      <p class="note">Keine Anlageberatung. Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen. Vergangene Ergebnisse sagen nichts über künftige aus.</p>
+
+      <div class="bots">
+        <article class="bot" data-bot="copy" data-on="false">
+          <div class="bot__top">
+            <span class="bot__n">01</span>
+            <h3 class="bot__name">Signal-Kopierer</h3>
+            <span class="bot__tag">folgt Ben</span>
+          </div>
+          <p class="bot__d">Kopiert jedes Signal aus dem Bereich <b>G</b> eins zu eins in dein Konto — gleicher Einstieg, gleicher Stop, gleiches Ziel. Du musst nichts entscheiden und nichts mitlesen.</p>
+          <div class="bot__spec">
+            <div><p class="k">Quelle</p><p class="v">Bens Signale</p></div>
+            <div><p class="k">Markt</p><p class="v">XAU/USD</p></div>
+            <div><p class="k">Eigene Logik</p><p class="v">keine</p></div>
+            <div><p class="k">Positionsgröße</p><p class="v"><span class="ph">[%]</span></p></div>
+          </div>
+          <div class="bot__foot">
+            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
+            <span class="k">Papierkonto zuerst</span>
+          </div>
+        </article>
+
+        <article class="bot" data-bot="auto" data-on="false">
+          <div class="bot__top">
+            <span class="bot__n">02</span>
+            <h3 class="bot__name">Dauerläufer</h3>
+            <span class="bot__tag">handelt selbst</span>
+          </div>
+          <p class="bot__d">Läuft durchgängig und entscheidet eigenständig. Er wartet auf seine Bedingungen, nimmt den Trade und schließt ihn wieder — auch nachts, auch wenn niemand hinschaut.</p>
+          <div class="bot__spec">
+            <div><p class="k">Laufzeit</p><p class="v">durchgängig</p></div>
+            <div><p class="k">Zeitrahmen</p><p class="v"><span class="ph">[m/h]</span></p></div>
+            <div><p class="k">Signalquelle</p><p class="v">eigene Regeln</p></div>
+            <div><p class="k">Risiko / Trade</p><p class="v"><span class="ph">[%]</span></p></div>
+          </div>
+          <div class="bot__foot">
+            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
+            <span class="k">Tageslimit und Not-Aus</span>
+          </div>
+        </article>
+
+        <article class="bot" data-bot="swing" data-on="false">
+          <div class="bot__top">
+            <span class="bot__n">03</span>
+            <h3 class="bot__name">Swing</h3>
+            <span class="bot__tag">meine Strategie</span>
+          </div>
+          <p class="bot__d">Handelt nach meinem Regelwerk im Swing: wenige Positionen, längere Haltedauer, größere Ziele. Er nimmt nicht jeden Ausschlag mit, sondern wartet auf die Bewegung, die sich lohnt.</p>
+          <div class="bot__spec">
+            <div><p class="k">Haltedauer</p><p class="v">Tage – Wochen</p></div>
+            <div><p class="k">Zeitrahmen</p><p class="v"><span class="ph">[4h / 1d]</span></p></div>
+            <div><p class="k">Regelwerk</p><p class="v">Bens Strategie</p></div>
+            <div><p class="k">Positionen</p><p class="v"><span class="ph">[max.]</span></p></div>
+          </div>
+          <div class="bot__foot">
+            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
+            <span class="k">Papierkonto zuerst</span>
+          </div>
+        </article>
+      </div>
+
+      <p class="note">Die Bots handeln noch nicht. Auswahl, Anbindung an deinen Broker, Preise und Funktionen folgen, sobald du mir sagst, wie sie laufen sollen. Keine Anlageberatung; der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
       <nav class="next"><span class="next__lbl">Zurück zum Anfang</span><button type="button" data-goto="ben">B — Ben →</button></nav>
     </section>
 
@@ -477,7 +669,7 @@ a{color:var(--fg)}
   "use strict";
 
   var keys=["ben","entdecken","mitglieder","gold","xaubot"];
-  var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Gold",xaubot:"XAU Bot"};
+  var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Signale",xaubot:"Bots"};
   var letters={b:"ben",e:"entdecken",n:"mitglieder",g:"gold",x:"xaubot"};
   var buttons=Array.prototype.slice.call(document.querySelectorAll(".ltr"));
   var word=document.getElementById("railword");
@@ -642,6 +834,460 @@ a{color:var(--fg)}
       }
     });
   }
+})();
+</script>
+<script>
+/* Signale: neuestes Signal, Tageszahlen, Historie — Daten im db-Speicher der Seite */
+(function(){
+  "use strict";
+
+  var COL="signals";
+  var rows=[],view="aktuell",DB=null,canWrite=false,armed=null,timer=0,confirmed=false;
+
+  function $(id){return document.getElementById(id);}
+  function el(t,c,x){var e=document.createElement(t);if(c){e.className=c;}if(x!=null){e.textContent=x;}return e;}
+  function clear(n){while(n&&n.firstChild){n.removeChild(n.firstChild);}}
+  function nf(v,d){
+    var n=Number(v);
+    if(!isFinite(n)){return "—";}
+    return n.toLocaleString("de-DE",{minimumFractionDigits:d||0,maximumFractionDigits:d||0});
+  }
+  function num(v){
+    if(v==null){return null;}
+    var s=String(v).trim().replace(/\s/g,"").replace(",",".");
+    if(!s){return null;}
+    var n=parseFloat(s);
+    return isFinite(n)?n:null;
+  }
+  function pipTxt(v){
+    var n=Number(v)||0;
+    return (n>0?"+":n<0?"−":"")+nf(Math.abs(n),Math.abs(n)%1?1:0);
+  }
+  function pipCls(v){var n=Number(v)||0;return n>0?"pos":n<0?"neg":"";}
+  function dayKey(iso){
+    if(!iso){return "";}
+    var d=new Date(iso);
+    if(isNaN(d.getTime())){return "";}
+    return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+  }
+  function todayKey(){var d=new Date();return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+  function dateTxt(iso){
+    var d=new Date(iso);
+    if(isNaN(d.getTime())){return "—";}
+    return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"2-digit"});
+  }
+  function timeTxt(iso){
+    var d=new Date(iso);
+    if(isNaN(d.getTime())){return "";}
+    return d.toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"})+" · "+
+           d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+  }
+  function isOpen(r){return !r.status||r.status==="offen";}
+  function statusTxt(r){
+    if(isOpen(r)){return "offen";}
+    if(r.status==="gewonnen"){return "Ziel erreicht";}
+    if(r.status==="verloren"){return "Stop";}
+    return "Break-even";
+  }
+  function setState(t){var n=$("sigstate");if(n){n.textContent=t;}}
+
+  function stats(onlyToday){
+    var w=0,l=0,p=0,n=0,tk=todayKey();
+    for(var i=0;i<rows.length;i++){
+      var r=rows[i],closed=!isOpen(r);
+      if(onlyToday){
+        var ref=closed?(r.closedAt||r.openedAt):r.openedAt;
+        if(dayKey(ref)!==tk){continue;}
+      }
+      n++;
+      if(closed){
+        p+=Number(r.pips)||0;
+        if(r.status==="gewonnen"){w++;}
+        else if(r.status==="verloren"){l++;}
+      }
+    }
+    return {n:n,w:w,l:l,pips:p,rate:(w+l)?Math.round(w/(w+l)*100):null};
+  }
+
+  function tile(k,v,cls,sub){
+    var li=el("li");
+    li.appendChild(el("p","k",k));
+    var p=el("p","v"+(cls?" "+cls:""),v);
+    li.appendChild(p);
+    if(sub){li.appendChild(el("p","k",sub));}
+    return li;
+  }
+
+  function renderStats(node,s,labels){
+    clear(node);
+    node.appendChild(tile(labels[0],s.rate==null?"—":s.rate+" %",null,s.w+" / "+(s.w+s.l)+" geschlossen"));
+    node.appendChild(tile(labels[1],pipTxt(s.pips),pipCls(s.pips),"Pips"));
+    node.appendChild(tile(labels[2],nf(s.n),null,s.n===1?"Signal":"Signale"));
+  }
+
+  function renderCurrent(){
+    var box=$("sigcard");
+    if(!box){return;}
+    clear(box);
+    if(!rows.length){
+      var e=el("div","sig--empty");
+      e.appendChild(el("b","Noch kein Signal veröffentlicht."));
+      e.appendChild(el("span",null,canWrite
+        ? "Unten legst du das erste Signal an. Es erscheint sofort hier und bei allen, die die Seite offen haben."
+        : "Sobald Ben ein Signal gibt, steht es hier."));
+      box.appendChild(e);
+      return;
+    }
+    var r=rows[0];
+    var card=el("article","sig");
+
+    var top=el("div","sig__top");
+    top.appendChild(el("span","sig__side sig__side--"+(r.side==="short"?"short":"long"),r.side==="short"?"Short":"Long"));
+    top.appendChild(el("span","sig__pair",r.pair||"XAU/USD"));
+    top.appendChild(el("span","sig__st",statusTxt(r)));
+    top.appendChild(el("time","sig__time",timeTxt(r.openedAt)));
+    card.appendChild(top);
+
+    var lv=el("div","sig__levels");
+    [["Einstieg",r.entry==null?"—":nf(r.entry,2)],
+     ["Stop",r.sl==null?"—":nf(r.sl,2)],
+     ["Ziel",r.tp==null?"—":nf(r.tp,2)],
+     ["Pips",isOpen(r)?"läuft":pipTxt(r.pips)]].forEach(function(pair,i){
+      var d=el("div");
+      d.appendChild(el("p","k",pair[0]));
+      var v=el("p","v"+(i===3&&!isOpen(r)?" "+pipCls(r.pips):""),pair[1]);
+      d.appendChild(v);
+      lv.appendChild(d);
+    });
+    card.appendChild(lv);
+
+    if(r.note){card.appendChild(el("p","sig__note",r.note));}
+    box.appendChild(card);
+
+    if(canWrite&&isOpen(r)){box.appendChild(closeForm(r));}
+  }
+
+  function closeForm(r){
+    var b=el("div","adminbox");
+    b.appendChild(el("p","adminbox__h","Signal schließen"));
+    var f=el("div","fields");
+
+    var f1=el("div","field");
+    f1.appendChild(el("label","","Ergebnis")).setAttribute("for","c-res");
+    var sel=el("select");sel.id="c-res";
+    [["gewonnen","Ziel erreicht"],["verloren","Stop"],["be","Break-even"]].forEach(function(o){
+      var op=el("option",null,o[1]);op.value=o[0];sel.appendChild(op);
+    });
+    f1.appendChild(sel);f.appendChild(f1);
+
+    var f2=el("div","field");
+    f2.appendChild(el("label","","Pips")).setAttribute("for","c-pips");
+    var inp=el("input");inp.id="c-pips";inp.type="text";inp.inputMode="decimal";inp.placeholder="z. B. 180";
+    f2.appendChild(inp);f.appendChild(f2);
+    b.appendChild(f);
+
+    var btn=el("button","btn","Schließen");btn.type="button";
+    var msg=el("p","msg","");
+    btn.addEventListener("click",function(){
+      var res=sel.value;
+      var p=Math.abs(num(inp.value)||0);
+      var sign=res==="verloren"?-1:res==="be"?0:1;
+      btn.disabled=true;msg.className="msg";msg.textContent="Wird gespeichert …";
+      DB.collection(COL).doc(r.id).update({
+        status:res,pips:sign*p,closedAt:new Date().toISOString()
+      }).then(function(){
+        msg.textContent="Gespeichert.";
+      },function(e){
+        btn.disabled=false;msg.className="msg msg--bad";
+        msg.textContent="Konnte nicht gespeichert werden ("+(e&&e.code||"Fehler")+").";
+      });
+    });
+    b.appendChild(btn);
+    b.appendChild(msg);
+    return b;
+  }
+
+  function newForm(){
+    var b=el("div","adminbox");
+    b.appendChild(el("p","adminbox__h","Neues Signal"));
+    var f=el("div","fields");
+
+    function field(id,label,node){
+      var d=el("div","field");
+      var l=el("label",null,label);l.setAttribute("for",id);
+      node.id=id;
+      d.appendChild(l);d.appendChild(node);
+      f.appendChild(d);
+      return node;
+    }
+    var sel=el("select");
+    [["long","Long"],["short","Short"]].forEach(function(o){
+      var op=el("option",null,o[1]);op.value=o[0];sel.appendChild(op);
+    });
+    field("n-side","Richtung",sel);
+
+    function txt(ph){var i=el("input");i.type="text";i.inputMode="decimal";i.placeholder=ph;return i;}
+    var en=field("n-entry","Einstieg",txt("2391,60"));
+    var sl=field("n-sl","Stop",txt("2386,40"));
+    var tp=field("n-tp","Ziel",txt("2402,00"));
+
+    var note=el("input");note.type="text";note.placeholder="kurze Begründung (optional)";
+    var dn=el("div","field field--wide");
+    var ln=el("label",null,"Notiz");ln.setAttribute("for","n-note");note.id="n-note";
+    dn.appendChild(ln);dn.appendChild(note);
+    f.appendChild(dn);
+    b.appendChild(f);
+
+    var btn=el("button","btn","Signal veröffentlichen");btn.type="button";
+    var msg=el("p","msg","");
+    btn.addEventListener("click",function(){
+      var e=num(en.value);
+      if(e==null){msg.className="msg msg--bad";msg.textContent="Einstieg fehlt.";en.focus();return;}
+      btn.disabled=true;msg.className="msg";msg.textContent="Wird veröffentlicht …";
+      var id="sig-"+Date.now().toString(36)+"-"+Math.random().toString(36).slice(2,6);
+      DB.collection(COL).doc(id).set({
+        pair:"XAU/USD",
+        side:sel.value==="short"?"short":"long",
+        entry:e,sl:num(sl.value),tp:num(tp.value),
+        note:String(note.value||"").slice(0,400),
+        status:"offen",pips:0,
+        openedAt:new Date().toISOString(),closedAt:null
+      }).then(function(){
+        btn.disabled=false;msg.textContent="Veröffentlicht.";
+        en.value="";sl.value="";tp.value="";note.value="";
+      },function(err){
+        btn.disabled=false;msg.className="msg msg--bad";
+        msg.textContent="Konnte nicht veröffentlicht werden ("+(err&&err.code||"Fehler")+").";
+      });
+    });
+    b.appendChild(btn);
+    b.appendChild(msg);
+    return b;
+  }
+
+  function renderTable(){
+    var wrap=$("sightable");
+    if(!wrap){return;}
+    clear(wrap);
+    if(!rows.length){
+      var e=el("div","sig--empty");
+      e.appendChild(el("b","Noch keine Historie."));
+      e.appendChild(el("span",null,"Geschlossene Signale sammeln sich hier."));
+      wrap.appendChild(e);
+      return;
+    }
+    var box=el("div","tbl-wrap");
+    var t=el("table","tbl");
+    var thead=el("thead"),tr=el("tr");
+    var cols=["Datum","Richtung","Einstieg","Ergebnis","Pips"];
+    if(canWrite){cols.push("");}
+    cols.forEach(function(c,i){
+      var th=el("th",i>=2&&i<=4?"n":null,c);
+      if(i===1||i===3){th.className="";}
+      tr.appendChild(th);
+    });
+    thead.appendChild(tr);t.appendChild(thead);
+
+    var tb=el("tbody");
+    rows.forEach(function(r){
+      var row=el("tr");
+      row.appendChild(el("td",null,dateTxt(r.openedAt)));
+      row.appendChild(el("td",r.side==="short"?"neg":"pos",r.side==="short"?"Short":"Long"));
+      row.appendChild(el("td","n",r.entry==null?"—":nf(r.entry,2)));
+      row.appendChild(el("td",null,statusTxt(r)));
+      row.appendChild(el("td","n "+(isOpen(r)?"":pipCls(r.pips)),isOpen(r)?"läuft":pipTxt(r.pips)));
+      if(canWrite){
+        var td=el("td","n");
+        var d=el("button","del","Löschen");d.type="button";
+        d.addEventListener("click",function(){
+          if(armed!==r.id){armed=r.id;d.textContent="Wirklich?";setTimeout(function(){
+            if(armed===r.id){armed=null;d.textContent="Löschen";}
+          },4000);return;}
+          armed=null;d.disabled=true;d.textContent="…";
+          DB.collection(COL).doc(r.id).delete().then(null,function(){d.disabled=false;d.textContent="Fehler";});
+        });
+        td.appendChild(d);
+        row.appendChild(td);
+      }
+      tb.appendChild(row);
+    });
+    t.appendChild(tb);
+    box.appendChild(t);
+    wrap.appendChild(box);
+  }
+
+  function render(){
+    renderStats($("todaystats"),stats(true),["Winrate heute","Pips heute","Signale heute"]);
+    renderStats($("allstats"),stats(false),["Winrate gesamt","Pips gesamt","Signale gesamt"]);
+    renderCurrent();
+    renderTable();
+    var host=$("adminnew");
+    if(host){
+      clear(host);
+      if(canWrite){host.appendChild(newForm());}
+    }
+  }
+
+  function setView(v){
+    view=v==="historie"?"historie":"aktuell";
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+      t.setAttribute("aria-selected",t.getAttribute("data-view")===view?"true":"false");
+    });
+    var a=$("view-aktuell"),h=$("view-historie");
+    if(a){a.hidden=view!=="aktuell";}
+    if(h){h.hidden=view!=="historie";}
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"),function(t){
+    t.addEventListener("click",function(){setView(t.getAttribute("data-view"));});
+  });
+  setView("aktuell");
+  render();
+
+  function fromFile(){
+    if(typeof fetch!=="function"){setState("Nicht verfügbar");return;}
+    fetch("signals.json",{cache:"no-store"}).then(function(r){
+      return r.ok?r.json():null;
+    }).then(function(j){
+      if(j&&Array.isArray(j.signals)){
+        rows=j.signals.slice().sort(function(a,b){
+          return String(b.openedAt||"").localeCompare(String(a.openedAt||""));
+        });
+        render();
+        setState(rows.length?"aus signals.json":"Keine Signale");
+      }else{
+        setState("Keine Signale");
+      }
+    })["catch"](function(){setState("Nicht verfügbar");});
+  }
+
+  (async function(){
+    var C=window.claude;
+    if(!C||typeof C.use!=="function"){fromFile();return;}
+    var db=null,user=null;
+    try{db=await C.use("db");}catch(e){db=null;}
+    try{user=await C.use("user");}catch(e){user=null;}
+    if(!db){fromFile();return;}
+    DB=db;
+
+    if(user){
+      try{canWrite=(await Promise.resolve(user.canEdit()))===true;}catch(e){canWrite=false;}
+    }
+    render();
+
+    setState("Lädt …");
+    timer=setTimeout(function(){
+      if(!confirmed){setState("Noch keine Antwort");}
+    },10000);
+
+    db.collection(COL).orderBy("openedAt","desc").limit(500).onSnapshot(function(snap){
+      rows=snap.docs.map(function(d){
+        var o=Object.assign({},d.data()||{});
+        o.id=d.id;
+        return o;
+      });
+      if(!snap.metadata.fromCache){
+        confirmed=true;
+        clearTimeout(timer);
+      }
+      render();
+      setState(rows.length?(rows.length===1?"1 Signal":rows.length+" Signale"):"Keine Signale");
+    },function(err){
+      clearTimeout(timer);
+      setState("Fehler: "+(err&&err.code||"unbekannt"));
+    });
+  })();
+})();
+</script>
+
+<script>
+/* Bots: Auswahl je Besucher — im eigenen Bereich des db-Speichers, sonst im Browser */
+(function(){
+  "use strict";
+
+  var KEY="bengx.bots";
+  var sel=[],ref=null,saving=false;
+
+  function cards(){return Array.prototype.slice.call(document.querySelectorAll(".bot"));}
+  function fromStore(){
+    try{
+      var raw=window.localStorage.getItem(KEY);
+      var v=raw?JSON.parse(raw):null;
+      return Array.isArray(v)?v:[];
+    }catch(e){return [];}
+  }
+  function toStore(){
+    try{window.localStorage.setItem(KEY,JSON.stringify(sel));}catch(e){}
+  }
+
+  function paint(){
+    cards().forEach(function(c){
+      var id=c.getAttribute("data-bot");
+      var on=sel.indexOf(id)>=0;
+      c.setAttribute("data-on",on?"true":"false");
+      var b=c.querySelector(".pick");
+      if(b){
+        b.setAttribute("aria-pressed",on?"true":"false");
+        b.textContent=on?"Ausgewählt":"Auswählen";
+      }
+    });
+    var n=document.getElementById("selcount");
+    if(n){n.textContent=sel.length+" von "+cards().length;}
+    var h=document.getElementById("selhint");
+    if(h){
+      h.textContent=sel.length
+        ? "Deine Auswahl bleibt gespeichert."
+        : "Du kannst einen Bot nehmen oder mehrere gleichzeitig.";
+    }
+  }
+
+  function save(){
+    toStore();
+    if(!ref||saving){return;}
+    saving=true;
+    ref.set({selected:sel.slice(),updatedAt:new Date().toISOString()}).then(function(){
+      saving=false;
+    },function(){
+      saving=false;
+    });
+  }
+
+  function toggle(id){
+    var i=sel.indexOf(id);
+    if(i>=0){sel.splice(i,1);}else{sel.push(id);}
+    paint();
+    save();
+  }
+
+  cards().forEach(function(c){
+    var b=c.querySelector(".pick");
+    if(b){b.addEventListener("click",function(){toggle(c.getAttribute("data-bot"));});}
+  });
+
+  sel=fromStore();
+  paint();
+
+  (async function(){
+    var C=window.claude;
+    if(!C||typeof C.use!=="function"){return;}
+    var db=null,user=null;
+    try{db=await C.use("db");}catch(e){db=null;}
+    try{user=await C.use("user");}catch(e){user=null;}
+    if(!db||!user){return;}
+    var uid=null;
+    try{uid=await user.id();}catch(e){uid=null;}
+    if(!uid){return;}
+    try{ref=db.doc("data/users/"+uid+"/bots");}catch(e){ref=null;return;}
+    try{
+      var snap=await ref.get();
+      if(snap&&snap.exists){
+        var v=(snap.data()||{}).selected;
+        if(Array.isArray(v)){sel=v.filter(function(x){return typeof x==="string";});paint();toStore();}
+      }else if(sel.length){
+        save();
+      }
+    }catch(e){}
+  })();
 })();
 </script>
 </body>

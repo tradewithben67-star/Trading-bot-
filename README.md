@@ -13,8 +13,8 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 | **B** | Ben | Über mich und das Vorstellungsvideo |
 | **E** | Entdecken | Lernen: Grundlagen, Risiko, Praxis |
 | **N** | Neue Mitglieder | Einstieg in drei Schritten |
-| **G** | Gold | Der Markt XAU/USD |
-| **X** | XAU Bot | Der Bot, der Gold nach Regeln handelt |
+| **G** | Signale | Das neueste Signal, Winrate und Pips von heute, dahinter die Historie |
+| **X** | Bots | Drei Bots zur Auswahl, einzeln oder mehrere zugleich |
 
 Jeder Abschnitt hat eine eigene Adresse (`#ben`, `#entdecken`, `#mitglieder`, `#gold`, `#xaubot`),
 lässt sich also direkt verlinken. Mit den Pfeiltasten blättert man durch die Abschnitte,
@@ -26,6 +26,49 @@ unten rechts führt eine Weiter-Zeile zum nächsten.
 | --- | --- |
 | `index.html` | Die komplette Seite: Markup, CSS und JavaScript inline |
 | `media/` | Mediendateien, u. a. das Vorstellungsvideo |
+| `signals.json` | Die Signale für die Fassung auf dem eigenen Server |
+
+## Signale (G)
+
+Der Bereich **G** hat zwei Ansichten:
+
+* **Aktuell** — nur das neueste Signal, dazu Winrate, Pips und Anzahl von heute.
+* **Historie** — Winrate, Pips und Anzahl über alles, darunter die Tabelle aller Signale.
+
+Woher die Signale kommen, hängt davon ab, wo die Seite läuft:
+
+* **Auf der claude.ai-Seite** liegen sie im Datenspeicher der Seite. Wer die Seite
+  bearbeiten darf, bekommt dort zwei Formulare eingeblendet: eines veröffentlicht ein
+  neues Signal, eines schließt das laufende mit Ergebnis und Pips. Alle, die die Seite
+  offen haben, sehen die Änderung sofort. Lesen darf jeder, schreiben nur der Inhaber
+  und Bearbeiter.
+* **Auf dem eigenen Server** (GitHub Pages) gibt es diesen Speicher nicht. Dort liest
+  die Seite `signals.json` neben `index.html`. Ein Signal ist ein Eintrag in der Liste
+  `signals`; die Felder stehen in der Datei selbst beschrieben. Nach dem Commit ist es
+  auf der Seite.
+
+Ein Signal hat diese Felder:
+
+| Feld | Bedeutung |
+| --- | --- |
+| `side` | `long` oder `short` |
+| `entry`, `sl`, `tp` | Einstieg, Stop, Ziel |
+| `status` | `offen`, `gewonnen`, `verloren` oder `be` (Break-even) |
+| `pips` | Zahl; bei Verlust negativ, solange offen 0 |
+| `openedAt`, `closedAt` | Zeitpunkte als ISO-8601, `closedAt` sonst `null` |
+| `note` | kurze Begründung, optional |
+
+Die Winrate zählt nur geschlossene Signale und lässt Break-even außen vor.
+„Heute" richtet sich nach dem Ausstieg, bei offenen Signalen nach dem Einstieg.
+
+## Bots (X)
+
+Drei Bots stehen zur Auswahl — Signal-Kopierer, Dauerläufer und Swing. Wer die Seite
+besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich die Seite: angemeldet
+im eigenen, privaten Bereich des Datenspeichers (den sonst niemand sieht, auch der
+Inhaber nicht), sonst im Browser des Besuchers.
+
+Die Bots handeln noch nicht — die Auswahl ist bisher eine Merkliste.
 
 ## Lokal ansehen
 

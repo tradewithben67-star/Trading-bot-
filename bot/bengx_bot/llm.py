@@ -19,6 +19,7 @@ hängt also nicht daran, wer antwortet — nur wie gut.
 from __future__ import annotations
 
 import base64
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Protocol, Sequence
 
@@ -248,7 +249,7 @@ class GeminiProvider:
             max_output_tokens=self.s.max_tokens,
             tools=liste or None,
             automatic_function_calling=(
-                types.AutomaticFunctionCallingConfig(maximum_remote_calls=6)
+                types.AutomaticFunctionCallingConfig(maximum_remote_calls=3)
                 if werkzeuge else None),
         )
 
@@ -260,7 +261,7 @@ class GeminiProvider:
         mit_suche = self.s.websuche and not self.ohne_suche
         letzter_fehler = ""
 
-        for _ in range(5):
+        for runde in range(3):
             self.versucht.add(self.modell)
             try:
                 antwort = client.models.generate_content(
@@ -295,13 +296,22 @@ class GeminiProvider:
                         self.notizen.append(
                             f"{self.modell}: {grund} — versuche {naechstes}.")
                         self.modell = naechstes
+                        if erschoepft:
+                            # Nicht hetzen: sonst reißen wir das
+                            # Minutenlimit erst recht.
+                            time.sleep(2)
                         continue
                     if erschoepft:
-                        return ("Das kostenlose Kontingent ist aufgebraucht — "
-                                "bei allen Modellen, die dein Schlüssel darf. "
-                                "Meist hilft Warten (es füllt sich pro Minute "
-                                "und pro Tag auf).\n\n"
-                                f"Googles Meldung: {letzter_fehler}")
+                        return (
+                            "Google gibt diesem Schlüssel kein Kontingent — "
+                            "bei keinem Modell, das er benutzen darf.\n\n"
+                            "Das heißt meist nicht „verbraucht“, sondern "
+                            "„nie zugeteilt“. Nachsehen unter "
+                            "https://ai.dev/rate-limit, welche Stufe dort "
+                            "steht. Hilft oft: in aistudio.google.com/apikey "
+                            "einen neuen Schlüssel in einem NEUEN Projekt "
+                            "anlegen.\n\n"
+                            f"Googles Meldung: {letzter_fehler}")
                     return ("Kein Modell gefunden, das dein Schlüssel benutzen "
                             f"darf.\n\nGoogles Meldung: {letzter_fehler}")
 
@@ -312,6 +322,7 @@ class GeminiProvider:
                 return f"Keine Antwort von Google: {_kurz(str(exc))}"
 
         return (f"Nach mehreren Versuchen keine Antwort.\n\n"
+                f"Versucht: {', '.join(sorted(self.versucht)) or '—'}\n\n"
                 f"Letzte Meldung: {letzter_fehler}")
 
 

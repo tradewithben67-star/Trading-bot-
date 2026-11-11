@@ -63,8 +63,15 @@ Die Winrate zählt nur geschlossene Signale und lässt Break-even außen vor.
 
 ## Bots (X)
 
-Drei Bots stehen zur Auswahl — Signal-Kopierer, Dauerläufer und Swing. Wer die Seite
-besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich die Seite: angemeldet
+Drei Bots stehen zur Auswahl:
+
+| Bot | Arbeitsweise |
+| --- | --- |
+| Signal-Kopierer | Übernimmt jedes Signal aus **G** eins zu eins |
+| Dauerläufer | Handelt durchgängig nach Studien und den Regelwerken erfahrener Gold-Trader, jede Strategie vorher im Backtest geprüft |
+| Swing | Handelt nach Bens eigenem Regelwerk, wenige Positionen, längere Haltedauer |
+
+Wer die Seite besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich die Seite: angemeldet
 im eigenen, privaten Bereich des Datenspeichers (den sonst niemand sieht, auch der
 Inhaber nicht), sonst im Browser des Besuchers.
 

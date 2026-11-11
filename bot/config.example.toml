@@ -1,8 +1,46 @@
 # BENGX Dauerläufer — Beispielkonfiguration
 #
-# Kopieren als config.toml und anpassen. Jede Änderung an [market], [costs],
-# [strategy] oder [risk] ändert den Fingerabdruck des Regelwerks — danach
+# Kopieren als config.toml und anpassen. Jede Änderung an [bot]
+# "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
+# "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
+name = "dauerlaeufer"
+
+[market], [costs],
+# [strategy] oder [swing]
+# Nur für bot.name = "swing". Der Bot braucht Minutenkerzen in data.csv;
+# die 5-Minuten- und Stundenkerzen rechnet er selbst daraus.
+atr_period = 14
+swing_lookback_h1 = 2            # Fraktalgröße für die Stunden-Swings
+swing_lookback_m1 = 2            # Fraktalgröße für die Minuten-Struktur
+continuation_window_minutes = 120  # Sweep → Fortsetzungskerze
+trigger_window_minutes = 60        # Fortsetzung → BOS oder FVG
+entry_window_minutes = 60          # scharf → Einstieg
+min_continuation_body = 0.5      # Körperanteil der 5m-Kerze
+min_gap_pips = 3.0               # kleinere Lücken zählen nicht
+entry_fill = 0.5                 # 0 = nahe Kante der Gap, 1 = ferne Kante
+allow_pullback = true            # Einstieg im Pullback in die FVG
+allow_ifvg = true                # Einstieg bei Entstehung einer invertierten FVG
+stop_source = "structure"        # structure | sweep | fvg
+stop_buffer_pips = 5.0
+min_stop_pips = 15.0             # engere Stops sind Rauschen
+max_stop_pips = 250.0            # weitere Stops kosten zu viel
+target_mode = "r"                # r | liquidity
+target_r = 3.0
+partial_r = 1.5
+partial_fraction = 0.5
+trail_atr = 2.0
+max_hold_minutes = 480
+session_start_hour = 7
+session_end_hour = 20
+friday_cutoff_hour = 19
+
+[risk] ändert den Fingerabdruck des Regelwerks — danach
 # verlangt der Live-Betrieb einen neuen Backtest.
+
+[bot]
+# "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
+# "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
+name = "dauerlaeufer"
 
 [market]
 symbol = "XAU/USD"
@@ -37,6 +75,34 @@ session_end_hour = 20     # UTC
 friday_cutoff_hour = 19   # freitags vorher glattstellen
 cooldown_bars = 12
 cooldown_after_losses = 2
+
+[swing]
+# Nur für bot.name = "swing". Der Bot braucht Minutenkerzen in data.csv;
+# die 5-Minuten- und Stundenkerzen rechnet er selbst daraus.
+atr_period = 14
+swing_lookback_h1 = 2            # Fraktalgröße für die Stunden-Swings
+swing_lookback_m1 = 2            # Fraktalgröße für die Minuten-Struktur
+continuation_window_minutes = 120  # Sweep → Fortsetzungskerze
+trigger_window_minutes = 60        # Fortsetzung → BOS oder FVG
+entry_window_minutes = 60          # scharf → Einstieg
+min_continuation_body = 0.5      # Körperanteil der 5m-Kerze
+min_gap_pips = 3.0               # kleinere Lücken zählen nicht
+entry_fill = 0.5                 # 0 = nahe Kante der Gap, 1 = ferne Kante
+allow_pullback = true            # Einstieg im Pullback in die FVG
+allow_ifvg = true                # Einstieg bei Entstehung einer invertierten FVG
+stop_source = "structure"        # structure | sweep | fvg
+stop_buffer_pips = 5.0
+min_stop_pips = 15.0             # engere Stops sind Rauschen
+max_stop_pips = 250.0            # weitere Stops kosten zu viel
+target_mode = "r"                # r | liquidity
+target_r = 3.0
+partial_r = 1.5
+partial_fraction = 0.5
+trail_atr = 2.0
+max_hold_minutes = 480
+session_start_hour = 7
+session_end_hour = 20
+friday_cutoff_hour = 19
 
 [risk]
 start_equity = 10000.0

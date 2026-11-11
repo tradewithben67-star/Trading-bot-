@@ -26,7 +26,8 @@ class Broker(Protocol):
     equity: float
 
     def open(self, side: Side, size: float, price: float, when: datetime,
-             bar: int, stop: float, target: float, note: str) -> Position: ...
+             bar: int, stop: float, target: float, note: str,
+             final_target: float | None = None) -> Position: ...
 
     def reduce(self, position: Position, fraction: float, price: float) -> None: ...
 
@@ -58,7 +59,8 @@ class PaperBroker:
 
     # ---- Order ----------------------------------------------------------
     def open(self, side: Side, size: float, price: float, when: datetime,
-             bar: int, stop: float, target: float, note: str = "") -> Position:
+             bar: int, stop: float, target: float, note: str = "",
+             final_target: float | None = None) -> Position:
         fill = self._fill(price, side, entering=True)
         pos = Position(
             id=f"sig-{when:%Y%m%d-%H%M}-{next(self._ids):03d}",
@@ -70,6 +72,7 @@ class PaperBroker:
             opened_at=when,
             opened_bar=bar,
             initial_risk=abs(fill - stop),
+            final_target=final_target,
             original_size=size,
             note=note,
         )

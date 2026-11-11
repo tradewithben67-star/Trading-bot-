@@ -8,6 +8,11 @@
     python -m bengx_bot report                    Zahlen aus dem Protokoll
     python -m bengx_bot export                    signals.json neu schreiben
     python -m bengx_bot rules                     das Regelwerk im Klartext
+    python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
+
+Welcher Bot läuft, steht in der Konfiguration unter [bot] name und lässt sich
+mit --bot überschreiben. Der Dauerläufer arbeitet auf Stundenkerzen, der
+Swing-Bot auf Minutenkerzen, aus denen er 5m und 1h selbst rechnet.
 """
 
 from __future__ import annotations
@@ -29,6 +34,9 @@ def _load(args) -> Config:
     cfg = Config.load(args.config)
     if getattr(args, "csv", None):
         cfg.data.csv = args.csv
+    if getattr(args, "bot", None):
+        cfg.bot.name = args.bot
+    cfg.validate()
     return cfg
 
 
@@ -107,8 +115,58 @@ def cmd_export(args) -> int:
     return 0
 
 
+def _rules_swing(cfg: Config) -> None:
+    w, r = cfg.swing, cfg.risk
+    print(f"""Swing — Regelwerk {cfg.fingerprint()}
+
+Vier Stufen, jede auf ihrem Zeitrahmen, jede mit einer Frist:
+
+  1h  Liquidität abgeräumt
+      Eine Stundenkerze sticht unter das jüngste offene Swing-Tief
+      (Fraktal {w.swing_lookback_h1}) und schließt wieder darüber.
+      Short spiegelbildlich. Danach {w.continuation_window_minutes} Minuten Zeit für:
+
+  5m  Fortsetzungskerze
+      Körper mindestens {w.min_continuation_body:.0%} der Spanne, Schluss über dem
+      Hoch der Vorkerze (Short: unter dem Tief).
+      Danach {w.trigger_window_minutes} Minuten Zeit für:
+
+  1m  Struktur oder Lücke
+      Bruch der Struktur (Schluss über dem letzten bestätigten Swing-Hoch,
+      Fraktal {w.swing_lookback_m1}) oder eine Fair-Value-Gap ab {w.min_gap_pips:g} Pips.
+      Danach {w.entry_window_minutes} Minuten Zeit für:
+
+  1m  Einstieg
+      {"Pullback in die Lücke, Limit bei " + format(w.entry_fill, ".0%") + " der Gap" if w.allow_pullback else "Pullback: aus"}
+      {"IFVG: Schluss durch eine gegenläufige Lücke, Einstieg zum Schluss" if w.allow_ifvg else "IFVG: aus"}
+
+Läuft eine Frist ab oder kommt ein neuer Sweep, beginnt alles von vorn.
+
+Nach dem Einstieg:
+  Stop         {w.stop_source} + {w.stop_buffer_pips:g} Pips Puffer,
+               erlaubt zwischen {w.min_stop_pips:g} und {w.max_stop_pips:g} Pips
+  Teilziel     {w.partial_r:g} R, dort {w.partial_fraction:.0%} raus, Rest auf Einstand
+  Endziel      {"das abgeräumte Niveau" if w.target_mode == "liquidity" else format(w.target_r, "g") + " R"}
+  Trailing     {w.trail_atr:g} × ATR, nur enger
+  Haltedauer   höchstens {w.max_hold_minutes} Minuten
+  Handelszeit  {w.session_start_hour:02d}:00 bis {w.session_end_hour:02d}:00 UTC,
+               freitags bis {w.friday_cutoff_hour:02d}:00
+
+Risiko (steht über der Strategie):
+  je Trade     {r.risk_per_trade:.2%} des Kontos
+  Positionen   höchstens {r.max_positions} gleichzeitig
+  Tagesverlust Schluss ab {r.daily_loss_limit:.1%}
+  Drawdown     ab {r.drawdown_halve:.1%} halbe Größe, ab {r.drawdown_stop:.1%} kein Einstieg
+  Not-Aus      Datei {cfg.live.killswitch_file} anlegen
+
+Der Swing-Bot braucht Minutenkerzen: 5m und 1h rechnet er selbst daraus.""")
+
+
 def cmd_rules(args) -> int:
     cfg = _load(args)
+    if cfg.bot.name == "swing":
+        _rules_swing(cfg)
+        return 0
     s, r = cfg.strategy, cfg.risk
     print(f"""Dauerläufer — Regelwerk {cfg.fingerprint()}
 
@@ -139,13 +197,17 @@ Risiko (steht über der Strategie):
 
 
 def cmd_selftest(args) -> int:
-    cfg = Config()
-    candles = synthetic(3000, seed=3)
-    result = run_backtest(cfg, candles)
     print("Selbsttest auf erfundenen Daten — kein Aussagewert über den Markt.\n")
-    print(result.report())
-    ok = result.bars == 3000
-    print("\nMechanik:", "läuft" if ok else "FEHLER")
+    ok = True
+    for name, bars, seed in (("dauerlaeufer", 3000, 3), ("swing", 30000, 9)):
+        cfg = Config()
+        cfg.bot.name = name
+        cfg.validate()
+        result = run_backtest(cfg, synthetic(bars, seed=seed, minutes=1))
+        print(result.report())
+        print()
+        ok = ok and result.bars == bars
+    print("Mechanik:", "läuft" if ok else "FEHLER")
     return 0 if ok else 1
 
 
@@ -155,6 +217,8 @@ def build_parser() -> argparse.ArgumentParser:
         description="BENGX Dauerläufer — regelbasierter Bot für XAU/USD",
     )
     p.add_argument("--config", help="Pfad zur TOML-Konfiguration")
+    p.add_argument("--bot", choices=("dauerlaeufer", "swing"),
+                   help="welcher Bot (überschreibt bot.name)")
     sub = p.add_subparsers(dest="command", required=True)
 
     b = sub.add_parser("backtest", help="Regelwerk über historische Kerzen rechnen")

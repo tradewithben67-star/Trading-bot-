@@ -61,6 +61,7 @@ class Signal:
     atr: float
     adx: float
     reason: str
+    final_target: float | None = None   # das eigentliche Ziel; `target` ist das Teilziel
 
     @property
     def risk_per_unit(self) -> float:
@@ -80,6 +81,7 @@ class Position:
     opened_at: datetime
     opened_bar: int
     initial_risk: float
+    final_target: float | None = None
     original_size: float = 0.0
     partial_done: bool = False
     realised_pnl: float = 0.0

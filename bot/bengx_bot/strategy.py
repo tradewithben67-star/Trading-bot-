@@ -31,6 +31,17 @@ from .model import Candle, Side, Signal
 
 
 @dataclass(frozen=True, slots=True)
+class ExitRules:
+    """Was die Positionsführung von der Strategie wissen muss."""
+
+    partial_r: float
+    partial_fraction: float
+    trail_atr: float
+    time_stop_bars: int
+    friday_cutoff_hour: int
+
+
+@dataclass(frozen=True, slots=True)
 class Context:
     """Alle Indikatorreihen, einmal über die ganze Kerzenreihe gerechnet."""
 
@@ -78,6 +89,16 @@ class Dauerlaeufer:
     def warmup_bars(self) -> int:
         p = self.p
         return max(p.trend_ema + p.trend_slope_bars, p.breakout, p.adx_period * 3) + 5
+
+    def exit_rules(self) -> ExitRules:
+        p = self.p
+        return ExitRules(
+            partial_r=p.partial_r,
+            partial_fraction=p.partial_fraction,
+            trail_atr=p.trail_atr,
+            time_stop_bars=p.time_stop_bars,
+            friday_cutoff_hour=p.friday_cutoff_hour,
+        )
 
     # ---- Einzelne Regeln ----------------------------------------------
     def in_session(self, candle: Candle) -> bool:

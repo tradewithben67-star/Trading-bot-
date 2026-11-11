@@ -17,12 +17,13 @@ from .broker import PaperBroker
 from .config import Config
 from .engine import TradeEngine
 from .model import Candle, Trade
+from .bots import make_strategy
 from .risk import RiskManager
-from .strategy import Dauerlaeufer
 
 
 @dataclass
 class BacktestResult:
+    bot: str
     symbol: str
     fingerprint: str
     bars: int
@@ -97,6 +98,7 @@ class BacktestResult:
 
     def summary(self) -> dict[str, Any]:
         return {
+            "bot": self.bot,
             "symbol": self.symbol,
             "fingerprint": self.fingerprint,
             "bars": self.bars,
@@ -128,7 +130,7 @@ class BacktestResult:
         pct = lambda v: "—" if v is None else f"{v * 100:.1f} %"
         num = lambda v: "—" if v is None else f"{v}"
         lines = [
-            f"Backtest {s['symbol']}   Regelwerk {s['fingerprint']}",
+            f"Backtest {s['bot']} auf {s['symbol']}   Regelwerk {s['fingerprint']}",
             f"Zeitraum        {s['start'][:10]} bis {s['end'][:10]}  ({s['bars']} Kerzen)",
             "",
             f"Trades          {s['trades']}   davon {s['wins']} im Plus, {s['losses']} im Minus",
@@ -149,11 +151,12 @@ class BacktestResult:
         return "\n".join(lines)
 
 
-def run_backtest(config: Config, candles: Sequence[Candle]) -> BacktestResult:
+def run_backtest(config: Config, candles: Sequence[Candle],
+                 strategy=None) -> BacktestResult:
     if len(candles) < 50:
         raise ValueError("Zu wenige Kerzen für einen Backtest")
 
-    strategy = Dauerlaeufer(config)
+    strategy = strategy or make_strategy(config)
     ctx = strategy.prepare(candles)
     broker = PaperBroker(config)
     risk = RiskManager(config)
@@ -167,6 +170,7 @@ def run_backtest(config: Config, candles: Sequence[Candle]) -> BacktestResult:
         )
 
     result = BacktestResult(
+        bot=strategy.name,
         symbol=config.market.symbol,
         fingerprint=config.fingerprint(),
         bars=len(candles),

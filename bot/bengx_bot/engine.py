@@ -37,7 +37,7 @@ class TradeEngine:
         candle = candles[i]
         atr = ctx.atr[i]
         closed: list[Trade] = []
-        p = self.cfg.strategy
+        p = self.strategy.exit_rules()
 
         for pos in list(self.broker.positions):
             if pos.opened_bar >= i:          # in dieser Kerze erst eröffnet
@@ -63,18 +63,29 @@ class TradeEngine:
                     pos.stop = max(pos.stop, pos.entry) if long else min(pos.stop, pos.entry)
                     self.on_event("partial", {"id": pos.id, "price": pos.target})
 
-            # 3. Stop nachziehen, sobald das Teilziel gelaufen ist.
+            # 3. Endziel: wenn eines gesetzt ist und erreicht wird, ist der
+            #    Trade fertig — der Rest geht zum Zielkurs raus.
+            if pos.final_target is not None:
+                hit_final = (candle.high >= pos.final_target if long
+                             else candle.low <= pos.final_target)
+                if hit_final:
+                    trade = self.broker.close(pos, pos.final_target, candle.ts,
+                                              ExitReason.TARGET)
+                    closed.append(trade)
+                    continue
+
+            # 4. Stop nachziehen, sobald das Teilziel gelaufen ist.
             if pos.partial_done and atr:
                 trail = self._trail_for(pos, float(atr))
                 pos.stop = max(pos.stop, trail) if long else min(pos.stop, trail)
 
-            # 4. Zeitstop: was sich nach N Kerzen nicht bewegt hat, blockiert nur Kapital.
+            # 5. Zeitstop: was sich nach N Kerzen nicht bewegt hat, blockiert nur Kapital.
             if held >= p.time_stop_bars:
                 trade = self.broker.close(pos, candle.close, candle.ts, ExitReason.TIME)
                 closed.append(trade)
                 continue
 
-            # 5. Vor dem Wochenende glattstellen — über Nacht von Freitag auf
+            # 6. Vor dem Wochenende glattstellen — über Nacht von Freitag auf
             #    Montag reißen Kurslücken jeden Stop.
             if candle.ts.weekday() == 4 and candle.ts.hour >= p.friday_cutoff_hour:
                 trade = self.broker.close(pos, candle.close, candle.ts, ExitReason.SESSION)
@@ -104,6 +115,7 @@ class TradeEngine:
             stop=signal.stop,
             target=signal.target,
             note=signal.reason,
+            final_target=signal.final_target,
         )
         self.on_event("open", {"position": pos, "signal": signal})
         return pos

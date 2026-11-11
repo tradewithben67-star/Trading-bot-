@@ -21,8 +21,8 @@ from .engine import TradeEngine
 from .journal import Journal, signals_payload, write_signals
 from .model import Candle, ExitReason, Trade
 from .risk import RiskManager
+from .bots import make_strategy
 from .state import BotState, load_state, save_state
-from .strategy import Dauerlaeufer
 
 
 class LiveGateError(RuntimeError):
@@ -52,7 +52,7 @@ class Runner:
     def __init__(self, config: Config, live: bool = False) -> None:
         self.cfg = config
         self.live = live
-        self.strategy = Dauerlaeufer(config)
+        self.strategy = make_strategy(config)
         self.state_file = Path(config.live.state_dir) / "state.json"
         self.journal = Journal(config.live.journal)
         self.killswitch = Path(config.live.killswitch_file)

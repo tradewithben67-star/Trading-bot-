@@ -1,27 +1,32 @@
-# Dauerläufer
+# Die Bots
 
-Der Bot aus dem Bereich **X** der Website. Er handelt XAU/USD nach einem festen
-Regelwerk: er prüft jede abgeschlossene Kerze, und wenn Trend, Stärke,
-Volatilität, Handelszeit und Risiko zusammenpassen, nimmt er den Ausbruch mit.
-In allen anderen Lagen tut er nichts.
+Zwei Bots aus dem Bereich **X** der Website, beide auf XAU/USD:
 
-Reines Standard-Python ab 3.11. Keine Abhängigkeiten, kein `pip install`.
+| `[bot] name` | Bot | Zeitrahmen | Idee |
+| --- | --- | --- | --- |
+| `dauerlaeufer` | **Dauerläufer** | 1h | Trendfolge: Ausbruch im gerichteten Markt |
+| `swing` | **Swing** | 1m (+5m, 1h) | Liquiditäts-Sweep, Fortsetzung, Einstieg in die Lücke |
+
+Beide erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
+Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11, keine
+Abhängigkeiten, kein `pip install`.
 
 ## Schnellstart
 
 ```bash
 cd bot
 
-python3 -m bengx_bot rules              # das Regelwerk im Klartext
+python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
+python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 89 Tests
+python3 -m unittest discover -s tests -t .   # 133 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
 python3 -m bengx_bot --config config.toml paper --once
 ```
 
-## Das Regelwerk
+## Dauerläufer
 
 Ein Signal entsteht **nur**, wenn alle fünf Bedingungen gleichzeitig zutreffen:
 
@@ -50,6 +55,38 @@ Das Regelwerk ist Trendfolge, wie sie für Rohstoffe seit Jahrzehnten beschriebe
 wird: in Richtung des übergeordneten Trends, Einstieg auf den Ausbruch,
 Positionsgröße und Stop an der Volatilität. Die konkreten Zahlen stehen in
 `config.toml` und sind bewusst nicht in den Code eingebrannt.
+
+## Swing
+
+Ein Modell über drei Zeitrahmen. Jede Stufe hat eine Frist; läuft sie ab oder
+kommt ein neuer Sweep, beginnt alles von vorn.
+
+| Stufe | Zeitrahmen | Was passieren muss | Frist |
+| --- | --- | --- | --- |
+| 1 | **1h** | Eine Stundenkerze sticht unter das jüngste offene Swing-Tief und schließt wieder darüber — die Liquidität ist abgeräumt | — |
+| 2 | **5m** | Eine Fortsetzungskerze bestätigt die Richtung: fester Körper, Schluss über dem Hoch der Vorkerze | 120 min |
+| 3 | **1m** | Bruch der Struktur (Schluss über dem letzten bestätigten Swing-Hoch) **oder** eine Fair-Value-Gap | 60 min |
+| 4 | **1m** | Einstieg: Pullback in die Lücke (Limit in der Mitte) **oder** Entstehung einer invertierten Lücke | 60 min |
+
+Short läuft spiegelbildlich: Sweep über ein Swing-Hoch, Schluss darunter.
+
+**Fair-Value-Gap**: drei Kerzen, bei denen das Tief der dritten über dem Hoch
+der ersten liegt. In dieser Zone wurde nicht gehandelt — der Kurs kommt
+erfahrungsgemäß zurück, um sie zu füllen. Der Einstieg ist ein Limit darin.
+
+**Invertierte Lücke (IFVG)**: eine gegenläufige Gap, durch die der Kurs
+schließt. Damit dreht ihre Bedeutung — was vorher Widerstand war, trägt jetzt
+von unten. Der Einstieg erfolgt zu diesem Schluss.
+
+Stop: unter dem Tief, das sich seit dem Sweep gebildet hat, plus Puffer
+(`stop_source = "structure"`). Alternativ unter dem Sweep-Tief selbst
+(`"sweep"`) — das liegt oft so weit weg, dass `max_stop_pips` den Trade
+ablehnt, und genau das soll die Grenze leisten. Ziel: 3 R, Teilverkauf bei
+1,5 R, danach Trailing.
+
+Der Swing-Bot braucht **Minutenkerzen** in `data.csv`. Die Fünf-Minuten- und
+Stundenkerzen rechnet er selbst daraus, auf vollen Vielfachen ausgerichtet; eine
+noch laufende Kerze benutzt er nie.
 
 ## Risiko steht über der Strategie
 
@@ -138,7 +175,10 @@ dem Papierkonto, mit demselben Code.
 | `indicators.py` | EMA, ATR, RSI, ADX, Donchian — ohne numpy |
 | `model.py` | Kerze, Signal, Position, Trade |
 | `config.py` | TOML laden, prüfen, Fingerabdruck bilden |
-| `strategy.py` | das Regelwerk |
+| `strategy.py` | Regelwerk des Dauerläufers |
+| `swing.py` | Regelwerk des Swing-Bots |
+| `timeframes.py` | 5m und 1h aus Minutenkerzen, Swing-Punkte, Sweeps, FVGs |
+| `bots.py` | welcher Bot läuft |
 | `risk.py` | Positionsgröße und alle Grenzen |
 | `broker.py` | Papierkonto mit Kosten, Schnittstelle für echte Broker |
 | `engine.py` | Positionsführung — Backtest und Live teilen sich diesen Code |
@@ -157,16 +197,22 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-89 Tests. Sie decken die Indikatoren, jede einzelne Regel, die Risikogrenzen,
-die Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft,
-Stop vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die
+133 Tests. Sie decken die Indikatoren, jede einzelne Regel beider Bots, die
+Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
+Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
+vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die
 Live-Sperre ab.
+
+Beim Swing-Bot prüft ein Test ausdrücklich, dass derselbe Einstieg entsteht,
+wenn man die Daten vorher abschneidet: der Ablauf wird aus den Kerzen
+gerechnet und nicht über Aufrufe angesammelt. Nach einem Neustart handelt der
+Bot deshalb genauso wie im Backtest.
 
 ## Was dieser Bot nicht ist
 
-Er ist **kein Versprechen auf Gewinn**. Das Regelwerk ist sauber umgesetzt und
-getestet — ob es auf echten Golddaten Geld verdient, zeigt erst ein Backtest auf
-echten Kursen und danach ein langer Lauf auf dem Papierkonto. Die Zahlen aus
+Sie sind **kein Versprechen auf Gewinn**. Beide Regelwerke sind sauber umgesetzt
+und getestet — ob sie auf echten Golddaten Geld verdienen, zeigt erst ein
+Backtest auf echten Kursen und danach ein langer Lauf auf dem Papierkonto. Die Zahlen aus
 `selftest` und `--synthetic` stammen aus einem Zufallspfad und sagen über den
 Markt nichts aus.
 

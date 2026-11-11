@@ -53,6 +53,41 @@ class StrategyConfig:
 
 
 @dataclass
+class BotConfig:
+    name: str = "dauerlaeufer"        # "dauerlaeufer" oder "swing"
+
+
+@dataclass
+class SwingConfig:
+    """Das Regelwerk des Swing-Bots: 1h-Sweep, 5m-Fortsetzung, 1m-Einstieg."""
+
+    atr_period: int = 14
+    swing_lookback_h1: int = 2        # Fraktalgröße für die Stunden-Swings
+    swing_lookback_m1: int = 2        # Fraktalgröße für die Minuten-Struktur
+    continuation_window_minutes: int = 120   # Sweep → Fortsetzungskerze
+    trigger_window_minutes: int = 60         # Fortsetzung → BOS/FVG
+    entry_window_minutes: int = 60           # scharf → Einstieg
+    min_continuation_body: float = 0.5       # Körperanteil der 5m-Kerze
+    min_gap_pips: float = 3.0                # kleinere Lücken ignorieren
+    entry_fill: float = 0.5                  # 0 = nahe Kante, 1 = ferne Kante
+    allow_pullback: bool = True
+    allow_ifvg: bool = True
+    stop_source: str = "structure"           # structure | sweep | fvg
+    stop_buffer_pips: float = 5.0
+    min_stop_pips: float = 15.0
+    max_stop_pips: float = 250.0
+    target_mode: str = "r"                   # r | liquidity
+    target_r: float = 3.0
+    partial_r: float = 1.5
+    partial_fraction: float = 0.5
+    trail_atr: float = 2.0
+    max_hold_minutes: int = 480
+    session_start_hour: int = 7
+    session_end_hour: int = 20
+    friday_cutoff_hour: int = 19
+
+
+@dataclass
 class RiskConfig:
     risk_per_trade: float = 0.005     # 0,5 % des Kontos je Position
     max_positions: int = 2
@@ -82,9 +117,11 @@ class LiveConfig:
 
 @dataclass
 class Config:
+    bot: BotConfig = field(default_factory=BotConfig)
     market: MarketConfig = field(default_factory=MarketConfig)
     costs: CostConfig = field(default_factory=CostConfig)
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
+    swing: SwingConfig = field(default_factory=SwingConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     data: DataConfig = field(default_factory=DataConfig)
     live: LiveConfig = field(default_factory=LiveConfig)
@@ -111,9 +148,11 @@ class Config:
             return cls(**data)
 
         cfg = Config(
+            bot=build(BotConfig, "bot"),
             market=build(MarketConfig, "market"),
             costs=build(CostConfig, "costs"),
             strategy=build(StrategyConfig, "strategy"),
+            swing=build(SwingConfig, "swing"),
             risk=build(RiskConfig, "risk"),
             data=build(DataConfig, "data"),
             live=build(LiveConfig, "live"),
@@ -123,6 +162,10 @@ class Config:
 
     def validate(self) -> None:
         s, r, m = self.strategy, self.risk, self.market
+        if self.bot.name not in ("dauerlaeufer", "swing"):
+            raise ValueError(f"unbekannter Bot: {self.bot.name!r} "
+                             "(erlaubt: dauerlaeufer, swing)")
+        self._validate_swing()
         if m.pip <= 0:
             raise ValueError("market.pip muss größer als 0 sein")
         if s.breakout < 2:
@@ -142,6 +185,29 @@ class Config:
         if r.max_positions < 1:
             raise ValueError("risk.max_positions muss mindestens 1 sein")
 
+    def _validate_swing(self) -> None:
+        w = self.swing
+        if w.stop_source not in ("structure", "sweep", "fvg"):
+            raise ValueError("swing.stop_source muss structure, sweep oder fvg sein")
+        if w.target_mode not in ("r", "liquidity"):
+            raise ValueError("swing.target_mode muss r oder liquidity sein")
+        if not 0.0 <= w.entry_fill <= 1.0:
+            raise ValueError("swing.entry_fill muss zwischen 0 und 1 liegen")
+        if not 0.0 < w.min_continuation_body <= 1.0:
+            raise ValueError("swing.min_continuation_body muss zwischen 0 und 1 liegen")
+        if w.min_stop_pips >= w.max_stop_pips:
+            raise ValueError("swing.min_stop_pips muss kleiner als max_stop_pips sein")
+        if w.swing_lookback_h1 < 1 or w.swing_lookback_m1 < 1:
+            raise ValueError("swing: die Fraktalgröße muss mindestens 1 sein")
+        for name in ("continuation_window_minutes", "trigger_window_minutes",
+                     "entry_window_minutes", "max_hold_minutes"):
+            if getattr(w, name) < 1:
+                raise ValueError(f"swing.{name} muss mindestens 1 sein")
+        if not w.allow_pullback and not w.allow_ifvg:
+            raise ValueError("swing: mindestens eine Einstiegsart muss erlaubt sein")
+        if not 0 <= w.session_start_hour < w.session_end_hour <= 24:
+            raise ValueError("swing: die Handelszeit muss innerhalb eines Tages liegen")
+
     def to_dict(self) -> dict[str, Any]:
         return {k: asdict(v) for k, v in asdict(self).items()} if False else asdict(self)
 
@@ -152,9 +218,11 @@ class Config:
         Fingerabdruck. Wer eine Regel ändert, muss neu nachrechnen.
         """
         relevant = {
+            "bot": asdict(self.bot),
             "market": asdict(self.market),
             "costs": asdict(self.costs),
             "strategy": asdict(self.strategy),
+            "swing": asdict(self.swing),
             "risk": asdict(self.risk),
         }
         blob = json.dumps(relevant, sort_keys=True, separators=(",", ":"))

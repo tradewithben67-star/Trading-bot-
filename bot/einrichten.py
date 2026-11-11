@@ -114,6 +114,35 @@ def geheimnis_abfragen(aufforderung: str, pruefung=None) -> str:
     return gefunden if ja("   Das nehmen?", True) else ""
 
 
+def alte_einstellungen(start: Path, tiefe: int = 3) -> list[Path]:
+    """Sucht .env-Dateien aus früheren Entpackungen.
+
+    Wer eine neue Fassung herunterlädt, hat seine Zugangsdaten schon im alten
+    Ordner. Die soll er nicht noch einmal eintippen müssen.
+    """
+    gefunden: list[Path] = []
+    ordner = start.resolve()
+    for _ in range(tiefe):
+        ordner = ordner.parent
+        if ordner == ordner.parent:
+            break
+        try:
+            for treffer in ordner.glob("*/bot/.env"):
+                if treffer.resolve() != (start / ".env").resolve():
+                    gefunden.append(treffer)
+            for treffer in ordner.glob("*/*/bot/.env"):
+                if treffer.resolve() != (start / ".env").resolve():
+                    gefunden.append(treffer)
+        except OSError:
+            continue
+        if gefunden:
+            break
+    einmalig = list(dict.fromkeys(gefunden))
+    einmalig.sort(key=lambda p: p.stat().st_mtime if p.exists() else 0,
+                  reverse=True)
+    return einmalig
+
+
 def chat_aus_updates(antwort: dict) -> tuple[str, str] | None:
     """Holt Chat-Kennung und Namen aus einer getUpdates-Antwort."""
     for update in antwort.get("result") or []:
@@ -160,6 +189,36 @@ def main() -> int:
         return 1
 
     werte = lesen(ENV)
+
+    # Aus einer früheren Entpackung übernehmen, statt alles neu einzutippen.
+    if not werte.get("TELEGRAM_TOKEN"):
+        for kandidat in alte_einstellungen(HIER):
+            alt = lesen(kandidat)
+            if not alt.get("TELEGRAM_TOKEN"):
+                continue
+            print(f"\nIch habe fertige Einstellungen gefunden:")
+            print(f"   {kandidat}")
+            print(f"   Token {maskieren(alt['TELEGRAM_TOKEN'])}"
+                  + (", Chat-Kennung " + alt["TELEGRAM_CHAT_ID"]
+                     if alt.get("TELEGRAM_CHAT_ID") else "")
+                  + (", Google-Schlüssel vorhanden"
+                     if alt.get("GOOGLE_API_KEY") else "")
+                  + (", Anthropic-Schlüssel vorhanden"
+                     if alt.get("ANTHROPIC_API_KEY") else ""))
+            if ja("   Übernehmen?", True):
+                vorlage = (VORLAGE.read_text(encoding="utf-8")
+                           if VORLAGE.exists() else "")
+                ENV.write_text(zusammenfuehren(vorlage, alt), encoding="utf-8")
+                try:
+                    os.chmod(ENV, 0o600)
+                except OSError:
+                    pass
+                print(f"\nÜbernommen nach {ENV}")
+                print("Fertig. Starten mit:  python3 -m bengx_bot telegram")
+                print("(oder starten.bat doppelklicken)")
+                return 0
+            break
+
     if werte.get("TELEGRAM_TOKEN"):
         print(f"\nEs gibt schon eine .env mit einem Token "
               f"({maskieren(werte['TELEGRAM_TOKEN'])}).")

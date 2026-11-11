@@ -139,3 +139,48 @@ class TestZwischenablage(unittest.TestCase):
             self.assertEqual(einrichten.zwischenablage(), "geheim")
         finally:
             subprocess.run = echt
+
+
+class TestAlteEinstellungenFinden(unittest.TestCase):
+    """Beim Umstieg auf eine neue Fassung soll nichts neu eingetippt werden."""
+
+    def test_findet_nachbarordner(self):
+        with tempfile.TemporaryDirectory() as d:
+            wurzel = Path(d)
+            alt = wurzel / "Trading-bot--alt" / "bot"
+            neu = wurzel / "Trading-bot--neu" / "bot"
+            alt.mkdir(parents=True)
+            neu.mkdir(parents=True)
+            (alt / ".env").write_text("TELEGRAM_TOKEN=1:abc\n", encoding="utf-8")
+            gefunden = einrichten.alte_einstellungen(neu)
+            self.assertEqual([p.parent.parent.name for p in gefunden],
+                             ["Trading-bot--alt"])
+
+    def test_findet_sich_nicht_selbst(self):
+        with tempfile.TemporaryDirectory() as d:
+            hier = Path(d) / "Trading-bot-" / "bot"
+            hier.mkdir(parents=True)
+            (hier / ".env").write_text("TELEGRAM_TOKEN=1:abc\n", encoding="utf-8")
+            self.assertEqual(einrichten.alte_einstellungen(hier), [])
+
+    def test_ohne_nachbarn_leer(self):
+        with tempfile.TemporaryDirectory() as d:
+            hier = Path(d) / "nur" / "bot"
+            hier.mkdir(parents=True)
+            self.assertEqual(einrichten.alte_einstellungen(hier), [])
+
+    def test_neueste_zuerst(self):
+        import os as _os
+        import time as _time
+        with tempfile.TemporaryDirectory() as d:
+            wurzel = Path(d)
+            neu = wurzel / "c" / "bot"
+            neu.mkdir(parents=True)
+            for name, alter in (("a", 100), ("b", 0)):
+                ordner = wurzel / name / "bot"
+                ordner.mkdir(parents=True)
+                datei = ordner / ".env"
+                datei.write_text("TELEGRAM_TOKEN=1:abc\n", encoding="utf-8")
+                _os.utime(datei, (_time.time() - alter, _time.time() - alter))
+            gefunden = einrichten.alte_einstellungen(neu)
+            self.assertEqual(gefunden[0].parent.parent.name, "b")

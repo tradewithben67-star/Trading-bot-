@@ -21,7 +21,7 @@ python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 268 Tests
+python3 -m unittest discover -s tests -t .   # 272 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -355,7 +355,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-268 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+272 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

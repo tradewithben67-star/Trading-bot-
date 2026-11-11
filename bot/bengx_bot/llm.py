@@ -32,7 +32,7 @@ class LLMSettings:
     claude_key: str = ""
     gemini_key: str = ""
     claude_model: str = "claude-opus-5-5"
-    gemini_model: str = "gemini-2.5-flash"
+    gemini_model: str = ""          # leer heißt: beim Schlüssel nachfragen
     effort: str = "low"
     max_tokens: int = 1500
     websuche: bool = True
@@ -48,8 +48,7 @@ class LLMSettings:
             gemini_key=(env.get("GOOGLE_API_KEY", "").strip()
                         or env.get("GEMINI_API_KEY", "").strip()),
             claude_model=env.get("BENGX_MODEL", "").strip() or "claude-opus-5-5",
-            gemini_model=(env.get("BENGX_GEMINI_MODEL", "").strip()
-                          or "gemini-2.5-flash"),
+            gemini_model=env.get("BENGX_GEMINI_MODEL", "").strip(),
             effort=env.get("BENGX_EFFORT", "low").strip() or "low",
             max_tokens=int(env.get("BENGX_MAX_TOKENS", "1500") or 1500),
             websuche=an("BENGX_WEBSUCHE"),
@@ -187,7 +186,13 @@ class GeminiProvider:
         if self.client is None:
             from google import genai
             self.client = genai.Client(api_key=self.s.gemini_key)
-            self.modell = self.modell or self.s.gemini_model
+        if not self.modell:
+            # Modellnamen ändern sich schneller als dieser Code. Statt einen
+            # zu raten, den der Schlüssel vielleicht gar nicht darf, wird
+            # gefragt — und das kleinste genommen, das es gibt.
+            self.modell = (self.s.gemini_model
+                           or self._naechstes_modell()
+                           or "gemini-flash-lite-latest")
         return self.client
 
     def modelle(self) -> list[str]:
@@ -209,12 +214,21 @@ class GeminiProvider:
         except Exception:
             return []
 
-        def rang(name: str) -> tuple[int, int]:
-            # Erst die kleinen: die liegen am ehesten im freien Kontingent.
+        def rang(name: str) -> tuple[int, float, int]:
+            # Erst die kleinen — die haben das großzügigste Kontingent —,
+            # darunter die neueste Version zuerst.
+            art = 3
             for i, muster in enumerate(("flash-lite", "flash", "pro")):
                 if muster in name:
-                    return (i, len(name))
-            return (3, len(name))
+                    art = i
+                    break
+            version = 0.0
+            for stueck in name.replace("-", " ").split():
+                try:
+                    version = max(version, float(stueck))
+                except ValueError:
+                    continue
+            return (art, -version, len(name))
 
         return sorted(dict.fromkeys(namen), key=rang)
 

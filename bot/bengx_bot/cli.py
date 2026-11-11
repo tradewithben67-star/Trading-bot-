@@ -348,18 +348,19 @@ def cmd_pruefen(args) -> int:
             anbieter = assistent.provider
             assert isinstance(anbieter, GeminiProvider)
             anbieter._verbinden()
-            print(f"\n   Modelle, die dein Schlüssel benutzen darf:")
+            print(f"\n   Gewähltes Modell: {anbieter.modell}")
+            print(f"   Modelle, die dein Schlüssel benutzen darf:")
             namen = anbieter.modelle()
             if not namen:
                 print("     keine abrufbar — Schlüssel oder Netz prüfen")
             for name in namen[:12]:
-                marke = "  <- eingestellt" if name == llm.gemini_model else ""
+                marke = "  <- wird benutzt" if name == anbieter.modell else ""
                 print(f"     {name}{marke}")
             if len(namen) > 12:
                 print(f"     … und {len(namen) - 12} weitere")
-            if namen and llm.gemini_model not in namen:
-                print(f"\n   Achtung: {llm.gemini_model} ist nicht dabei. "
-                      "Ich nehme beim Antworten automatisch ein anderes.")
+            if llm.gemini_model and llm.gemini_model not in namen:
+                print(f"\n   Achtung: das eingestellte {llm.gemini_model} ist "
+                      "nicht dabei.")
 
         print("\n3. Eine Testfrage")
         text = assistent.answer("Antworte nur mit dem Wort: bereit",

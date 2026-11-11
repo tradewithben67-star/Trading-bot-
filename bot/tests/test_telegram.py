@@ -361,7 +361,8 @@ class TestAnbieterwahl(unittest.TestCase):
     def test_standardmodelle(self):
         s = LLMSettings.from_env({})
         self.assertEqual(s.claude_model, "claude-opus-5-5")
-        self.assertEqual(s.gemini_model, "gemini-2.5-flash")
+        self.assertEqual(s.gemini_model, "",
+                         "bei Gemini wird der Schlüssel gefragt, nicht geraten")
 
     def test_modelle_lassen_sich_setzen(self):
         s = LLMSettings.from_env({"BENGX_GEMINI_MODEL": "gemini-3-flash",
@@ -455,3 +456,45 @@ class TestWeiterbauen(unittest.TestCase):
         bot = TB(self.cfg, TelegramSettings(token="t", chat_id="1"),
                  FakeTransport(), coder=c)
         self.assertIs(bot.ai.coder, c)
+
+
+class TestModellwahl(unittest.TestCase):
+    """Ohne feste Vorgabe soll das kleinste und neueste Modell gewinnen."""
+
+    def rang(self, namen):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        g.client = object()          # verhindert einen echten Verbindungsaufbau
+        g.modelle = lambda: namen
+        g._kandidaten = []
+        return [g._naechstes_modell()]
+
+    def test_flash_lite_vor_flash_und_pro(self):
+        namen = ["gemini-3.5-pro", "gemini-3.5-flash", "gemini-3.5-flash-lite"]
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        g._kandidaten = namen
+        self.assertEqual(g._naechstes_modell(), "gemini-3.5-pro",
+                         "ohne Sortierung wird die Liste so genommen")
+
+    def test_naechstes_ueberspringt_versuchte(self):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        g._kandidaten = ["a", "b", "c"]
+        g.versucht = {"a", "b"}
+        self.assertEqual(g._naechstes_modell(), "c")
+
+    def test_nichts_mehr_uebrig(self):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x"))
+        g._kandidaten = ["a"]
+        g.versucht = {"a"}
+        self.assertEqual(g._naechstes_modell(), "")
+
+    def test_eingestelltes_modell_gewinnt(self):
+        from bengx_bot.llm import GeminiProvider, LLMSettings
+        g = GeminiProvider(LLMSettings(gemini_key="x",
+                                       gemini_model="gemini-eigenes"))
+        g.client = object()
+        g._verbinden()
+        self.assertEqual(g.modell, "gemini-eigenes")

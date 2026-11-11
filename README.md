@@ -27,6 +27,7 @@ unten rechts führt eine Weiter-Zeile zum nächsten.
 | `index.html` | Die komplette Seite: Markup, CSS und JavaScript inline |
 | `media/` | Mediendateien, u. a. das Vorstellungsvideo |
 | `signals.json` | Die Signale für die Fassung auf dem eigenen Server |
+| `bot/` | Der Dauerläufer: der Handelsbot als lauffähiges Python-Programm |
 
 ## Signale (G)
 
@@ -68,14 +69,22 @@ Drei Bots stehen zur Auswahl:
 | Bot | Arbeitsweise |
 | --- | --- |
 | Signal-Kopierer | Übernimmt jedes Signal aus **G** eins zu eins |
-| Dauerläufer | Handelt durchgängig nach Studien und den Regelwerken erfahrener Gold-Trader, jede Strategie vorher im Backtest geprüft |
+| Dauerläufer | Handelt durchgängig nach einem festen Regelwerk — **gebaut, liegt unter `bot/`** |
 | Swing | Handelt nach Bens eigenem Regelwerk, wenige Positionen, längere Haltedauer |
 
 Wer die Seite besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich die Seite: angemeldet
 im eigenen, privaten Bereich des Datenspeichers (den sonst niemand sieht, auch der
 Inhaber nicht), sonst im Browser des Besuchers.
 
-Die Bots handeln noch nicht — die Auswahl ist bisher eine Merkliste.
+Der **Dauerläufer** ist fertig gebaut und liegt als Python-Programm unter
+[`bot/`](bot/README.md): Regelwerk, Risikogrenzen, Backtest, Papierkonto,
+Protokoll und Not-Aus, dazu 89 Tests. Er schreibt `signals.json` in genau dem
+Format, das der Bereich **G** liest — die Kette vom Signal bis zur Seite ist
+damit geschlossen. Echtes Geld fasst er erst an, wenn ein Backtest über echte
+Golddaten vorliegt und ein Broker angebunden ist; beides erzwingt er selbst.
+
+Signal-Kopierer und Swing folgen. Die Auswahl auf der Seite ist bis dahin eine
+Merkliste.
 
 ## Lokal ansehen
 

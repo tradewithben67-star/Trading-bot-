@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+state/
+config.toml
+data/*.csv

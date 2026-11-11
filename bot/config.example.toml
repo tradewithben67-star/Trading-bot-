@@ -1,0 +1,61 @@
+# BENGX Dauerläufer — Beispielkonfiguration
+#
+# Kopieren als config.toml und anpassen. Jede Änderung an [market], [costs],
+# [strategy] oder [risk] ändert den Fingerabdruck des Regelwerks — danach
+# verlangt der Live-Betrieb einen neuen Backtest.
+
+[market]
+symbol = "XAU/USD"
+pip = 0.1              # bei Gold üblich: 0,10 USD je Pip
+min_size = 0.01        # kleinste handelbare Menge in Unzen
+size_step = 0.01
+max_size = 1000.0
+
+[costs]
+# Beim eigenen Broker nachsehen und ehrlich eintragen. Zu niedrige Kosten
+# machen jeden Backtest schön und jedes Konto leer.
+spread_pips = 2.0
+slippage_pips = 1.0
+commission_per_unit = 0.0
+
+[strategy]
+trend_ema = 200           # Trendfilter
+trend_slope_bars = 20     # über so viele Kerzen muss der EMA steigen
+breakout = 20             # Ausbruch über das Hoch der letzten N Kerzen
+atr_period = 14
+adx_period = 14
+adx_min = 18.0            # darunter gilt der Markt als richtungslos
+min_atr_pips = 25.0       # zu ruhig: kein Trade
+max_atr_pips = 400.0      # zu wild: kein Trade
+stop_atr = 2.0            # Stop-Abstand in ATR
+trail_atr = 2.5           # Trailing-Abstand nach dem Teilziel
+partial_r = 1.5           # Teilziel in R
+partial_fraction = 0.5    # Anteil, der dort herausgeht
+time_stop_bars = 48       # ohne Entscheidung nach N Kerzen schließen
+session_start_hour = 7    # UTC
+session_end_hour = 20     # UTC
+friday_cutoff_hour = 19   # freitags vorher glattstellen
+cooldown_bars = 12
+cooldown_after_losses = 2
+
+[risk]
+start_equity = 10000.0
+risk_per_trade = 0.005    # 0,5 Prozent je Position
+max_positions = 2
+daily_loss_limit = 0.02   # 2 Prozent Tagesverlust, dann Schluss
+drawdown_halve = 0.08     # ab 8 Prozent Rückgang halbe Größe
+drawdown_stop = 0.15      # ab 15 Prozent kein neuer Einstieg
+
+[data]
+csv = "data/xauusd_h1.csv"
+timeframe_minutes = 60
+warmup_bars = 260
+
+[live]
+enabled = false           # bewusst einschalten, sonst läuft nichts echt
+broker = "paper"          # der einzige fertige Anschluss
+poll_seconds = 60
+state_dir = "state"
+journal = "state/trades.jsonl"
+killswitch_file = "state/KILLSWITCH"
+signals_out = "../signals.json"   # relativ zu state/: die Datei der Website

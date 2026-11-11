@@ -17,7 +17,6 @@ Zugangsdaten kommen aus der Umgebung, nie aus dem Repository:
 
 from __future__ import annotations
 
-import base64
 import json
 import os
 import time
@@ -32,6 +31,7 @@ from .assistant import Assistant, AssistantSettings
 from .cli import rules_for
 from .coder import Coder, CoderSettings
 from .config import Config
+from .llm import LLMSettings
 
 API = "https://api.telegram.org"
 LIMIT = 3900          # Telegram bricht bei 4096 Zeichen ab
@@ -42,10 +42,6 @@ class TelegramSettings:
     token: str = ""
     chat_id: str = ""
     poll_timeout: int = 50
-    model: str = "claude-opus-5-5"
-    effort: str = "low"
-    max_tokens: int = 1200
-    websuche: bool = True
 
     @staticmethod
     def from_env(env: dict[str, str] | None = None) -> "TelegramSettings":
@@ -54,11 +50,6 @@ class TelegramSettings:
             token=e.get("TELEGRAM_TOKEN", "").strip(),
             chat_id=str(e.get("TELEGRAM_CHAT_ID", "")).strip(),
             poll_timeout=int(e.get("TELEGRAM_POLL_TIMEOUT", "50") or 50),
-            model=e.get("BENGX_MODEL", "claude-opus-5-5").strip() or "claude-opus-5-5",
-            effort=e.get("BENGX_EFFORT", "low").strip() or "low",
-            max_tokens=int(e.get("BENGX_MAX_TOKENS", "1200") or 1200),
-            websuche=str(e.get("BENGX_WEBSUCHE", "1")).strip().lower()
-            not in ("0", "aus", "false", "nein"),
         )
 
 
@@ -162,10 +153,7 @@ class TelegramBot:
         self.net = transport
         self.coder = coder
         self.ai = assistant or Assistant(
-            AssistantSettings(model=settings.model, effort=settings.effort,
-                              max_tokens=settings.max_tokens,
-                              websuche=settings.websuche),
-            config=config, coder=coder)
+            AssistantSettings(LLMSettings()), config=config, coder=coder)
         self.offset = 0
 
     # ---- Zugang ---------------------------------------------------------
@@ -259,7 +247,7 @@ class TelegramBot:
         return [f"Den Befehl {befehl} kenne ich nicht. /hilfe zeigt die Liste."]
 
     # ---- Bilder ----------------------------------------------------------
-    def _images(self, message: dict[str, Any]) -> list[tuple[str, str]]:
+    def _images(self, message: dict[str, Any]) -> list[tuple[str, bytes]]:
         fotos = message.get("photo") or []
         if not fotos:
             return []
@@ -275,7 +263,7 @@ class TelegramBot:
         if not daten:
             return []
         art = "image/png" if daten[:8] == b"\x89PNG\r\n\x1a\n" else "image/jpeg"
-        return [(art, base64.standard_b64encode(daten).decode("ascii"))]
+        return [(art, daten)]
 
     # ---- Betrieb ----------------------------------------------------------
     def typing(self, chat_id: str) -> None:
@@ -314,7 +302,8 @@ class TelegramBot:
 
     def run(self) -> None:
         print(f"Telegram-Bot läuft. Bot: {self.cfg.bot.name}, "
-              f"freies Schreiben: {'ja' if self.ai.ready() else 'nein'}", flush=True)
+              f"Assistent: {self.ai.anbieter if self.ai.ready() else 'aus'}",
+              flush=True)
         while True:
             try:
                 self.poll_once()

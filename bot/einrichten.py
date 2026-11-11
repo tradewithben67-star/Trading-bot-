@@ -224,24 +224,53 @@ def main() -> int:
               "eintragen — der Bot nennt sie dir beim ersten Schreiben.")
     werte["TELEGRAM_CHAT_ID"] = kennung
 
-    # 3. Anthropic
-    print("\n3. Schlüssel für freies Schreiben (optional)")
-    print("   Ohne ihn gehen nur die Befehle. Anlegen unter platform.claude.com.")
-    print("   Auch hier: Rechtsklick fügt ein.")
-    schluessel = geheimnis_abfragen(
-        "   Schlüssel einfügen oder Enter zum Überspringen: ")
-    if schluessel:
-        werte["ANTHROPIC_API_KEY"] = schluessel
-        print(f"   Übernommen ({maskieren(schluessel)}).")
+    # 3. Wer antwortet
+    print("\n3. Wer soll antworten?")
+    print("   [1] Gemini von Google — hat ein kostenloses Kontingent.")
+    print("       Schlüssel unter aistudio.google.com, ohne Kreditkarte.")
+    print("   [2] Claude von Anthropic — kostet Geld, antwortet gründlicher")
+    print("       und kann als einziger am Code weiterbauen.")
+    print("   [3] Erst mal keiner — dann gehen nur die Befehle.")
+    print()
+    print("   Hinweis zum kostenlosen Kontingent: Google behält sich vor,")
+    print("   die Inhalte zur Verbesserung seiner Dienste auszuwerten.")
+    print("   Schick also nichts durch, was niemanden angehen soll.")
+    wahl = frage("   Deine Wahl [1/2/3]", "1")
 
-    # 4. Weiterbauen
-    if schluessel:
+    schluessel = ""
+    if wahl == "1":
+        print("\n   aistudio.google.com öffnen, anmelden, Schlüssel erstellen.")
+        print("   Rechtsklick fügt ein. Oder Enter, dann hole ich ihn aus")
+        print("   der Zwischenablage.")
+        schluessel = geheimnis_abfragen("   Google-Schlüssel: ")
+        if schluessel:
+            werte["GOOGLE_API_KEY"] = schluessel
+            werte["BENGX_ANBIETER"] = "gemini"
+            print(f"   Übernommen ({maskieren(schluessel)}).")
+    elif wahl == "2":
+        print("\n   platform.claude.com öffnen, anmelden, Schlüssel erstellen.")
+        print("   Achtung: das ist nicht dein Claude-Abo, sondern getrennt")
+        print("   abgerechnet — dort muss Guthaben liegen.")
+        schluessel = geheimnis_abfragen("   Anthropic-Schlüssel: ")
+        if schluessel:
+            werte["ANTHROPIC_API_KEY"] = schluessel
+            werte["BENGX_ANBIETER"] = "claude"
+            print(f"   Übernommen ({maskieren(schluessel)}).")
+    if not schluessel:
+        print("   Übersprungen. Du kannst den Schlüssel später in .env "
+              "nachtragen.")
+
+    # 4. Weiterbauen — geht nur mit Claude
+    if wahl == "2" and schluessel:
         print("\n4. Am Code weiterbauen")
         print("   Damit startet „baue an der Website weiter“ einen Coding-Agenten,")
         print("   der hier Dateien ändert, testet und committet. Er schiebt nichts")
         print("   nach außen und hört nach 40 Schritten oder 2 Dollar auf.")
         if ja("   Einschalten?"):
             werte["BENGX_CODER"] = "1"
+    elif wahl == "1" and schluessel:
+        print("\n   (Am Code weiterbauen geht nur mit Claude. Mit Gemini")
+        print("   notiert der Assistent stattdessen eine Aufgabe.)")
 
     # 5. Schreiben
     vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
@@ -255,16 +284,19 @@ def main() -> int:
 
     # 6. Fehlende Pakete
     fehlt = []
-    for paket, zweck in (("anthropic", "freies Schreiben"),
-                         ("claude_agent_sdk", "am Code weiterbauen")):
-        if werte.get("BENGX_CODER") != "1" and paket == "claude_agent_sdk":
-            continue
-        if paket == "anthropic" and not schluessel:
-            continue
+    gebraucht = []
+    if werte.get("GOOGLE_API_KEY"):
+        gebraucht.append(("google.genai", "google-genai", "Antworten über Gemini"))
+    if werte.get("ANTHROPIC_API_KEY"):
+        gebraucht.append(("anthropic", "anthropic", "Antworten über Claude"))
+    if werte.get("BENGX_CODER") == "1":
+        gebraucht.append(("claude_agent_sdk", "claude-agent-sdk",
+                          "am Code weiterbauen"))
+    for modul, paket, zweck in gebraucht:
         try:
-            __import__(paket)
+            __import__(modul)
         except ImportError:
-            fehlt.append((paket.replace("_", "-"), zweck))
+            fehlt.append((paket, zweck))
     if fehlt:
         print("\nNoch nachzuinstallieren:")
         for paket, zweck in fehlt:

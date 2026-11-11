@@ -21,7 +21,7 @@ python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 257 Tests
+python3 -m unittest discover -s tests -t .   # 264 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -135,6 +135,23 @@ landet nur in `.env`.
 
 Von Hand geht es auch: `cp .env.example .env` und ausfüllen.
 
+**Wer antwortet — Gemini oder Claude:**
+
+| | Gemini (Google) | Claude (Anthropic) |
+| --- | --- | --- |
+| Kosten | kostenloses Kontingent | kostet, getrennt vom Claude-Abo |
+| Schlüssel | aistudio.google.com | platform.claude.com |
+| Paket | `pip install google-genai` | `pip install anthropic` |
+| Antworten, Werkzeuge, Bilder | ja | ja |
+| Websuche | ja (Google-Suche) | ja (Claudes Suche) |
+| Am Code weiterbauen | nein | ja |
+| Daten | beim kostenlosen Kontingent wertet Google die Inhalte zur Verbesserung seiner Dienste aus | nicht zum Training |
+
+Einer von beiden reicht. Es wird der genommen, für den ein Schlüssel da ist;
+sind beide da, gewinnt Claude. `BENGX_ANBIETER=gemini` erzwingt die Wahl.
+Beide bekommen dieselben Werkzeuge und dieselbe Anweisung — was der Bot
+**kann**, hängt also nicht daran, wer antwortet, nur wie gut.
+
 **Was du brauchst — drei Dinge:**
 
 1. **Einen Bot-Token.** In Telegram [@BotFather](https://t.me/BotFather) anschreiben,
@@ -143,20 +160,21 @@ Von Hand geht es auch: `cp .env.example .env` und ausfüllen.
    schreiben — er nennt dir die Kennung. Eintragen, neu starten. **Nur dieser
    Chat wird bedient**, alle anderen bekommen eine Absage. Ohne diesen Schritt
    könnte jeder, der den Bot findet, deinen Not-Aus betätigen.
-3. **Einen Anthropic-Schlüssel**, wenn er frei antworten soll →
-   `ANTHROPIC_API_KEY`. Ohne ihn laufen die Befehle trotzdem.
+3. **Einen Schlüssel für Gemini oder Claude**, wenn er frei antworten soll.
+   Ohne laufen die Befehle trotzdem. Das Einrichtungsprogramm fragt, welchen
+   du willst.
 
 `.env` steht in `.gitignore` und gehört dort auch hin. Token und Schlüssel
 niemals in den Code.
 
-Er sucht auch im Netz, wenn es um Kurse, Termine oder Nachrichten geht — das
-läuft über Claudes eingebaute Suche und über denselben Schlüssel. **Ein
-Google-Schlüssel oder ein anderer Suchdienst wird nirgends gebraucht.**
+Er sucht auch im Netz, wenn es um Kurse, Termine oder Nachrichten geht — über
+die Suche des jeweiligen Anbieters, ohne weiteren Dienst und ohne zweiten
+Schlüssel. Abschalten mit `BENGX_WEBSUCHE=0`.
 
 ### Am Code weiterbauen
 
-Schreibst du „baue an der Website weiter“ oder „repariere das“, startet auf
-derselben Maschine ein richtiger Coding-Agent ([Claude Agent
+**Nur mit Claude.** Schreibst du „baue an der Website weiter“ oder „repariere
+das“, startet auf derselben Maschine ein richtiger Coding-Agent ([Claude Agent
 SDK](https://code.claude.com/docs/en/agent-sdk)): er liest die Dateien, ändert
 sie, führt die Tests aus und committet.
 
@@ -319,7 +337,8 @@ nachrechnen, was die breiteren Spreads kosten.
 | `state.py` | Zustand über Neustarts hinweg |
 | `runner.py` | Betrieb, Not-Aus, Live-Sperre |
 | `report.py` | Lagebericht aus Protokoll, Zustand und Aufgaben |
-| `assistant.py` | der Chat-Teil über das Anthropic-SDK |
+| `assistant.py` | der Chat-Teil: Werkzeuge, Anweisung, Gesprächsfaden |
+| `llm.py` | die beiden Anbieter Gemini und Claude hinter einer Schnittstelle |
 | `telegram.py` | Telegram-Anbindung, langer Abruf, Befehle |
 | `cli.py` | Kommandozeile |
 | `einrichten.py` | Einrichtung: .env anlegen, Token prüfen, Chat-Kennung holen |
@@ -334,7 +353,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-257 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+264 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

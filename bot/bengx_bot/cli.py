@@ -252,6 +252,7 @@ def cmd_telegram(args) -> int:
 
     from .assistant import Assistant, AssistantSettings
     from .coder import Coder, CoderSettings
+    from .llm import LLMSettings
     from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
                            load_env_file)
 
@@ -271,23 +272,17 @@ def cmd_telegram(args) -> int:
             file=sys.stderr)
         return 1
 
-    schluessel = umgebung.get("ANTHROPIC_API_KEY", "")
+    llm = LLMSettings.from_env(umgebung)
     coder = Coder(CoderSettings.from_env(umgebung))
-    assistent = Assistant(
-        AssistantSettings(api_key=schluessel, model=tg.model, effort=tg.effort,
-                          max_tokens=tg.max_tokens, websuche=tg.websuche),
-        config=cfg, coder=coder)
+    assistent = Assistant(AssistantSettings(llm), config=cfg, coder=coder)
 
     if not tg.chat_id:
         print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
               "Schreiben deine Kennung und antwortet sonst nichts.", file=sys.stderr)
-    if not Assistant.sdk_available():
-        print("Das Paket anthropic fehlt — freies Schreiben ist aus, die "
-              "Befehle gehen. Nachinstallieren mit: pip install anthropic",
-              file=sys.stderr)
-    elif not schluessel and not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY ist nicht gesetzt — freies Schreiben ist aus.",
-              file=sys.stderr)
+    hindernis_ai = assistent.hindernis()
+    print("Assistent: " + (hindernis_ai or f"{assistent.anbieter} "
+          f"({llm.gemini_model if assistent.anbieter == 'Gemini' else llm.claude_model})"),
+          file=sys.stderr)
 
     hindernis = coder.status()
     print("Weiterbauen: " + (hindernis or

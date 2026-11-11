@@ -1,25 +1,25 @@
-"""Der Chat-Teil: fragt Claude über das offizielle Anthropic-SDK.
+"""Der Chat-Teil des Assistenten.
 
-Ben schreibt normal — keine Befehle. Damit das geht, bekommt Claude Werkzeuge:
-den Stand abfragen, Signale lesen, das Regelwerk zeigen, eine Aufgabe notieren
-und den Handel stoppen oder wieder erlauben. Was Ben in Worten sagt, führt
-Claude damit aus.
+Ben schreibt normal — keine Befehle. Damit das geht, bekommt das Modell
+Werkzeuge: den Stand abfragen, Signale lesen, das Regelwerk zeigen, eine
+Aufgabe notieren, den Handel stoppen und am Code weiterbauen. Was Ben in
+Worten sagt, führt das Modell damit aus.
 
-Das SDK ist die einzige Abhängigkeit des Projekts und bleibt freiwillig: fehlt
-es oder fehlt der Schlüssel, laufen die Befehle als Rückfallebene weiter.
-
-    pip install anthropic
+Wer antwortet — Gemini oder Claude — steht in `llm.py`. Die Werkzeuge hier
+sind für beide dieselben: einfache Funktionen mit deutscher Beschreibung,
+aus der sich jeder Anbieter sein eigenes Format baut.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Callable, Sequence
 
 from . import report
 from .coder import Coder
 from .config import Config
+from .llm import Bild, LLMSettings, Provider, anbieter_bauen
 
 SYSTEM = (
     "Du bist der Assistent von Ben. Ben ist 18, kommt aus Deutschland und "
@@ -33,27 +33,25 @@ SYSTEM = (
     "oder signale_lesen.\n"
     "- Fragen nach Regeln, Stops, Zielen, Filtern → regelwerk.\n"
     "- Meldet er ein Problem oder einen Wunsch → aufgabe_anlegen, und sag ihm, "
-    "dass es notiert ist. Claude Code arbeitet die Liste ab.\n"
-    "- Sagt er, der Bot soll aufhören, stoppen, Schluss machen → "
-    "handel_stoppen. Das ist jederzeit umkehrbar, also zögere nicht.\n"
+    "dass es notiert ist.\n"
+    "- Sagt er, der Bot soll aufhören oder stoppen → handel_stoppen. Das ist "
+    "jederzeit umkehrbar, also zögere nicht.\n"
     "- Soll wieder gehandelt werden → frag einmal nach, bevor du "
     "handel_erlauben benutzt.\n"
     "- Sagt er, du sollst an der Website, am Bot oder am Code weiterbauen, "
     "etwas ändern oder reparieren → am_code_bauen. Dahinter läuft ein "
-    "richtiger Coding-Agent auf Bens Rechner, der Dateien ändert, testet und "
-    "committet. Gib ihm einen vollständigen Auftrag in einem Absatz, nicht "
-    "nur Bens Stichwort. Es dauert ein paar Minuten; sag das vorher. Ist "
-    "unklar, was genau gebaut werden soll, frag einmal nach.\n\n"
+    "richtiger Coding-Agent auf Bens Rechner. Gib ihm einen vollständigen "
+    "Auftrag in einem Absatz, nicht nur Bens Stichwort. Es dauert ein paar "
+    "Minuten; sag das vorher. Ist unklar, was gebaut werden soll, frag nach.\n\n"
     "Zu jeder Nachricht steht ein Abschnitt LAGE mit den aktuellen Zahlen. "
     "Reicht er, antworte sofort daraus statt ein Werkzeug zu rufen — das "
     "spart Zeit. Reicht er nicht, ruf das Werkzeug.\n\n"
     "Erfinde nie eine Zahl und schätze nicht. Weißt du etwas nicht, sag es. "
-    "Du kannst keinen Code ändern und nichts am Regelwerk umstellen — dafür "
-    "legst du eine Aufgabe an.\n\n"
+    "Du kannst keinen Code von Hand ändern und nichts am Regelwerk "
+    "umstellen — dafür gibt es die Werkzeuge.\n\n"
     "Für alles, was draußen passiert — Kurse, Termine, Nachrichten zu Gold, "
-    "Broker-Meldungen — benutzt du die Websuche und nennst die Quelle. Für "
-    "Zahlen aus Bens eigenem Bot niemals die Websuche, dafür hast du die "
-    "Werkzeuge.\n\n"
+    "Broker-Meldungen — such im Netz und nenn die Quelle. Für Zahlen aus "
+    "Bens eigenem Bot niemals suchen, dafür hast du die Werkzeuge.\n\n"
     "Schickt Ben ein Bild, sieh es dir an und antworte darauf.\n\n"
     "Rede ihm nicht nach dem Mund. Sehen die Zahlen schlecht aus, sag es."
 )
@@ -145,104 +143,92 @@ class Werkzeuge:
         return "Not-Aus gelöst. Der Bot darf wieder handeln."
 
 
-def build_tools(w: Werkzeuge) -> list[Any]:
-    """Verpackt die Werkzeuge so, wie das SDK sie erwartet."""
-    from anthropic import beta_tool
+def werkzeug_funktionen(w: Werkzeuge) -> list[Callable[..., Any]]:
+    """Die Werkzeuge als einfache Funktionen.
 
-    @beta_tool
+    Beschreibung und Argumente stehen im Docstring — daraus bauen sowohl das
+    Anthropic- als auch das Google-SDK ihre eigenen Formate.
+    """
+
     def stand_abfragen() -> str:
         """Der aktuelle Stand des Handelsbots: Kapital, offene Positionen,
-        letzte verarbeitete Kerze, Zahlen von heute und insgesamt, ob der
-        Not-Aus gesetzt ist. Für Fragen wie „wie läuft es“ oder „wie steht es“.
+        letzte verarbeitete Kerze, Zahlen von heute und insgesamt, und ob der
+        Not-Aus gesetzt ist. Für Fragen wie "wie laeuft es" oder "wie steht es".
         """
         return w.stand()
 
-    @beta_tool
     def signale_lesen(zeitraum: str = "heute", anzahl: int = 8) -> str:
         """Die abgeschlossenen Signale mit Einstieg, Pips und Grund des
         Ausstiegs.
 
         Args:
             zeitraum: heute, woche, monat oder alles.
-            anzahl: wie viele Signale, höchstens 20.
+            anzahl: wie viele Signale, hoechstens 20.
         """
         return w.signale(zeitraum, anzahl)
 
-    @beta_tool
     def regelwerk(bot: str = "") -> str:
         """Das Regelwerk eines Bots im Klartext: Filter, Einstieg, Stop,
         Ziele, Handelszeiten und Risikogrenzen.
 
         Args:
-            bot: dauerlaeufer, swing oder kopierer. Leer heißt der Bot, der
+            bot: dauerlaeufer, swing oder kopierer. Leer heisst der Bot, der
                 gerade eingestellt ist.
         """
         return w.regeln(bot)
 
-    @beta_tool
     def aufgabe_anlegen(text: str) -> str:
-        """Notiert ein Problem oder einen Wunsch, damit Claude Code es später
-        abarbeitet. Benutze das, wenn etwas kaputt ist oder geändert werden
-        soll.
+        """Notiert ein Problem oder einen Wunsch, damit es spaeter abgearbeitet
+        wird. Benutze das, wenn etwas kaputt ist oder geaendert werden soll.
 
         Args:
             text: Was genau passiert und was erwartet wird.
         """
         return w.aufgabe(text)
 
-    @beta_tool
     def aufgaben_lesen() -> str:
         """Die offenen Aufgaben, die bisher notiert wurden."""
         return w.aufgaben()
 
-    @beta_tool
     def handel_stoppen() -> str:
-        """Setzt den Not-Aus: der Bot schließt beim nächsten Durchlauf alles
-        und eröffnet nichts Neues. Jederzeit umkehrbar.
+        """Setzt den Not-Aus: der Bot schliesst beim naechsten Durchlauf alles
+        und eroeffnet nichts Neues. Jederzeit umkehrbar.
         """
         return w.stoppen()
 
-    @beta_tool
     def handel_erlauben() -> str:
-        """Löst den Not-Aus wieder, der Bot darf danach handeln. Vorher beim
+        """Loest den Not-Aus wieder, der Bot darf danach handeln. Vorher beim
         Nutzer nachfragen.
         """
         return w.erlauben()
 
-    werkzeuge = [stand_abfragen, signale_lesen, regelwerk, aufgabe_anlegen,
-                 aufgaben_lesen, handel_stoppen, handel_erlauben]
+    funktionen: list[Callable[..., Any]] = [
+        stand_abfragen, signale_lesen, regelwerk, aufgabe_anlegen,
+        aufgaben_lesen, handel_stoppen, handel_erlauben]
 
     if w.coder is not None:
-        @beta_tool
         def am_code_bauen(auftrag: str) -> str:
-            """Lässt einen Coding-Agenten am Repository weiterbauen: Website
-            und Handelsbot. Er liest die Dateien, ändert sie, führt die Tests
+            """Laesst einen Coding-Agenten am Repository weiterbauen: Website
+            und Handelsbot. Er liest die Dateien, aendert sie, fuehrt die Tests
             aus und committet. Dauert einige Minuten.
 
             Args:
-                auftrag: Der vollständige Auftrag in einem Absatz — was gebaut
-                    oder geändert werden soll und woran man erkennt, dass es
+                auftrag: Der vollstaendige Auftrag in einem Absatz — was gebaut
+                    oder geaendert werden soll und woran man erkennt, dass es
                     fertig ist.
             """
             return w.bauen(auftrag)
 
-        werkzeuge.append(am_code_bauen)
+        funktionen.append(am_code_bauen)
 
-    return werkzeuge
+    return funktionen
 
 
 # ---- Der Assistent --------------------------------------------------------
-WEB_SEARCH = {"type": "web_search_20260209", "name": "web_search", "max_uses": 4}
-
-
 @dataclass
 class AssistantSettings:
-    api_key: str = ""
-    model: str = "claude-opus-5-5"
-    effort: str = "low"
-    max_tokens: int = 1500
+    llm: LLMSettings = field(default_factory=LLMSettings)
     history_turns: int = 12
-    websuche: bool = True      # läuft bei Anthropic, kein eigener Schlüssel nötig
 
 
 @dataclass
@@ -250,95 +236,44 @@ class Assistant:
     settings: AssistantSettings
     config: Config | None = None
     coder: Coder | None = None
-    client: Any = None
-    history: list[dict[str, Any]] = field(default_factory=list)
+    provider: Provider | None = None
+    history: list[dict[str, str]] = field(default_factory=list)
 
-    @staticmethod
-    def sdk_available() -> bool:
-        try:
-            import anthropic  # noqa: F401
-        except ImportError:
-            return False
-        return True
+    def __post_init__(self) -> None:
+        if self.provider is None:
+            self.provider = anbieter_bauen(self.settings.llm)
+
+    @property
+    def anbieter(self) -> str:
+        return self.provider.name if self.provider else "—"
+
+    def hindernis(self) -> str:
+        return self.provider.hindernis() if self.provider else "kein Anbieter"
 
     def ready(self) -> bool:
-        return self.client is not None or self._connect()
-
-    def _connect(self) -> bool:
-        if self.client is not None:
-            return True
-        try:
-            import anthropic
-        except ImportError:
-            return False
-        try:
-            self.client = (anthropic.Anthropic(api_key=self.settings.api_key)
-                           if self.settings.api_key else anthropic.Anthropic())
-        except Exception:
-            return False
-        return True
+        return self.hindernis() == ""
 
     def reset(self) -> None:
         self.history = []
 
-    # ---- Anfrage ---------------------------------------------------------
-    def answer(self, frage: str, lage: str,
-               bilder: Sequence[tuple[str, str]] = (),
+    def answer(self, frage: str, lage: str, bilder: Sequence[Bild] = (),
                melden: Any = None) -> str:
-        """`bilder` sind Paare aus Medientyp und base64-Daten."""
-        if not self.ready():
-            return ("Freies Schreiben ist nicht eingerichtet — dafür fehlt das "
-                    "Paket anthropic oder der Schlüssel ANTHROPIC_API_KEY. "
-                    "Solange gehen nur die Befehle; /hilfe zeigt sie.")
+        hindernis = self.hindernis()
+        if hindernis:
+            return (f"{hindernis}\n\nSolange gehen nur die Befehle; "
+                    "/hilfe zeigt sie.")
 
-        import anthropic
-
-        inhalt: list[dict[str, Any]] = []
-        for media_type, data in bilder:
-            inhalt.append({"type": "image", "source": {
-                "type": "base64", "media_type": media_type, "data": data}})
-        inhalt.append({"type": "text",
-                       "text": f"LAGE\n{lage}\n\nNACHRICHT\n"
-                               f"{frage or 'Schau dir das an.'}"})
-
-        nachrichten = self.history[-self.settings.history_turns:] + [
-            {"role": "user", "content": inhalt}]
-
-        werkzeuge: list[Any] = []
+        nachricht = (f"LAGE\n{lage}\n\nNACHRICHT\n"
+                     f"{frage or 'Schau dir das an.'}")
+        werkzeuge: list[Callable[..., Any]] = []
         if self.config is not None:
-            try:
-                werkzeuge = build_tools(
-                    Werkzeuge(self.config, self.coder, melden))
-            except Exception:
-                werkzeuge = []
-        if self.settings.websuche:
-            # Server-Werkzeug: läuft bei Anthropic mit, kein zweiter Schlüssel.
-            werkzeuge.append(dict(WEB_SEARCH))
+            werkzeuge = werkzeug_funktionen(
+                Werkzeuge(self.config, self.coder, melden))
 
-        try:
-            antwort = self._call(nachrichten, werkzeuge)
-        except anthropic.AuthenticationError:
-            return "Der API-Schlüssel wird nicht angenommen. Bitte prüfen."
-        except anthropic.PermissionDeniedError:
-            return "Der API-Schlüssel darf dieses Modell nicht benutzen."
-        except anthropic.NotFoundError:
-            return f"Das Modell {self.settings.model} gibt es so nicht."
-        except anthropic.RateLimitError:
-            return "Zu viele Anfragen gerade. Gleich noch einmal."
-        except anthropic.APIStatusError as exc:
-            if exc.status_code >= 500:
-                return "Bei Anthropic hakt es gerade. Gleich noch einmal."
-            return f"Anfrage abgelehnt: {exc.message}"
-        except anthropic.APIConnectionError:
-            return "Keine Verbindung zu Anthropic. Netz prüfen."
-
-        if antwort is None:
-            return "Darauf kam keine Antwort. Frag es anders."
-        if getattr(antwort, "stop_reason", None) == "refusal":
-            return "Diese Anfrage hat Claude abgelehnt. Formulier sie anders."
-
-        text = "\n".join(b.text for b in antwort.content
-                         if getattr(b, "type", None) == "text").strip()
+        text = self.provider.frage(
+            SYSTEM, self.history[-self.settings.history_turns:],
+            nachricht, list(bilder), werkzeuge) or ""
+        text = text.strip()
         if not text:
             return "Darauf kam keine Antwort. Frag es anders."
 
@@ -347,22 +282,3 @@ class Assistant:
         self.history.append({"role": "assistant", "content": text})
         self.history = self.history[-self.settings.history_turns:]
         return text
-
-    def _call(self, nachrichten: list[dict[str, Any]], werkzeuge: list[Any]):
-        gemeinsam = dict(
-            model=self.settings.model,
-            max_tokens=self.settings.max_tokens,
-            system=SYSTEM,
-            messages=nachrichten,
-            output_config={"effort": self.settings.effort},
-        )
-        if not werkzeuge:
-            return self.client.messages.create(**gemeinsam)
-
-        runner = self.client.beta.messages.tool_runner(tools=werkzeuge, **gemeinsam)
-        if hasattr(runner, "until_done"):
-            return runner.until_done()
-        letzte = None
-        for nachricht in runner:
-            letzte = nachricht
-        return letzte

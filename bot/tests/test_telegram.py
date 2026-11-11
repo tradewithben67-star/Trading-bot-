@@ -1,4 +1,3 @@
-import base64
 import tempfile
 import unittest
 from datetime import timedelta
@@ -7,6 +6,7 @@ from pathlib import Path
 from tests.helpers import START
 from bengx_bot import report
 from bengx_bot.assistant import Assistant, AssistantSettings
+from bengx_bot.llm import LLMSettings
 from bengx_bot.config import Config
 from bengx_bot.journal import Journal
 from bengx_bot.model import ExitReason, Side, Trade
@@ -20,7 +20,7 @@ class StubAI(Assistant):
     """Ein Assistent, der nicht ins Netz geht."""
 
     def __init__(self):
-        super().__init__(AssistantSettings())
+        super().__init__(AssistantSettings(LLMSettings()))
         self.gefragt = []
 
     def ready(self):
@@ -166,7 +166,7 @@ class TestFreiesSchreiben(Base):
         bilder = self.ai.gefragt[0]["bilder"]
         self.assertEqual(len(bilder), 1)
         self.assertEqual(bilder[0][0], "image/png")
-        self.assertEqual(base64.standard_b64decode(bilder[0][1]), PNG)
+        self.assertEqual(bilder[0][1], PNG, "Bilder gehen roh weiter")
         self.assertEqual(self.ai.gefragt[0]["frage"], "Was ist das?")
 
     def test_groesstes_bild_wird_genommen(self):
@@ -218,17 +218,16 @@ class TestEinstellungen(unittest.TestCase):
     def test_aus_der_umgebung(self):
         s = TelegramSettings.from_env({
             "TELEGRAM_TOKEN": " abc ", "TELEGRAM_CHAT_ID": " 42 ",
-            "BENGX_EFFORT": "medium", "BENGX_MAX_TOKENS": "500"})
+            "TELEGRAM_POLL_TIMEOUT": "20"})
         self.assertEqual(s.token, "abc")
         self.assertEqual(s.chat_id, "42")
-        self.assertEqual(s.effort, "medium")
-        self.assertEqual(s.max_tokens, 500)
+        self.assertEqual(s.poll_timeout, 20)
 
     def test_standardwerte(self):
         s = TelegramSettings.from_env({})
         self.assertEqual(s.token, "")
-        self.assertEqual(s.model, "claude-opus-5-5")
-        self.assertEqual(s.effort, "low")
+        self.assertEqual(s.chat_id, "")
+        self.assertEqual(s.poll_timeout, 50)
 
     def test_env_datei(self):
         with tempfile.TemporaryDirectory() as d:
@@ -244,13 +243,19 @@ class TestEinstellungen(unittest.TestCase):
         self.assertEqual(load_env_file("/gibt/es/nicht/.env"), {})
 
 
-class TestOhneSDK(Base):
+class TestOhneSchluessel(Base):
     def test_hinweis_statt_absturz(self):
         bot = TelegramBot(self.cfg, self.tg, self.net,
-                          Assistant(AssistantSettings()))
+                          Assistant(AssistantSettings(LLMSettings())))
         antwort = bot.handle(update("Hallo"))
-        self.assertIn("nicht eingerichtet", antwort[0])
+        self.assertIn("fehlt", antwort[0])
         self.assertIn("/hilfe", antwort[0])
+
+    def test_gemini_ohne_schluessel_nennt_das_paket(self):
+        bot = TelegramBot(self.cfg, self.tg, self.net,
+                          Assistant(AssistantSettings(
+                              LLMSettings(anbieter="gemini"))))
+        self.assertIn("google-genai", bot.handle(update("Hallo"))[0])
 
 
 if __name__ == "__main__":
@@ -329,20 +334,49 @@ class TestWerkzeuge(unittest.TestCase):
         self.assertEqual(self.w.benutzt, ["stand", "aufgaben"])
 
 
+class TestAnbieterwahl(unittest.TestCase):
+    """Gemini oder Claude — wer antwortet, hängt am vorhandenen Schlüssel."""
+
+    def test_nur_google_nimmt_gemini(self):
+        self.assertEqual(
+            LLMSettings.from_env({"GOOGLE_API_KEY": "g"}).gewaehlt(), "gemini")
+
+    def test_gemini_key_wird_auch_erkannt(self):
+        self.assertEqual(
+            LLMSettings.from_env({"GEMINI_API_KEY": "g"}).gewaehlt(), "gemini")
+
+    def test_nur_anthropic_nimmt_claude(self):
+        self.assertEqual(
+            LLMSettings.from_env({"ANTHROPIC_API_KEY": "a"}).gewaehlt(), "claude")
+
+    def test_beide_nehmen_claude(self):
+        self.assertEqual(LLMSettings.from_env(
+            {"ANTHROPIC_API_KEY": "a", "GOOGLE_API_KEY": "g"}).gewaehlt(), "claude")
+
+    def test_erzwingen_geht_vor(self):
+        self.assertEqual(LLMSettings.from_env(
+            {"BENGX_ANBIETER": "gemini", "ANTHROPIC_API_KEY": "a"}).gewaehlt(),
+            "gemini")
+
+    def test_standardmodelle(self):
+        s = LLMSettings.from_env({})
+        self.assertEqual(s.claude_model, "claude-opus-5-5")
+        self.assertEqual(s.gemini_model, "gemini-2.5-flash")
+
+    def test_modelle_lassen_sich_setzen(self):
+        s = LLMSettings.from_env({"BENGX_GEMINI_MODEL": "gemini-3-flash",
+                                  "BENGX_MAX_TOKENS": "500"})
+        self.assertEqual(s.gemini_model, "gemini-3-flash")
+        self.assertEqual(s.max_tokens, 500)
+
+
 class TestWebsuche(unittest.TestCase):
     def test_standard_ist_an(self):
-        self.assertTrue(TelegramSettings.from_env({}).websuche)
+        self.assertTrue(LLMSettings.from_env({}).websuche)
 
     def test_laesst_sich_abschalten(self):
         for wert in ("0", "aus", "false", "nein"):
-            self.assertFalse(TelegramSettings.from_env({"BENGX_WEBSUCHE": wert}).websuche)
-
-    def test_wird_an_den_assistenten_gereicht(self):
-        from bengx_bot.telegram import TelegramBot as TB
-        cfg = Config()
-        bot = TB(cfg, TelegramSettings(token="t", chat_id="1", websuche=False),
-                 FakeTransport())
-        self.assertFalse(bot.ai.settings.websuche)
+            self.assertFalse(LLMSettings.from_env({"BENGX_WEBSUCHE": wert}).websuche)
 
 
 class TestWeiterbauen(unittest.TestCase):

@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Bot-Konsole: Einstellungen fuer die drei BENGX-Bots, mit fertiger config.toml zum Kopieren.">
+<meta name="theme-color" content="#000000">
+<title>Bot-Konsole</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;500&display=swap">
+<style>
+/* Layout: Werkbank — links die Einstellungen in Gruppen, rechts mitlaufend das Regelwerk und die fertige Datei */
+:root{
+  color-scheme:dark;
+  --black:#000;
+  --ink:#0A0A0C;
+  --ink-2:#101014;
+  --fg:#DCE1E8;
+  --fg-mid:#A4ABB4;
+  --fg-dim:#7D848D;
+  --line:rgba(255,255,255,.11);
+  --line-soft:rgba(255,255,255,.06);
+  --gold:#EFC45E;
+  --gold-dim:#B08E36;
+  --gold-soft:rgba(239,196,94,.12);
+  --bad:#FF8E7E;
+  --good:#55D6A6;
+  --chrome:linear-gradient(176deg,#FFF 0%,#E6EBF1 14%,#9DA6B0 38%,#FFF 50%,#C7CED6 64%,#848C96 84%,#F0F4F8 100%);
+  --gilt:linear-gradient(176deg,#FFF6D8 0%,#F4CE70 24%,#A67F20 48%,#FFEFB6 60%,#D9AE3A 82%,#FFF8E0 100%);
+  --f-display:"Archivo","Helvetica Neue",Arial,sans-serif;
+  --f-body:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --moon-size:min(46vmin,380px);
+  --moon-top:-13vmin;
+  --moon-right:-13vmin;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+[hidden]{display:none!important}
+body{margin:0;background:var(--black);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased}
+::selection{background:rgba(239,196,94,.26);color:#fff}
+h1,h2,h3{font-family:var(--f-display);font-weight:700;letter-spacing:-.02em;margin:0;line-height:1.1}
+p{margin:0}
+:focus-visible{outline:1px solid var(--gold);outline-offset:3px}
+
+.bg{position:fixed;inset:0;z-index:-1;overflow:hidden;background:var(--black);pointer-events:none}
+.bg>*{position:absolute}
+.bg__grid{
+  inset:-2px;
+  background-image:
+    repeating-linear-gradient(0deg,rgba(255,255,255,.026) 0 1px,transparent 1px 58px),
+    repeating-linear-gradient(90deg,rgba(255,255,255,.026) 0 1px,transparent 1px 58px);
+  -webkit-mask-image:radial-gradient(120% 95% at 50% 70%,#000 20%,rgba(0,0,0,.4) 55%,transparent 80%);
+  mask-image:radial-gradient(120% 95% at 50% 70%,#000 20%,rgba(0,0,0,.4) 55%,transparent 80%);
+}
+/* Der Schein um den Mond, in zwei Lagen: kühl außen, warm am Rand */
+.bg__halo{
+  top:var(--moon-top);
+  right:var(--moon-right);
+  width:calc(var(--moon-size) * 2.9);
+  height:calc(var(--moon-size) * 2.9);
+  transform:translate(calc(var(--moon-size) * .95),calc(var(--moon-size) * -.95));
+  border-radius:50%;
+  background:
+    radial-gradient(circle,rgba(214,227,246,.11) 0%,rgba(214,227,246,.035) 28%,transparent 58%),
+    radial-gradient(circle,rgba(239,196,94,.07) 0%,transparent 42%);
+}
+/* Die Scheibe selbst: Licht von links oben, Schatten nach rechts unten */
+.bg__moon{
+  top:var(--moon-top);
+  right:var(--moon-right);
+  width:var(--moon-size);
+  height:var(--moon-size);
+  border-radius:50%;
+  opacity:.6;
+  background:
+    radial-gradient(circle at 33% 28%,
+      #FFFEF8 0%, #F2F5F9 14%, #DCE2EA 30%, #BAC3CF 48%,
+      #939DAB 66%, #69727F 82%, #434B57 93%, #2C333D 100%);
+  box-shadow:
+    inset -16px -20px 48px rgba(10,14,22,.55),
+    inset 10px 12px 40px rgba(255,255,255,.14),
+    0 0 48px 2px rgba(224,234,250,.14),
+    0 0 120px 24px rgba(239,196,94,.07);
+}
+/* Krater — weiche Senken, jeweils mit einer hellen Kante oben links */
+.bg__moon::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:50%;
+  opacity:.5;
+  background:
+    radial-gradient(circle at 58% 34%,rgba(32,38,48,.5) 0 4.5%,transparent 5.4%),
+    radial-gradient(circle at 56.4% 32.6%,rgba(255,255,255,.3) 0 3.4%,transparent 4%),
+    radial-gradient(circle at 38% 52%,rgba(32,38,48,.42) 0 7.5%,transparent 8.6%),
+    radial-gradient(circle at 36.2% 50.2%,rgba(255,255,255,.24) 0 6%,transparent 6.8%),
+    radial-gradient(circle at 68% 62%,rgba(32,38,48,.38) 0 5.5%,transparent 6.4%),
+    radial-gradient(circle at 66.4% 60.4%,rgba(255,255,255,.2) 0 4.2%,transparent 4.9%),
+    radial-gradient(circle at 26% 34%,rgba(32,38,48,.3) 0 3.2%,transparent 3.9%),
+    radial-gradient(circle at 48% 73%,rgba(32,38,48,.3) 0 4%,transparent 4.8%),
+    radial-gradient(circle at 73% 44%,rgba(32,38,48,.26) 0 2.6%,transparent 3.2%),
+    radial-gradient(circle at 44% 22%,rgba(32,38,48,.24) 0 2.2%,transparent 2.8%),
+    radial-gradient(circle at 30% 64%,rgba(32,38,48,.22) 0 2.8%,transparent 3.4%);
+}
+/* Die dunkle Seite — der Mond steht nie ganz voll da */
+.bg__moon::after{
+  content:"";
+  position:absolute;
+  inset:-1px;
+  border-radius:50%;
+  background:radial-gradient(circle at 78% 76%,rgba(0,0,0,.52) 0%,rgba(0,0,0,.2) 38%,transparent 62%);
+}
+.bg__stars{inset:0;width:100%;height:100%;opacity:.85}
+.bg__glow{border-radius:50%;filter:blur(2px)}
+.bg__glow--steel{
+  width:min(96vw,980px);aspect-ratio:1;left:-26%;bottom:-34%;
+  background:radial-gradient(circle,rgba(150,172,206,.10) 0%,rgba(150,172,206,.03) 36%,transparent 62%);
+}
+.bg__grain{
+  inset:0;opacity:.42;mix-blend-mode:soft-light;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/></filter><rect width='200' height='200' filter='url(%23n)' opacity='0.4'/></svg>");
+}
+.bg__vig{inset:0;background:radial-gradient(148% 112% at 58% 24%,transparent 24%,rgba(0,0,0,.42) 54%,rgba(0,0,0,.72) 78%,rgba(0,0,0,.94) 100%)}
+@media (prefers-reduced-motion:no-preference){
+  .bg__halo{animation:breathe 26s ease-in-out infinite alternate}
+  .bg__glow--steel{animation:driftB 58s ease-in-out infinite alternate}
+  @keyframes breathe{from{opacity:.82}to{opacity:1}}
+  @keyframes driftB{from{transform:translate3d(0,0,0) scale(1.05)}to{transform:translate3d(7%,-5%,0) scale(1)}}
+}
+
+.wrap{max-width:1280px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+
+.top{border-bottom:1px solid var(--line-soft);background:rgba(0,0,0,.72);position:sticky;top:env(safe-area-inset-top,0px);z-index:20;backdrop-filter:blur(8px)}
+.top__in{display:flex;flex-wrap:wrap;align-items:baseline;gap:10px 18px;padding-block:14px}
+.mark{font-family:var(--f-display);font-weight:800;font-size:17px;letter-spacing:.02em;background-image:var(--chrome);-webkit-background-clip:text;background-clip:text;color:transparent}
+.mark b{background-image:var(--gilt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.top h1{font-size:17px;font-weight:600;color:var(--fg-mid)}
+.top__right{margin-left:auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.who{font-family:var(--f-data);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--fg-dim)}
+
+.btn{appearance:none;display:inline-flex;align-items:center;gap:8px;font-family:var(--f-data);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;padding:9px 15px;border-radius:2px;border:1px solid rgba(239,196,94,.42);background:var(--gold-soft);color:var(--gold);cursor:pointer;text-decoration:none;transition:border-color .2s,background .2s}
+.btn:hover{border-color:var(--gold);background:rgba(239,196,94,.2)}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn--plain{border-color:var(--line);background:rgba(255,255,255,.02);color:var(--fg-mid)}
+.btn--plain:hover{border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.05);color:var(--fg)}
+
+.bots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding-block:22px}
+.botpick{appearance:none;text-align:left;cursor:pointer;background:rgba(10,10,12,.7);border:1px solid var(--line);padding:16px 18px;display:grid;gap:5px;min-width:0;transition:border-color .2s,background .2s}
+.botpick:hover{border-color:rgba(255,255,255,.26)}
+.botpick[aria-pressed="true"]{border-color:rgba(239,196,94,.55);background:linear-gradient(180deg,rgba(239,196,94,.08),transparent 60%),rgba(10,10,12,.8)}
+.botpick__n{font-family:var(--f-data);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--fg-dim)}
+.botpick[aria-pressed="true"] .botpick__n{color:var(--gold)}
+.botpick__t{font-family:var(--f-display);font-weight:700;font-size:18px;letter-spacing:-.02em;color:var(--fg)}
+.botpick[aria-pressed="true"] .botpick__t{background-image:var(--gilt);-webkit-background-clip:text;background-clip:text;color:transparent}
+.botpick__d{font-size:13px;color:var(--fg-dim);min-width:0}
+
+.cols{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:clamp(18px,2.5vw,32px);padding-bottom:60px;align-items:start}
+
+.group{border:1px solid var(--line-soft);background:rgba(10,10,12,.62);margin-bottom:14px}
+.group__head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px 14px;padding:14px 18px;border-bottom:1px solid var(--line-soft);background:rgba(0,0,0,.4)}
+.group__head h2{font-size:15px;font-weight:600;font-family:var(--f-body);letter-spacing:0}
+.group__tag{font-family:var(--f-data);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--gold)}
+.group__note{flex-basis:100%;font-size:13px;color:var(--fg-dim)}
+.fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:1px;background:var(--line-soft)}
+.field{background:rgba(10,10,12,.86);padding:14px 18px;display:grid;gap:7px;min-width:0}
+.field--wide{grid-column:1/-1}
+.field label{font-family:var(--f-data);font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--fg-dim)}
+.field__row{display:flex;align-items:center;gap:9px;min-width:0}
+.field input[type=text],.field input[type=number],.field select{width:100%;min-width:0;font-family:var(--f-data);font-size:14px;padding:9px 11px;border-radius:2px;border:1px solid var(--line);background:rgba(0,0,0,.6);color:var(--fg)}
+.field input:hover,.field select:hover{border-color:rgba(255,255,255,.26)}
+.field input[aria-invalid="true"]{border-color:var(--bad)}
+.unit{font-family:var(--f-data);font-size:11px;color:var(--fg-dim);white-space:nowrap}
+.field__help{font-size:12.5px;color:var(--fg-dim);line-height:1.5}
+.field__err{font-family:var(--f-data);font-size:11px;color:var(--bad)}
+.changed{color:var(--gold)}
+.switch{display:flex;align-items:center;gap:10px;cursor:pointer}
+.switch input{position:absolute;opacity:0;width:0;height:0}
+.track{width:38px;height:20px;border-radius:20px;border:1px solid var(--line);background:rgba(0,0,0,.6);position:relative;flex:0 0 auto;transition:background .2s,border-color .2s}
+.track::after{content:"";position:absolute;top:2px;left:2px;width:14px;height:14px;border-radius:50%;background:var(--fg-dim);transition:transform .2s,background .2s}
+.switch input:checked+.track{background:var(--gold-soft);border-color:rgba(239,196,94,.5)}
+.switch input:checked+.track::after{transform:translateX(18px);background:var(--gold)}
+.switch input:focus-visible+.track{outline:1px solid var(--gold);outline-offset:3px}
+.switch span{font-family:var(--f-data);font-size:12px;color:var(--fg-mid)}
+
+.out{position:sticky;top:calc(env(safe-area-inset-top,0px) + 86px);border:1px solid var(--line);background:rgba(10,10,12,.86);display:grid;min-width:0}
+.out__tabs{display:flex;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line-soft);align-items:center;flex-wrap:wrap}
+.tab{appearance:none;background:none;border:1px solid var(--line);color:var(--fg-dim);font-family:var(--f-data);font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:7px 13px;border-radius:2px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--gold);border-color:rgba(239,196,94,.5);background:var(--gold-soft)}
+.out__fp{margin-left:auto;font-family:var(--f-data);font-size:10px;letter-spacing:.1em;color:var(--fg-dim);white-space:nowrap}
+.out__body{padding:16px;overflow:auto;max-height:min(58vh,620px)}
+pre{margin:0;font-family:var(--f-data);font-size:12.5px;line-height:1.65;color:var(--fg-mid);white-space:pre-wrap;word-break:break-word}
+pre b{color:var(--fg);font-weight:500}
+.out__foot{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:14px 16px;border-top:1px solid var(--line-soft)}
+.state{font-family:var(--f-data);font-size:11px;color:var(--fg-dim);margin-left:auto;text-align:right}
+.state--ok{color:var(--good)}
+.state--bad{color:var(--bad)}
+
+.alarm{border:1px solid rgba(255,142,126,.45);background:rgba(255,142,126,.07);padding:13px 16px;display:grid;gap:5px;margin-bottom:14px}
+.alarm p{font-size:13.5px;color:var(--fg-mid)}
+.alarm b{font-family:var(--f-data);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--bad);font-weight:400}
+.hint{border-left:1px solid rgba(239,196,94,.45);padding-left:14px;font-family:var(--f-data);font-size:11.5px;line-height:1.7;color:var(--fg-dim);margin-bottom:18px}
+
+@media (max-width:980px){
+  .cols{grid-template-columns:minmax(0,1fr)}
+  .out{position:static;max-height:none}
+  .out__body{max-height:420px}
+}
+@media (max-width:620px){
+  :root{--moon-size:min(40vmin,220px);--moon-top:-6vmin;--moon-right:-9vmin}
+  .bots{grid-template-columns:minmax(0,1fr)}
+  .fields{grid-template-columns:minmax(0,1fr)}
+}
+</style>
+</head>
+<body>
+<div class="bg" aria-hidden="true">
+  <div class="bg__grid"></div>
+  <div class="bg__glow bg__glow--steel"></div>
+  <div class="bg__halo"></div>
+  <div class="bg__moon"></div>
+  <canvas class="bg__stars" id="stars"></canvas>
+  <div class="bg__grain"></div>
+  <div class="bg__vig"></div>
+</div>
+
+<header class="top">
+  <div class="top__in wrap">
+    <span class="mark">BEN<b>GX</b></span>
+    <h1>Bot-Konsole</h1>
+    <div class="top__right">
+      <span class="who" id="who">wird geprüft …</span>
+      <a class="btn btn--plain" id="tosite" href="https://claude.ai/artifact/MXab5BP1BYUPwmY8aB3GKD" target="_blank" rel="noopener">Zur Website</a>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="bots" id="bots" aria-label="Bot auswählen"></nav>
+
+  <div class="cols">
+    <div id="panels"></div>
+
+    <aside class="out">
+      <div class="out__tabs" role="tablist">
+        <button class="tab" type="button" role="tab" data-view="rules" aria-selected="true">Regelwerk</button>
+        <button class="tab" type="button" role="tab" data-view="toml" aria-selected="false">config.toml</button>
+        <span class="out__fp" id="fp"></span>
+      </div>
+      <div class="out__body">
+        <pre id="output"></pre>
+      </div>
+      <div class="out__foot">
+        <button class="btn" type="button" id="copy">Kopieren</button>
+        <button class="btn btn--plain" type="button" id="save">Speichern</button>
+        <button class="btn btn--plain" type="button" id="reset">Zurücksetzen</button>
+        <span class="state" id="state"></span>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- Standardwerte, wie im Bot ---------------- */
+  var DEFAULTS = {
+    bot: {name: "dauerlaeufer"},
+    market: {symbol: "XAU/USD", pip: 0.1, min_size: 0.01, size_step: 0.01, max_size: 1000},
+    costs: {spread_pips: 2, slippage_pips: 1, commission_per_unit: 0},
+    strategy: {trend_ema: 200, trend_slope_bars: 20, breakout: 20, atr_period: 14,
+      adx_period: 14, adx_min: 18, min_atr_pips: 25, max_atr_pips: 400, stop_atr: 2,
+      trail_atr: 2.5, partial_r: 1.5, partial_fraction: 0.5, time_stop_bars: 48,
+      session_start_hour: 7, session_end_hour: 20, friday_cutoff_hour: 19,
+      cooldown_bars: 12, cooldown_after_losses: 2},
+    swing: {atr_period: 14, swing_lookback_h1: 2, swing_lookback_m1: 2,
+      continuation_window_minutes: 120, trigger_window_minutes: 60,
+      entry_window_minutes: 60, min_continuation_body: 0.5, min_gap_pips: 3,
+      entry_fill: 0.5, allow_pullback: true, allow_ifvg: true,
+      stop_source: "structure", stop_buffer_pips: 5, min_stop_pips: 15,
+      max_stop_pips: 250, target_mode: "r", target_r: 3, partial_r: 1.5,
+      partial_fraction: 0.5, trail_atr: 2, max_hold_minutes: 480,
+      session_start_hour: 7, session_end_hour: 20, friday_cutoff_hour: 19},
+    copy: {source: "file", path: "../signals.json", url: "", timeout_seconds: 10,
+      entry_mode: "limit", max_slippage_pips: 30, max_age_minutes: 30,
+      follow_stop: true, follow_target: true, fallback_stop_atr: 2,
+      min_stop_pips: 10, max_stop_pips: 400, close_with_source: true,
+      partial_fraction: 0, trail_atr: 2, max_hold_bars: 480,
+      friday_cutoff_hour: 19, atr_period: 14},
+    risk: {risk_per_trade: 0.005, max_positions: 2, daily_loss_limit: 0.02,
+      drawdown_halve: 0.08, drawdown_stop: 0.15, start_equity: 10000},
+    data: {csv: "data/xauusd_h1.csv", timeframe_minutes: 60, warmup_bars: 260},
+    live: {enabled: false, broker: "paper", poll_seconds: 60, state_dir: "state",
+      journal: "state/trades.jsonl", killswitch_file: "state/KILLSWITCH",
+      signals_out: "../signals.json"}
+  };
+
+  var BOTS = [
+    {id: "dauerlaeufer", n: "01", t: "Dauerläufer",
+     d: "Trendfolge auf Stundenkerzen", section: "strategy",
+     tf: "Stundenkerzen", csv: "data/xauusd_h1.csv"},
+    {id: "swing", n: "02", t: "Swing",
+     d: "1h-Sweep, 5m-Fortsetzung, 1m-Einstieg", section: "swing",
+     tf: "Minutenkerzen", csv: "data/xauusd_m1.csv"},
+    {id: "kopierer", n: "03", t: "Signal-Kopierer",
+     d: "spiegelt Bens Signale", section: "copy",
+     tf: "beliebig", csv: "data/xauusd_h1.csv"}
+  ];
+
+  /* ---------------- Felder ---------------- */
+  function num(key, label, help, o){
+    o = o || {};
+    return {key: key, label: label, help: help, type: "number",
+            step: o.step || 1, min: o.min, max: o.max, unit: o.unit, pct: o.pct,
+            wide: o.wide};
+  }
+  function txt(key, label, help, o){
+    o = o || {};
+    return {key: key, label: label, help: help, type: "text", wide: o.wide !== false};
+  }
+  function pick(key, label, help, options){
+    return {key: key, label: label, help: help, type: "select", options: options};
+  }
+  function flag(key, label, help){
+    return {key: key, label: label, help: help, type: "bool"};
+  }
+
+  var GROUPS = {
+    strategy: [
+      {t: "Wann ein Signal entsteht", tag: "Filter",
+       note: "Alle Bedingungen müssen gleichzeitig zutreffen. Fehlt eine, passiert nichts.",
+       f: [
+        num("trend_ema", "Trend-EMA", "Kurs darüber heißt Aufwärtstrend. Länger = träger, aber zuverlässiger.", {min: 5, max: 1000}),
+        num("trend_slope_bars", "Steigung über", "Über so viele Kerzen muss der EMA steigen.", {min: 1, max: 200, unit: "Kerzen"}),
+        num("breakout", "Ausbruch über", "Schluss über dem Hoch der letzten N Kerzen löst aus.", {min: 2, max: 200, unit: "Kerzen"}),
+        num("adx_min", "ADX mindestens", "Darunter gilt der Markt als richtungslos. Niedriger = mehr Trades, mehr Fehlausbrüche.", {min: 0, max: 100, step: 0.5}),
+        num("min_atr_pips", "ATR von", "Zu ruhig lohnt den Aufwand nicht.", {min: 0, max: 5000, unit: "Pips"}),
+        num("max_atr_pips", "ATR bis", "Zu wild sprengt jeden Stop.", {min: 1, max: 20000, unit: "Pips"}),
+        num("atr_period", "ATR-Länge", "Fenster für die Volatilitätsmessung.", {min: 2, max: 200}),
+        num("adx_period", "ADX-Länge", "Fenster für die Richtungsmessung.", {min: 2, max: 200})
+       ]},
+      {t: "Nach dem Einstieg", tag: "Ausstieg", f: [
+        num("stop_atr", "Stop-Abstand", "Vielfaches des ATR. Weiter = weniger Ausstoppen, aber kleinere Position.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("partial_r", "Teilziel bei", "Dort geht ein Teil raus und der Stop wandert auf Einstand.", {min: 0.1, max: 20, step: 0.1, unit: "R"}),
+        num("partial_fraction", "Davon raus", "Anteil der Position, der am Teilziel verkauft wird.", {min: 0, max: 99, step: 1, unit: "%", pct: true}),
+        num("trail_atr", "Trailing", "Abstand des nachgezogenen Stops vom Extrem.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("time_stop_bars", "Zeitstop nach", "Ohne Entscheidung wird geschlossen.", {min: 1, max: 5000, unit: "Kerzen"})
+       ]},
+      {t: "Handelszeit", tag: "Fenster",
+       note: "Alle Zeiten in UTC. Deutsche Winterzeit ist UTC+1, Sommerzeit UTC+2.",
+       f: [
+        num("session_start_hour", "Von", "Londoner Eröffnung liegt bei 07:00 UTC.", {min: 0, max: 23, unit: "Uhr"}),
+        num("session_end_hour", "Bis", "New Yorker Nachmittag endet gegen 20:00 UTC.", {min: 1, max: 24, unit: "Uhr"}),
+        num("friday_cutoff_hour", "Freitags bis", "Danach wird glattgestellt — über das Wochenende reißen Kurslücken jeden Stop.", {min: 0, max: 24, unit: "Uhr"}),
+        num("cooldown_after_losses", "Pause nach", "So viele Verluste in Folge lösen eine Pause aus.", {min: 1, max: 20, unit: "Verlusten"}),
+        num("cooldown_bars", "Pause dauert", "So lange wird nach einer Verlustserie ausgesetzt.", {min: 1, max: 1000, unit: "Kerzen"})
+       ]}
+    ],
+    swing: [
+      {t: "Stufe 1 — Liquidität auf 1h", tag: "Sweep",
+       note: "Eine Stundenkerze sticht unter das jüngste offene Swing-Tief und schließt wieder darüber.",
+       f: [
+        num("swing_lookback_h1", "Fraktal 1h", "So viele Kerzen links und rechts müssen höher liegen, damit ein Tief als Swing gilt.", {min: 1, max: 20, unit: "Kerzen"}),
+        num("continuation_window_minutes", "Frist bis Stufe 2", "Danach ist der Sweep verfallen.", {min: 1, max: 2000, unit: "Minuten"})
+       ]},
+      {t: "Stufe 2 — Fortsetzung auf 5m", tag: "Bestätigung", f: [
+        num("min_continuation_body", "Körper mindestens", "Anteil des Kerzenkörpers an der Gesamtspanne. Höher = nur klare Kerzen zählen.", {min: 1, max: 100, unit: "%", pct: true}),
+        num("trigger_window_minutes", "Frist bis Stufe 3", "Danach beginnt alles von vorn.", {min: 1, max: 2000, unit: "Minuten"})
+       ]},
+      {t: "Stufe 3 — Struktur oder Lücke auf 1m", tag: "Scharf", f: [
+        num("swing_lookback_m1", "Fraktal 1m", "Fenster für die Minuten-Struktur, gegen die der Bruch gemessen wird.", {min: 1, max: 20, unit: "Kerzen"}),
+        num("min_gap_pips", "Lücke ab", "Kleinere Fair-Value-Gaps werden ignoriert.", {min: 0, max: 1000, step: 0.5, unit: "Pips"}),
+        num("entry_window_minutes", "Frist bis Einstieg", "Kommt der Pullback nicht, läuft das Setup aus.", {min: 1, max: 2000, unit: "Minuten"})
+       ]},
+      {t: "Stufe 4 — Einstieg", tag: "Order", f: [
+        flag("allow_pullback", "Pullback in die Lücke", "Limit-Order in die Gap, wenn der Kurs zurückkommt."),
+        flag("allow_ifvg", "Invertierte Lücke", "Einstieg, wenn der Kurs durch eine gegenläufige Lücke schließt."),
+        num("entry_fill", "Limit bei", "0 % = obere Kante der Lücke, 100 % = untere. Tiefer heißt besserer Kurs, aber öfter kein Fill.", {min: 0, max: 100, unit: "% der Gap", pct: true})
+       ]},
+      {t: "Stop und Ziel", tag: "Ausstieg", f: [
+        pick("stop_source", "Stop misst sich an", "Struktur ist der engste Stop, Sweep der weiteste.", [
+          ["structure", "Struktur seit dem Sweep"], ["sweep", "dem Sweep-Extrem"], ["fvg", "der Lücke"]]),
+        num("stop_buffer_pips", "Puffer", "Abstand unter die gewählte Marke, damit Dochte nicht ausstoppen.", {min: 0, max: 500, step: 0.5, unit: "Pips"}),
+        num("min_stop_pips", "Stop mindestens", "Engere Stops sind nur Rauschen.", {min: 0, max: 5000, step: 0.5, unit: "Pips"}),
+        num("max_stop_pips", "Stop höchstens", "Weitere Stops kosten zu viel — das Signal wird dann ausgelassen.", {min: 1, max: 20000, step: 0.5, unit: "Pips"}),
+        pick("target_mode", "Ziel", "Festes Vielfaches des Risikos oder das abgeräumte Niveau.", [
+          ["r", "Vielfaches des Risikos"], ["liquidity", "das abgeräumte Niveau"]]),
+        num("target_r", "Ziel bei", "Nur bei Ziel als Vielfaches des Risikos.", {min: 0.1, max: 50, step: 0.1, unit: "R"}),
+        num("partial_r", "Teilziel bei", "Dort geht ein Teil raus, der Stop wandert auf Einstand.", {min: 0.1, max: 50, step: 0.1, unit: "R"}),
+        num("partial_fraction", "Davon raus", "Anteil, der am Teilziel verkauft wird.", {min: 0, max: 99, unit: "%", pct: true}),
+        num("trail_atr", "Trailing", "Abstand des nachgezogenen Stops.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("max_hold_minutes", "Haltedauer", "Danach wird geschlossen, egal wo der Kurs steht.", {min: 1, max: 100000, unit: "Minuten"}),
+        num("atr_period", "ATR-Länge", "Fenster für das Trailing.", {min: 2, max: 200})
+       ]},
+      {t: "Handelszeit", tag: "Fenster", note: "Alle Zeiten in UTC.", f: [
+        num("session_start_hour", "Von", "Vorher wird nicht eingestiegen.", {min: 0, max: 23, unit: "Uhr"}),
+        num("session_end_hour", "Bis", "Danach kein neuer Einstieg mehr.", {min: 1, max: 24, unit: "Uhr"}),
+        num("friday_cutoff_hour", "Freitags bis", "Danach wird glattgestellt.", {min: 0, max: 24, unit: "Uhr"})
+       ]}
+    ],
+    copy: [
+      {t: "Woher die Signale kommen", tag: "Quelle",
+       note: "Dasselbe Format, das die Website im Bereich G liest.",
+       f: [
+        pick("source", "Quelle", "Datei auf derselben Maschine oder Adresse im Netz.", [
+          ["file", "Datei auf der Platte"], ["http", "Adresse im Netz"]]),
+        txt("path", "Pfad zur Datei", "Relativ zum Ordner bot/ oder absolut."),
+        txt("url", "Adresse", "Nur bei Quelle „Adresse im Netz“, z. B. die veröffentlichte Seite."),
+        num("timeout_seconds", "Zeitlimit", "So lange wird auf eine Antwort gewartet.", {min: 1, max: 120, unit: "Sekunden"})
+       ]},
+      {t: "Was übernommen wird", tag: "Kopie", f: [
+        flag("follow_stop", "Bens Stop übernehmen", "Aus heißt: eigener Stop aus dem ATR."),
+        flag("follow_target", "Bens Ziel übernehmen", "Aus heißt: es gilt nur der Stop."),
+        flag("close_with_source", "Mitschließen", "Schließt Ben, wird auch hier geschlossen. Der eigene Stop behält Vorrang."),
+        num("fallback_stop_atr", "Ersatz-Stop", "Wird benutzt, wenn kein Stop mitkommt.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("atr_period", "ATR-Länge", "Fenster für Ersatz-Stop und Trailing.", {min: 2, max: 200})
+       ]},
+      {t: "Wann ein Signal ausgelassen wird", tag: "Grenzen",
+       note: "Die Positionsgröße kommt immer aus dem eigenen Konto — nie aus dem Signal.",
+       f: [
+        pick("entry_mode", "Einstieg", "Limit steigt nur nahe an Bens Kurs ein, Markt steigt immer ein.", [
+          ["limit", "nur nahe an Bens Kurs"], ["market", "zum aktuellen Kurs"]]),
+        num("max_slippage_pips", "Abstand höchstens", "Weiter weg heißt: Signal auslassen statt hinterherlaufen.", {min: 0, max: 5000, step: 0.5, unit: "Pips"}),
+        num("max_age_minutes", "Alter höchstens", "Älteren Signalen wird nicht nachgelaufen.", {min: 0, max: 10000, step: 1, unit: "Minuten"}),
+        num("min_stop_pips", "Stop mindestens", "Engere Signale werden ausgelassen.", {min: 0, max: 5000, step: 0.5, unit: "Pips"}),
+        num("max_stop_pips", "Stop höchstens", "Weitere Signale werden ausgelassen.", {min: 1, max: 20000, step: 0.5, unit: "Pips"})
+       ]},
+      {t: "Eigene Ausstiege", tag: "Ausstieg", f: [
+        num("partial_fraction", "Teilverkauf", "0 % ist die reine Kopie ohne eigenen Teilverkauf.", {min: 0, max: 99, unit: "%", pct: true}),
+        num("trail_atr", "Trailing", "Greift erst nach einem Teilverkauf.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("max_hold_bars", "Haltedauer", "Notbremse, falls kein Ausstieg kommt.", {min: 1, max: 100000, unit: "Kerzen"}),
+        num("friday_cutoff_hour", "Freitags bis", "Danach wird glattgestellt.", {min: 0, max: 24, unit: "Uhr"})
+       ]}
+    ],
+    risk: [
+      {t: "Risiko und Konto", tag: "Steht über allem",
+       note: "Diese Grenzen kann keine Strategie umgehen. Sie gelten für jeden Bot.",
+       f: [
+        num("start_equity", "Startkapital", "Grundlage für jede Positionsgröße.", {min: 1, max: 100000000, step: 100, unit: "€"}),
+        num("risk_per_trade", "Risiko je Trade", "Anteil des Kontos, der an einem Stop verloren geht. Über 2 % ist für die meisten zu viel.", {min: 0.01, max: 5, step: 0.05, unit: "%", pct: true}),
+        num("max_positions", "Positionen", "Wie viele Trades gleichzeitig offen sein dürfen.", {min: 1, max: 50}),
+        num("daily_loss_limit", "Tagesverlust-Limit", "Ist es erreicht, wird bis zum nächsten Tag nichts Neues eröffnet.", {min: 0.1, max: 50, step: 0.1, unit: "%", pct: true}),
+        num("drawdown_halve", "Halbe Größe ab", "Ab diesem Rückgang vom Hoch wird die Positionsgröße halbiert.", {min: 0.1, max: 90, step: 0.5, unit: "%", pct: true}),
+        num("drawdown_stop", "Kein Einstieg ab", "Ab diesem Rückgang wird gar nichts mehr eröffnet.", {min: 0.2, max: 95, step: 0.5, unit: "%", pct: true})
+       ]}
+    ],
+    market: [
+      {t: "Markt und Kosten", tag: "Broker",
+       note: "Beim eigenen Broker nachsehen und ehrlich eintragen. Zu niedrige Kosten machen jeden Backtest schön und jedes Konto leer.",
+       f: [
+        txt("symbol", "Symbol", "Nur zur Beschriftung."),
+        num("pip", "Ein Pip entspricht", "Bei Gold üblich: 0,10 USD.", {min: 0.0001, max: 100, step: 0.01}),
+        num("min_size", "Kleinste Menge", "Was der Broker als Minimum zulässt.", {min: 0.0001, max: 1000, step: 0.01, unit: "Unzen"}),
+        num("size_step", "Schrittweite", "In diesen Schritten wird gerundet.", {min: 0.0001, max: 1000, step: 0.01, unit: "Unzen"}),
+        num("max_size", "Größte Menge", "Obergrenze für eine Position.", {min: 0.01, max: 1000000, step: 1, unit: "Unzen"})
+       ]}
+    ],
+    costs: [
+      {t: "Spread, Slippage, Kommission", tag: "Kosten", f: [
+        num("spread_pips", "Spread", "Differenz zwischen Kauf- und Verkaufskurs.", {min: 0, max: 1000, step: 0.1, unit: "Pips"}),
+        num("slippage_pips", "Slippage", "Was zusätzlich gegen einen läuft.", {min: 0, max: 1000, step: 0.1, unit: "Pips"}),
+        num("commission_per_unit", "Kommission", "Je gehandelter Unze, pro Seite.", {min: 0, max: 1000, step: 0.1, unit: "€"})
+       ]}
+    ],
+    data: [
+      {t: "Kursdaten", tag: "Eingang", f: [
+        txt("csv", "Datei", "CSV mit Zeit, Open, High, Low, Close."),
+        num("warmup_bars", "Vorlauf", "So viele Kerzen dienen nur der Indikatorberechnung.", {min: 1, max: 100000, unit: "Kerzen"}),
+        num("timeframe_minutes", "Zeitrahmen", "Nur zur Beschriftung; der Bot liest, was in der Datei steht.", {min: 1, max: 10080, unit: "Minuten"})
+       ]}
+    ],
+    live: [
+      {t: "Betrieb", tag: "Laufzeit",
+       note: "Echtes Geld bleibt gesperrt, bis ein Backtest zum Fingerabdruck vorliegt und ein Broker angebunden ist.",
+       f: [
+        flag("enabled", "Live freigeben", "Muss bewusst eingeschaltet werden. Ohne Broker-Anschluss passiert trotzdem nichts."),
+        txt("broker", "Broker", "„paper“ ist der einzige fertige Anschluss."),
+        num("poll_seconds", "Takt", "Abstand zwischen zwei Durchläufen im Dauerbetrieb.", {min: 1, max: 86400, unit: "Sekunden"}),
+        txt("state_dir", "Zustandsordner", "Hier liegen Zustand, Protokoll und Not-Aus."),
+        txt("journal", "Protokoll", "Jeder abgeschlossene Trade als eine Zeile."),
+        txt("killswitch_file", "Not-Aus", "Existiert diese Datei, wird alles geschlossen."),
+        txt("signals_out", "Signale schreiben nach", "Diese Datei liest die Website im Bereich G.")
+       ]}
+    ]
+  };
+
+  /* ---------------- Zustand ---------------- */
+  var KEY = "bengx.konsole";
+  var values = clone(DEFAULTS);
+  var view = "rules";
+  var errors = {};
+  var canWrite = false;
+  var dbRef = null;
+
+  function clone(o){ return JSON.parse(JSON.stringify(o)); }
+  function get(sec, key){ return values[sec][key]; }
+  function isDefault(sec, key){ return values[sec][key] === DEFAULTS[sec][key]; }
+  function current(){ return BOTS.filter(function(b){ return b.id === values.bot.name; })[0]; }
+
+  function de(n, digits){
+    if (typeof n !== "number" || !isFinite(n)) return String(n);
+    return n.toLocaleString("de-DE", {maximumFractionDigits: digits === undefined ? 4 : digits});
+  }
+  function toml(n){
+    if (typeof n === "boolean") return n ? "true" : "false";
+    if (typeof n === "number") return Number.isInteger(n) ? String(n) : String(n);
+    return '"' + String(n).replace(/"/g, '\\"') + '"';
+  }
+
+  /* ---------------- Prüfung, wie im Bot ---------------- */
+  function validate(){
+    var e = {}, m = values.market, r = values.risk, s = values.strategy,
+        w = values.swing, c = values.copy, bot = values.bot.name;
+
+    function bad(sec, key, text){ e[sec + "." + key] = text; }
+
+    if (!(m.pip > 0)) bad("market", "pip", "muss größer als 0 sein");
+    if (!(r.risk_per_trade > 0 && r.risk_per_trade <= 0.05))
+      bad("risk", "risk_per_trade", "muss zwischen 0 und 5 % liegen");
+    if (!(r.daily_loss_limit > 0 && r.daily_loss_limit <= 0.5))
+      bad("risk", "daily_loss_limit", "muss zwischen 0 und 50 % liegen");
+    if (!(r.drawdown_halve < r.drawdown_stop))
+      bad("risk", "drawdown_halve", "muss kleiner sein als „Kein Einstieg ab“");
+    if (r.max_positions < 1) bad("risk", "max_positions", "mindestens 1");
+
+    if (s.breakout < 2) bad("strategy", "breakout", "mindestens 2");
+    if (!(s.stop_atr > 0)) bad("strategy", "stop_atr", "muss größer als 0 sein");
+    if (!(s.trail_atr > 0)) bad("strategy", "trail_atr", "muss größer als 0 sein");
+    if (!(s.partial_fraction >= 0 && s.partial_fraction < 1))
+      bad("strategy", "partial_fraction", "muss unter 100 % liegen");
+    if (!(s.session_start_hour >= 0 && s.session_start_hour < s.session_end_hour
+          && s.session_end_hour <= 24))
+      bad("strategy", "session_end_hour", "„Bis“ muss nach „Von“ liegen");
+    if (s.min_atr_pips >= s.max_atr_pips)
+      bad("strategy", "max_atr_pips", "muss über dem Mindestwert liegen");
+
+    if (["structure", "sweep", "fvg"].indexOf(w.stop_source) < 0)
+      bad("swing", "stop_source", "unbekannt");
+    if (["r", "liquidity"].indexOf(w.target_mode) < 0)
+      bad("swing", "target_mode", "unbekannt");
+    if (!(w.entry_fill >= 0 && w.entry_fill <= 1))
+      bad("swing", "entry_fill", "zwischen 0 und 100 %");
+    if (!(w.min_continuation_body > 0 && w.min_continuation_body <= 1))
+      bad("swing", "min_continuation_body", "zwischen 0 und 100 %");
+    if (w.min_stop_pips >= w.max_stop_pips)
+      bad("swing", "max_stop_pips", "muss über dem Mindestwert liegen");
+    if (!w.allow_pullback && !w.allow_ifvg)
+      bad("swing", "allow_ifvg", "mindestens eine Einstiegsart muss an sein");
+    if (!(w.session_start_hour >= 0 && w.session_start_hour < w.session_end_hour
+          && w.session_end_hour <= 24))
+      bad("swing", "session_end_hour", "„Bis“ muss nach „Von“ liegen");
+    if (!(w.partial_fraction >= 0 && w.partial_fraction < 1))
+      bad("swing", "partial_fraction", "muss unter 100 % liegen");
+
+    if (["file", "http"].indexOf(c.source) < 0) bad("copy", "source", "unbekannt");
+    if (["limit", "market"].indexOf(c.entry_mode) < 0) bad("copy", "entry_mode", "unbekannt");
+    if (c.min_stop_pips >= c.max_stop_pips)
+      bad("copy", "max_stop_pips", "muss über dem Mindestwert liegen");
+    if (!(c.partial_fraction >= 0 && c.partial_fraction < 1))
+      bad("copy", "partial_fraction", "muss unter 100 % liegen");
+    if (c.max_age_minutes < 0 || c.max_slippage_pips < 0)
+      bad("copy", "max_age_minutes", "darf nicht negativ sein");
+    if (c.max_hold_bars < 1) bad("copy", "max_hold_bars", "mindestens 1");
+    if (bot === "kopierer" && c.source === "http" && !String(c.url).trim())
+      bad("copy", "url", "wird bei Quelle „Adresse im Netz“ gebraucht");
+
+    errors = e;
+    return e;
+  }
+
+  function relevant(){
+    var b = current();
+    var keys = ["market", "costs", b.section, "risk", "data", "live"];
+    var out = [];
+    for (var k in errors){
+      var sec = k.split(".")[0];
+      if (keys.indexOf(sec) >= 0) out.push(errors[k]);
+    }
+    return out;
+  }
+
+  /* ---------------- Fingerabdruck ---------------- */
+  function fingerprint(){
+    var b = current();
+    var parts = ["bot", "market", "costs", "strategy", "swing", "copy", "risk"];
+    var s = "";
+    parts.forEach(function(sec){
+      Object.keys(values[sec]).sort().forEach(function(k){
+        s += sec + "." + k + "=" + values[sec][k] + ";";
+      });
+    });
+    var h1 = 0x811c9dc5, h2 = 0x01000193;
+    for (var i = 0; i < s.length; i++){
+      h1 = (h1 ^ s.charCodeAt(i)) >>> 0;
+      h1 = Math.imul(h1, 16777619) >>> 0;
+      h2 = (h2 + Math.imul(s.charCodeAt(i) + i, 2654435761)) >>> 0;
+    }
+    return ("00000000" + h1.toString(16)).slice(-8) + ("00000000" + h2.toString(16)).slice(-8);
+  }
+
+  /* ---------------- Ausgaben ---------------- */
+  function pct(v, d){ return de(v * 100, d === undefined ? 2 : d) + " %"; }
+
+  function rulesText(){
+    var b = current(), r = values.risk;
+    var head = b.t + "\n" + "─".repeat(b.t.length) + "\n\n";
+    var risk = "\nRisiko — steht über der Strategie\n" +
+      "  je Trade      " + pct(r.risk_per_trade) + " des Kontos (bei " + de(r.start_equity, 0) + " € sind das " +
+        de(r.start_equity * r.risk_per_trade, 2) + " €)\n" +
+      "  Positionen    höchstens " + r.max_positions + " gleichzeitig\n" +
+      "  Tagesverlust  Schluss ab " + pct(r.daily_loss_limit, 1) + "\n" +
+      "  Drawdown      ab " + pct(r.drawdown_halve, 1) + " halbe Größe, ab " + pct(r.drawdown_stop, 1) + " kein Einstieg\n" +
+      "  Not-Aus       Datei " + values.live.killswitch_file + " anlegen\n";
+
+    if (b.id === "dauerlaeufer"){
+      var s = values.strategy;
+      return head +
+      "Ein Signal entsteht nur, wenn alles zugleich zutrifft:\n" +
+      "  Trend         Kurs über EMA(" + s.trend_ema + "), der über " + s.trend_slope_bars + " Kerzen steigt\n" +
+      "  Stärke        ADX(" + s.adx_period + ") mindestens " + de(s.adx_min) + "\n" +
+      "  Volatilität   ATR(" + s.atr_period + ") zwischen " + de(s.min_atr_pips) + " und " + de(s.max_atr_pips) + " Pips\n" +
+      "  Handelszeit   " + pad(s.session_start_hour) + ":00 bis " + pad(s.session_end_hour) + ":00 UTC, freitags bis " + pad(s.friday_cutoff_hour) + ":00\n" +
+      "  Ausbruch      Schluss über dem Hoch der letzten " + s.breakout + " Kerzen\n" +
+      "\nNach dem Einstieg:\n" +
+      "  Stop          " + de(s.stop_atr) + " × ATR vom Einstieg\n" +
+      "  Teilziel      " + de(s.partial_r) + " R, dort " + pct(s.partial_fraction, 0) + " raus, Rest auf Einstand\n" +
+      "  Trailing      " + de(s.trail_atr) + " × ATR, nur enger\n" +
+      "  Zeitstop      nach " + s.time_stop_bars + " Kerzen\n" +
+      "  Pause         " + s.cooldown_bars + " Kerzen nach " + s.cooldown_after_losses + " Verlusten in Folge\n" + risk;
+    }
+    if (b.id === "swing"){
+      var w = values.swing;
+      var ein = [];
+      if (w.allow_pullback) ein.push("Pullback in die Lücke, Limit bei " + pct(w.entry_fill, 0) + " der Gap");
+      if (w.allow_ifvg) ein.push("Schluss durch eine gegenläufige Lücke (IFVG)");
+      return head +
+      "Vier Stufen, jede mit einer Frist:\n\n" +
+      "  1h  Eine Stundenkerze sticht unter das jüngste offene Swing-Tief\n" +
+      "      (Fraktal " + w.swing_lookback_h1 + ") und schließt wieder darüber.\n" +
+      "      → " + w.continuation_window_minutes + " Minuten Zeit für:\n\n" +
+      "  5m  Fortsetzungskerze, Körper mindestens " + pct(w.min_continuation_body, 0) + " der Spanne.\n" +
+      "      → " + w.trigger_window_minutes + " Minuten Zeit für:\n\n" +
+      "  1m  Bruch der Struktur (Fraktal " + w.swing_lookback_m1 + ") oder eine Lücke ab " + de(w.min_gap_pips) + " Pips.\n" +
+      "      → " + w.entry_window_minutes + " Minuten Zeit für:\n\n" +
+      "  1m  Einstieg:\n      " + ein.join("\n      ") + "\n" +
+      "\nLäuft eine Frist ab oder kommt ein neuer Sweep, beginnt alles von vorn.\n" +
+      "\nNach dem Einstieg:\n" +
+      "  Stop          " + stopWord(w.stop_source) + " + " + de(w.stop_buffer_pips) + " Pips,\n" +
+      "                erlaubt zwischen " + de(w.min_stop_pips) + " und " + de(w.max_stop_pips) + " Pips\n" +
+      "  Teilziel      " + de(w.partial_r) + " R, dort " + pct(w.partial_fraction, 0) + " raus\n" +
+      "  Endziel       " + (w.target_mode === "liquidity" ? "das abgeräumte Niveau" : de(w.target_r) + " R") + "\n" +
+      "  Trailing      " + de(w.trail_atr) + " × ATR, nur enger\n" +
+      "  Haltedauer    höchstens " + w.max_hold_minutes + " Minuten\n" +
+      "  Handelszeit   " + pad(w.session_start_hour) + ":00 bis " + pad(w.session_end_hour) + ":00 UTC, freitags bis " + pad(w.friday_cutoff_hour) + ":00\n" +
+      "\nBraucht Minutenkerzen. 5m und 1h rechnet er selbst daraus.\n" + risk;
+    }
+    var c = values.copy;
+    return head +
+    "Er denkt sich nichts aus. Er liest Signale und spiegelt sie.\n\n" +
+    "  Quelle        " + (c.source === "http" ? ("Adresse: " + (c.url || "— noch keine eingetragen —")) : ("Datei: " + c.path)) + "\n" +
+    "\nÜbernommen wird:\n" +
+    "  Richtung      eins zu eins\n" +
+    "  Stop          " + (c.follow_stop ? "Bens Stop" : "eigener, " + de(c.fallback_stop_atr) + " × ATR") + "\n" +
+    "  Ziel          " + (c.follow_target ? "Bens Ziel" : "keins, es gilt nur der Stop") + "\n" +
+    "  Ausstieg      " + (c.close_with_source ? "mitschließen, sobald Ben schließt" : "nur eigener Stop und eigenes Ziel") + "\n" +
+    "\nNicht übernommen wird:\n" +
+    "  Größe         aus dem eigenen Konto, " + pct(values.risk.risk_per_trade) + " Risiko je Trade\n" +
+    "  Nachlaufen    " + (c.entry_mode === "limit"
+        ? "nur innerhalb von " + de(c.max_slippage_pips) + " Pips um Bens Kurs"
+        : "Einstieg zum aktuellen Kurs") + "\n" +
+    "\nAusgelassen wird ein Signal, wenn es älter als " + de(c.max_age_minutes) + " Minuten ist,\n" +
+    "der Kurs zu weit weg ist, es schon geschlossen war, der Stop-Abstand\n" +
+    "außerhalb von " + de(c.min_stop_pips) + " bis " + de(c.max_stop_pips) + " Pips liegt oder der Stop auf der\n" +
+    "falschen Seite des eigenen Einstiegs läge.\n" + risk;
+  }
+
+  function pad(n){ return (n < 10 ? "0" : "") + n; }
+  function stopWord(s){
+    return s === "sweep" ? "unter dem Sweep-Extrem"
+         : s === "fvg" ? "an der Lücke"
+         : "unter der Struktur seit dem Sweep";
+  }
+
+  function tomlText(){
+    var b = current();
+    var out = ["# BENGX — " + b.t,
+               "# erzeugt in der Bot-Konsole",
+               "# Diese Datei als bot/config.toml ablegen.",
+               ""];
+    function section(name, keys, head){
+      out.push("[" + name + "]");
+      if (head) out.push("# " + head);
+      keys.forEach(function(k){
+        var mark = isDefault(name, k) ? "" : "   # geändert";
+        out.push(k + " = " + toml(values[name][k]) + mark);
+      });
+      out.push("");
+    }
+    section("bot", ["name"]);
+    section("market", Object.keys(DEFAULTS.market));
+    section("costs", Object.keys(DEFAULTS.costs), "Beim eigenen Broker nachsehen.");
+    section(b.section, Object.keys(DEFAULTS[b.section]));
+    section("risk", Object.keys(DEFAULTS.risk));
+    section("data", Object.keys(DEFAULTS.data));
+    section("live", Object.keys(DEFAULTS.live));
+    return out.join("\n");
+  }
+
+  /* ---------------- Oberfläche ---------------- */
+  function el(t, c, x){
+    var e = document.createElement(t);
+    if (c) e.className = c;
+    if (x != null) e.textContent = x;
+    return e;
+  }
+
+  function renderBots(){
+    var host = document.getElementById("bots");
+    host.textContent = "";
+    BOTS.forEach(function(b){
+      var btn = el("button", "botpick");
+      btn.type = "button";
+      btn.setAttribute("aria-pressed", b.id === values.bot.name ? "true" : "false");
+      btn.appendChild(el("span", "botpick__n", b.n));
+      btn.appendChild(el("span", "botpick__t", b.t));
+      btn.appendChild(el("span", "botpick__d", b.d));
+      btn.addEventListener("click", function(){
+        values.bot.name = b.id;
+        if (values.data.csv === DEFAULTS.data.csv ||
+            BOTS.some(function(x){ return x.csv === values.data.csv; })){
+          values.data.csv = b.csv;
+        }
+        render();
+        persistLocal();
+      });
+      host.appendChild(btn);
+    });
+  }
+
+  function fieldNode(sec, f){
+    var wrap = el("div", "field" + (f.wide || f.type === "text" ? " field--wide" : ""));
+    var id = "f-" + sec + "-" + f.key;
+    var label = el("label", null, f.label);
+    label.setAttribute("for", id);
+    if (!isDefault(sec, f.key)) label.appendChild(el("span", "changed", " ·"));
+    wrap.appendChild(label);
+
+    var row = el("div", "field__row");
+    var input;
+
+    if (f.type === "bool"){
+      var sw = el("label", "switch");
+      input = document.createElement("input");
+      input.type = "checkbox";
+      input.id = id;
+      input.checked = !!get(sec, f.key);
+      var track = el("span", "track");
+      sw.appendChild(input);
+      sw.appendChild(track);
+      sw.appendChild(el("span", null, input.checked ? "an" : "aus"));
+      input.addEventListener("change", function(){
+        values[sec][f.key] = input.checked;
+        render();
+        persistLocal();
+      });
+      row.appendChild(sw);
+    } else if (f.type === "select"){
+      input = document.createElement("select");
+      input.id = id;
+      f.options.forEach(function(o){
+        var op = el("option", null, o[1]);
+        op.value = o[0];
+        if (o[0] === get(sec, f.key)) op.selected = true;
+        input.appendChild(op);
+      });
+      input.addEventListener("change", function(){
+        values[sec][f.key] = input.value;
+        render();
+        persistLocal();
+      });
+      row.appendChild(input);
+    } else {
+      input = document.createElement("input");
+      input.id = id;
+      if (f.type === "number"){
+        input.type = "number";
+        input.step = f.step;
+        if (f.min !== undefined) input.min = f.min;
+        if (f.max !== undefined) input.max = f.max;
+        var v = get(sec, f.key);
+        input.value = f.pct ? round(v * 100, 4) : v;
+      } else {
+        input.type = "text";
+        input.value = get(sec, f.key);
+      }
+      input.addEventListener("input", function(){
+        if (f.type === "number"){
+          var n = parseFloat(input.value.replace(",", "."));
+          if (!isFinite(n)) return;
+          values[sec][f.key] = f.pct ? round(n / 100, 8) : n;
+        } else {
+          values[sec][f.key] = input.value;
+        }
+        refreshOutput();
+        persistLocal();
+      });
+      input.addEventListener("change", function(){ render(); });
+      row.appendChild(input);
+      if (f.unit) row.appendChild(el("span", "unit", f.unit));
+    }
+
+    wrap.appendChild(row);
+    if (f.help) wrap.appendChild(el("p", "field__help", f.help));
+    var err = errors[sec + "." + f.key];
+    if (err){
+      wrap.appendChild(el("p", "field__err", err));
+      if (input && input.setAttribute) input.setAttribute("aria-invalid", "true");
+    }
+    return wrap;
+  }
+
+  function round(n, d){
+    var f = Math.pow(10, d);
+    return Math.round(n * f) / f;
+  }
+
+  function renderPanels(){
+    var host = document.getElementById("panels");
+    host.textContent = "";
+    var b = current();
+
+    var hint = el("p", "hint",
+      "Die Konsole schreibt nichts auf deinen Rechner. Sie baut die fertige " +
+      "config.toml — kopieren und als bot/config.toml ablegen. Ändert sich eine " +
+      "Regel, ändert sich der Fingerabdruck, und der Bot verlangt vor dem " +
+      "Live-Betrieb einen neuen Backtest.");
+    host.appendChild(hint);
+
+    var problems = relevant();
+    if (problems.length){
+      var box = el("div", "alarm");
+      box.appendChild(el("b", null, problems.length === 1 ? "Ein Wert passt nicht" : problems.length + " Werte passen nicht"));
+      problems.forEach(function(p){ box.appendChild(el("p", null, p)); });
+      host.appendChild(box);
+    }
+
+    var order = [[b.section, GROUPS[b.section]], ["risk", GROUPS.risk],
+                 ["market", GROUPS.market], ["costs", GROUPS.costs],
+                 ["data", GROUPS.data], ["live", GROUPS.live]];
+    order.forEach(function(pair){
+      var sec = pair[0];
+      pair[1].forEach(function(g){
+        var node = el("section", "group");
+        var head = el("div", "group__head");
+        head.appendChild(el("h2", null, g.t));
+        head.appendChild(el("span", "group__tag", g.tag));
+        if (g.note) head.appendChild(el("p", "group__note", g.note));
+        node.appendChild(head);
+        var fields = el("div", "fields");
+        g.f.forEach(function(f){ fields.appendChild(fieldNode(sec, f)); });
+        node.appendChild(fields);
+        host.appendChild(node);
+      });
+    });
+  }
+
+  function refreshOutput(){
+    validate();
+    document.getElementById("output").textContent =
+      view === "toml" ? tomlText() : rulesText();
+    document.getElementById("fp").textContent = "Fingerabdruck " + fingerprint().slice(0, 16);
+  }
+
+  function render(){
+    validate();
+    renderBots();
+    renderPanels();
+    refreshOutput();
+    Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
+      t.setAttribute("aria-selected", t.getAttribute("data-view") === view ? "true" : "false");
+    });
+    document.getElementById("save").disabled = !canWrite;
+  }
+
+  function status(text, kind){
+    var n = document.getElementById("state");
+    n.textContent = text;
+    n.className = "state" + (kind ? " state--" + kind : "");
+  }
+
+  /* ---------------- Speichern ---------------- */
+  function persistLocal(){
+    try { window.localStorage.setItem(KEY, JSON.stringify(values)); } catch (e) {}
+  }
+  function restoreLocal(){
+    try {
+      var raw = window.localStorage.getItem(KEY);
+      if (raw) merge(JSON.parse(raw));
+    } catch (e) {}
+  }
+  function merge(incoming){
+    if (!incoming || typeof incoming !== "object") return;
+    Object.keys(DEFAULTS).forEach(function(sec){
+      if (!incoming[sec] || typeof incoming[sec] !== "object") return;
+      Object.keys(DEFAULTS[sec]).forEach(function(k){
+        var v = incoming[sec][k];
+        if (typeof v === typeof DEFAULTS[sec][k]) values[sec][k] = v;
+      });
+    });
+    if (!BOTS.some(function(b){ return b.id === values.bot.name; })){
+      values.bot.name = DEFAULTS.bot.name;
+    }
+  }
+
+  document.getElementById("reset").addEventListener("click", function(){
+    var b = values.bot.name;
+    values = clone(DEFAULTS);
+    values.bot.name = b;
+    render();
+    persistLocal();
+    status("auf Standard zurückgesetzt");
+  });
+
+  document.getElementById("copy").addEventListener("click", function(){
+    var text = view === "toml" ? tomlText() : rulesText();
+    var btn = document.getElementById("copy");
+    function back(word){
+      btn.textContent = word;
+      setTimeout(function(){ btn.textContent = "Kopieren"; }, 1600);
+    }
+    function mark(){
+      var r = document.createRange();
+      r.selectNodeContents(document.getElementById("output"));
+      var s = window.getSelection();
+      s.removeAllRanges();
+      s.addRange(r);
+      back("Markiert");
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){ back("Kopiert"); }, mark);
+    } else { mark(); }
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll(".tab"), function(t){
+    t.addEventListener("click", function(){
+      view = t.getAttribute("data-view");
+      render();
+    });
+  });
+
+  document.getElementById("save").addEventListener("click", function(){
+    if (!dbRef){ status("kein Speicher verfügbar", "bad"); return; }
+    status("wird gespeichert …");
+    dbRef.set({values: values, updatedAt: new Date().toISOString()}).then(function(){
+      status("gespeichert", "ok");
+    }, function(e){
+      status("nicht gespeichert (" + (e && e.code || "Fehler") + ")", "bad");
+    });
+  });
+
+  restoreLocal();
+  render();
+  status("");
+
+  /* ---- Sterne ---- */
+  (function(){
+    var cv = document.getElementById("stars");
+    if (!cv || !cv.getContext) return;
+    var ctx = cv.getContext("2d");
+    var calm = window.matchMedia &&
+               window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var stars = [], w = 0, h = 0, raf = 0, tm = 0;
+
+    function seed(){
+      var n = Math.max(40, Math.min(150, Math.round(w * h / 11000)));
+      stars = [];
+      for (var i = 0; i < n; i++){
+        var bright = Math.random() < 0.08;
+        stars.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          r: bright ? 1.1 + Math.random() * 0.9 : 0.4 + Math.random() * 0.7,
+          a: bright ? 0.5 + Math.random() * 0.4 : 0.16 + Math.random() * 0.34,
+          p: Math.random() * Math.PI * 2,
+          s: 0.0004 + Math.random() * 0.0011,
+          g: Math.random() < 0.12
+        });
+      }
+    }
+    function size(){
+      var dpr = Math.min(window.devicePixelRatio || 1, 2);
+      w = cv.clientWidth; h = cv.clientHeight;
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      seed();
+    }
+    function paint(t){
+      ctx.clearRect(0, 0, w, h);
+      for (var i = 0; i < stars.length; i++){
+        var s = stars[i];
+        var a = calm ? s.a : s.a * (0.62 + 0.38 * Math.sin(t * s.s + s.p));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = s.g ? "rgba(241,205,128," + a + ")"
+                            : "rgba(226,236,250," + a + ")";
+        ctx.fill();
+      }
+    }
+    function step(t){ paint(t); raf = window.requestAnimationFrame(step); }
+    function start(){
+      if (raf){ window.cancelAnimationFrame(raf); raf = 0; }
+      if (calm) paint(0); else raf = window.requestAnimationFrame(step);
+    }
+    size(); start();
+    window.addEventListener("resize", function(){
+      clearTimeout(tm);
+      tm = setTimeout(function(){ size(); start(); }, 180);
+    });
+    document.addEventListener("visibilitychange", function(){
+      if (document.hidden){ if (raf){ window.cancelAnimationFrame(raf); raf = 0; } }
+      else start();
+    });
+  })();
+
+
+  (async function(){
+    var C = window.claude;
+    if (!C || typeof C.use !== "function"){
+      document.getElementById("who").textContent = "lokal";
+      document.getElementById("save").disabled = true;
+      return;
+    }
+    var db = null, user = null;
+    try { db = await C.use("db"); } catch (e) {}
+    try { user = await C.use("user"); } catch (e) {}
+    if (user){
+      try { canWrite = (await Promise.resolve(user.canEdit())) === true; } catch (e) {}
+    }
+    document.getElementById("who").textContent = canWrite ? "Bearbeiter" : "nur lesen";
+    document.getElementById("save").disabled = !canWrite;
+    if (!db) return;
+    dbRef = db.doc("configs/bots");
+    try {
+      var snap = await dbRef.get();
+      if (snap && snap.exists){
+        var stored = (snap.data() || {}).values;
+        if (stored){
+          merge(stored);
+          render();
+          status("gespeicherte Einstellungen geladen");
+        }
+      }
+    } catch (e) {}
+  })();
+})();
+</script>
+</body>
+</html>

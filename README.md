@@ -25,6 +25,7 @@ unten rechts führt eine Weiter-Zeile zum nächsten.
 | Datei | Zweck |
 | --- | --- |
 | `index.html` | Die komplette Seite: Markup, CSS und JavaScript inline |
+| `konsole.html` | Bot-Konsole: Einstellungen für die drei Bots, erzeugt die `config.toml` |
 | `media/` | Mediendateien, u. a. das Vorstellungsvideo |
 | `signals.json` | Die Signale für die Fassung auf dem eigenen Server |
 | `bot/` | Der Dauerläufer: der Handelsbot als lauffähiges Python-Programm |
@@ -101,6 +102,17 @@ python3 -m http.server 8000
 Die Seite liegt danach unter `https://<benutzername>.github.io/<repository>/`.
 Für eine eigene Domain eine Datei `CNAME` mit der Domain ins Wurzelverzeichnis legen.
 
+## Bot-Konsole
+
+`konsole.html` ist eine eigene Seite, auf der sich die drei Bots einstellen
+lassen: jeder Wert mit Erklärung, Einheit und Standardwert, dieselben Grenzen
+wie im Bot selbst, und daneben zwei Ansichten, die live mitlaufen — das
+Regelwerk in Klartext und die fertige `config.toml` zum Kopieren.
+
+Die Konsole schreibt nichts auf die Platte. Sie baut die Datei, kopiert wird
+von Hand nach `bot/config.toml`. Ändert sich eine Regel, ändert sich der
+Fingerabdruck, und der Bot verlangt vor dem Live-Betrieb einen neuen Backtest.
+
 ## Gestaltung
 
 Schwarz als Grund, Chrom und Gold als einzige Farben. Alle Werte stehen als Tokens
@@ -111,15 +123,16 @@ im `:root`-Block oben im `<style>`:
 * `--gold` — der Goldton für Beschriftungen, Rahmen und Schaltflächen
 * `--fg`, `--fg-dim`, `--line` — Text und Linien
 
-Der Hintergrund (`.bg`) liegt in sieben Schichten übereinander, ohne eine einzige Bilddatei:
+Der Hintergrund (`.bg`) ist ein Nachthimmel in sieben Schichten, ohne eine
+einzige Bilddatei:
 
 | Schicht | Was sie macht |
 | --- | --- |
 | `.bg__grid` | feines Raster, zu den Rändern hin ausgeblendet |
-| `.bg__glow--gold` | goldenes Licht oben links, wandert langsam |
-| `.bg__glow--steel` | kühles Licht unten rechts, wandert gegenläufig |
-| `.bg__sheen` | schräger Chromschimmer, zieht langsam durchs Bild |
-| `.bg__dust` | feiner Gold- und Silberstaub auf einem Canvas |
+| `.bg__moon` | der Mond: Scheibe mit Kratern und dunkler Seite, rein aus Verläufen |
+| `.bg__halo` | sein Schein, kühl außen und warm am Rand, atmet langsam |
+| `.bg__stars` | Sternenfeld auf einem Canvas, einzelne golden, leises Funkeln |
+| `.bg__glow--steel` | kühles Licht unten links, wandert langsam |
 | `.bg__grain` | Korn als SVG-Rauschen |
 | `.bg__vig` | Vignette, die die Ränder abdunkelt |
 

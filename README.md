@@ -123,22 +123,24 @@ im `:root`-Block oben im `<style>`:
 * `--gold` — der Goldton für Beschriftungen, Rahmen und Schaltflächen
 * `--fg`, `--fg-dim`, `--line` — Text und Linien
 
-Der Hintergrund (`.bg`) ist ein Nachthimmel in sieben Schichten, ohne eine
-einzige Bilddatei:
+Der Hintergrund ist **Mondgestein** — nicht gemalt, sondern gerechnet, ohne
+eine einzige Bilddatei:
 
-| Schicht | Was sie macht |
+| Schritt | Was passiert |
 | --- | --- |
-| `.bg__grid` | feines Raster, zu den Rändern hin ausgeblendet |
-| `.bg__moon` | der Mond: Scheibe mit Kratern und dunkler Seite, rein aus Verläufen |
-| `.bg__halo` | sein Schein, kühl außen und warm am Rand, atmet langsam |
-| `.bg__stars` | Sternenfeld auf einem Canvas, einzelne golden, leises Funkeln |
-| `.bg__glow--steel` | kühles Licht unten links, wandert langsam |
-| `.bg__grain` | Korn als SVG-Rauschen |
-| `.bg__vig` | Vignette, die die Ränder abdunkelt |
+| Höhenfeld | sechs Oktaven Gradientenrauschen ergeben das Grundrelief |
+| Krater | Schüssel, aufgeworfener Wall und Auswurfdecke; die Ränder sind leicht unrund, kleine Krater sind viel häufiger als große |
+| Steine | kleine steile Buckel, die eigene Schatten werfen |
+| Licht | Normalen aus dem Gefälle, Sonne flach über dem Horizont |
+| Schatten | Strahlmarsch entlang der Sonnenrichtung — ohne Atmosphäre sind die Schatten hart und lang, und genau das macht den Eindruck |
+| Albedo | heller Staub auf Kraterrändern, dunklere Flächen dazwischen |
 
-Alle Bewegungen stehen still, sobald das Gerät auf „weniger Bewegung" steht, und der
-Staub pausiert, wenn der Tab im Hintergrund liegt. Die Anzahl der Staubkörner richtet
-sich nach der Fenstergröße.
+Gerechnet wird in Häppchen von zehn Millisekunden pro Bild, sonst stünde die
+Seite beim Laden eine Sekunde lang. Darüber liegen eine dunkle Decke und eine
+Vignette: die Fläche soll zu sehen sein, aber der Text gewinnt.
+
+Die Auflösung richtet sich nach dem Fenster und ist gedeckelt; bei einer
+Größenänderung wird neu gerechnet, aber erst nach einer kurzen Ruhepause.
 
 ## Noch einzutragen
 

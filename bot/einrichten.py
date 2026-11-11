@@ -298,9 +298,23 @@ def main() -> int:
         except ImportError:
             fehlt.append((paket, zweck))
     if fehlt:
-        print("\nNoch nachzuinstallieren:")
+        print("\nEs fehlen noch Pakete:")
         for paket, zweck in fehlt:
-            print(f"   pip install {paket}      ({zweck})")
+            print(f"   {paket}  —  {zweck}")
+        if ja("\nSoll ich die jetzt installieren?", True):
+            for paket, _ in fehlt:
+                print(f"\n   Installiere {paket} ...")
+                ergebnis = subprocess.run(
+                    [sys.executable, "-m", "pip", "install", "--quiet", paket])
+                if ergebnis.returncode == 0:
+                    print(f"   {paket} ist da.")
+                else:
+                    print(f"   Hat nicht geklappt. Von Hand: "
+                          f"pip install {paket}")
+        else:
+            print("\n   Später von Hand:")
+            for paket, _ in fehlt:
+                print(f"   pip install {paket}")
 
     print("\nFertig. Starten mit:")
     print("   python3 -m bengx_bot telegram")

@@ -17,7 +17,8 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 | **X** | XAU Bot | Der Bot, der Gold nach Regeln handelt |
 
 Jeder Abschnitt hat eine eigene Adresse (`#ben`, `#entdecken`, `#mitglieder`, `#gold`, `#xaubot`),
-lässt sich also direkt verlinken.
+lässt sich also direkt verlinken. Mit den Pfeiltasten blättert man durch die Abschnitte,
+unten rechts führt eine Weiter-Zeile zum nächsten.
 
 ## Dateien
 
@@ -52,8 +53,21 @@ im `:root`-Block oben im `<style>`:
 * `--gold` — der Goldton für Beschriftungen, Rahmen und Schaltflächen
 * `--fg`, `--fg-dim`, `--line` — Text und Linien
 
-Der Hintergrund (`.bg`) besteht aus feinem Raster, zwei weichen Lichtern und einem
-Korn als SVG — rein in CSS, keine Bilddatei.
+Der Hintergrund (`.bg`) liegt in sieben Schichten übereinander, ohne eine einzige Bilddatei:
+
+| Schicht | Was sie macht |
+| --- | --- |
+| `.bg__grid` | feines Raster, zu den Rändern hin ausgeblendet |
+| `.bg__glow--gold` | goldenes Licht oben links, wandert langsam |
+| `.bg__glow--steel` | kühles Licht unten rechts, wandert gegenläufig |
+| `.bg__sheen` | schräger Chromschimmer, zieht langsam durchs Bild |
+| `.bg__dust` | feiner Gold- und Silberstaub auf einem Canvas |
+| `.bg__grain` | Korn als SVG-Rauschen |
+| `.bg__vig` | Vignette, die die Ränder abdunkelt |
+
+Alle Bewegungen stehen still, sobald das Gerät auf „weniger Bewegung" steht, und der
+Staub pausiert, wenn der Tab im Hintergrund liegt. Die Anzahl der Staubkörner richtet
+sich nach der Fenstergröße.
 
 ## Noch einzutragen
 

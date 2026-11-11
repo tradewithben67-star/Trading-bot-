@@ -21,7 +21,7 @@ python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 237 Tests
+python3 -m unittest discover -s tests -t .   # 253 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -121,10 +121,16 @@ Ein Bot, dem man normal schreibt. Er läuft auf derselben Maschine wie der
 Handelsbot und liest dessen Protokoll, Zustand und Aufgaben.
 
 ```bash
-cp .env.example .env     # ausfüllen, siehe unten
-pip install anthropic    # nur für freies Schreiben
-python3 -m bengx_bot --config config.toml telegram
+python3 einrichten.py    # legt .env an und holt die Chat-Kennung selbst
+python3 -m bengx_bot telegram
 ```
+
+`einrichten.py` fragt nach dem Token, prüft ihn gegen Telegram, wartet auf
+deine erste Nachricht an den Bot, trägt die Chat-Kennung automatisch ein und
+sagt dir, welche Pakete noch fehlen. Der Token wird dabei nicht angezeigt und
+landet nur in `.env`.
+
+Von Hand geht es auch: `cp .env.example .env` und ausfüllen.
 
 **Was du brauchst — drei Dinge:**
 
@@ -313,6 +319,7 @@ nachrechnen, was die breiteren Spreads kosten.
 | `assistant.py` | der Chat-Teil über das Anthropic-SDK |
 | `telegram.py` | Telegram-Anbindung, langer Abruf, Befehle |
 | `cli.py` | Kommandozeile |
+| `einrichten.py` | Einrichtung: .env anlegen, Token prüfen, Chat-Kennung holen |
 
 Backtest und Live benutzen **dieselbe** `engine.py`. Was der Test prüft, läuft
 später auch wirklich so.
@@ -323,7 +330,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-237 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+253 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

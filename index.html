@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="BENGX - Ben, Entdecken, neue Mitglieder, Signale auf XAU/USD und drei Bots zur Auswahl.">
+<meta name="description" content="BENGX - Ben, 18, aus Deutschland, handelt seit einem Jahr ausschliesslich Gold. Signale, Lernbereich und Bots.">
 <meta name="theme-color" content="#000000">
 <title>BENGX</title>
 <meta name="claude:viewport-fit-sides" content="cover">
@@ -212,6 +212,7 @@ a{color:var(--fg)}
 }
 .video__t{font-family:var(--f-data);font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:var(--fg-mid)}
 .video__s{font-family:var(--f-data);font-size:12px;color:var(--fg-dim);word-break:break-all;max-width:36ch}
+.video__edit{display:grid;justify-items:center;gap:11px}
 .video__cap{
   display:flex;flex-wrap:wrap;gap:4px 10px;
   font-family:var(--f-data);font-size:11px;letter-spacing:.06em;color:var(--fg-dim);
@@ -476,7 +477,7 @@ a{color:var(--fg)}
       <header class="phead">
         <div class="phead__top"><p class="kick">B — Ben</p><p class="idx num">01 / 05</p></div>
         <h1 class="chrome">Ben</h1>
-        <p class="lead">Ich handle die Märkte nach festen Regeln und zeige hier, wie ich das mache — ohne Geheimnisse und ohne Versprechen.</p>
+        <p class="lead">18, aus Deutschland, seit einem Jahr am Markt — und das ausschließlich auf Gold.</p>
       </header>
       <div class="rule"></div>
 
@@ -489,25 +490,29 @@ a{color:var(--fg)}
                 <svg width="15" height="17" viewBox="0 0 15 17" fill="none"><path d="M14 7.634a1 1 0 0 1 0 1.732L2 16.294a1 1 0 0 1-1.5-.866V1.572A1 1 0 0 1 2 .706l12 6.928Z" fill="#EFC45E"/></svg>
               </span>
               <p class="video__t">Vorstellungsvideo</p>
-              <p class="video__s">media/ben-vorstellung.mp4</p>
-              <button class="btn btn--sm" type="button" id="pickvid">Datei auswählen</button>
-              <input id="vidfile" type="file" accept="video/*" hidden>
+              <p class="video__s" id="vph-note">Folgt in Kürze.</p>
+              <div class="video__edit" id="vph-edit" hidden>
+                <p class="video__s">media/ben-vorstellung.mp4</p>
+                <button class="btn btn--sm" type="button" id="pickvid">Datei auswählen</button>
+                <input id="vidfile" type="file" accept="video/*" hidden>
+              </div>
             </div>
           </div>
-          <figcaption class="video__cap"><span>Ben stellt sich vor</span><span>·</span><span class="ph">[Länge]</span></figcaption>
+          <figcaption class="video__cap"><span>Ben stellt sich vor</span></figcaption>
         </figure>
 
         <div class="body-text">
-          <p>Mein Name ist Ben. Seit <span class="ph">[Jahr]</span> beschäftige ich mich mit den Märkten, angefangen bei <span class="ph">[womit du angefangen hast]</span>. Heute handle ich hauptsächlich <b>Gold, Krypto und Indizes</b> — nach einem Plan, den ich vor dem Einstieg aufschreibe und nach dem Trade kontrolliere.</p>
-          <p>Was mich verändert hat, war <span class="ph">[dein Wendepunkt]</span>. Seitdem gilt bei mir: erst das Risiko festlegen, dann die Position. Genau das gebe ich hier weiter.</p>
+          <p>Ich bin Ben, <b>18 Jahre alt</b> und komme aus <b>Deutschland</b>. Seit einem Jahr handle ich — und zwar nur einen einzigen Markt: <b>Gold, XAU/USD</b>. Kein Krypto, keine Aktien, keine zehn Paare nebenher.</p>
+          <p>Das ist eine Entscheidung, keine Bequemlichkeit. Ein Markt heißt: ich kenne seine Zeiten, seine Bewegungen und die Tage, an denen man besser die Finger davon lässt. Wer überall gleichzeitig unterwegs ist, kennt am Ende nirgends die Details.</p>
+          <p>Jeder Einstieg steht vorher auf Papier: Stop, Ziel, Risiko. Was danach passiert, wird protokolliert — die guten Tage und die schlechten. Beides siehst du hier.</p>
         </div>
       </div>
 
       <ul class="facts">
-        <li><p class="k">Am Markt seit</p><p class="v"><span class="ph">[Jahr]</span></p></li>
-        <li><p class="k">Schwerpunkt</p><p class="v">XAU/USD</p></li>
-        <li><p class="k">Stil</p><p class="v">Regelbasiert</p></li>
-        <li><p class="k">Standort</p><p class="v"><span class="ph">[Ort]</span></p></li>
+        <li><p class="k">Alter</p><p class="v">18</p></li>
+        <li><p class="k">Land</p><p class="v">Deutschland</p></li>
+        <li><p class="k">Erfahrung</p><p class="v">1 Jahr</p></li>
+        <li><p class="k">Markt</p><p class="v">XAU/USD</p></li>
       </ul>
 
       <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="entdecken">E — Entdecken →</button></nav>
@@ -796,6 +801,17 @@ a{color:var(--fg)}
     vid.addEventListener("loadeddata",reveal);
     vid.addEventListener("error",function(){vid.hidden=true;vph.hidden=false;});
     vid.src="media/ben-vorstellung.mp4";
+
+    var C=window.claude;
+    if(C&&typeof C.use==="function"){
+      C.use("user").then(function(u){
+        if(!u){return null;}
+        return Promise.resolve(u.canEdit());
+      }).then(function(ok){
+        var box=document.getElementById("vph-edit");
+        if(ok===true&&box){box.hidden=false;}
+      },function(){});
+    }
 
     var pick=document.getElementById("pickvid"),file=document.getElementById("vidfile");
     if(pick&&file){

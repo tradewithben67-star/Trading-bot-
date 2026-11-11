@@ -10,7 +10,7 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 
 | Taste | Abschnitt | Inhalt |
 | --- | --- | --- |
-| **B** | Ben | Über mich und das Vorstellungsvideo |
+| **B** | Ben | Über Ben und das Vorstellungsvideo |
 | **E** | Entdecken | Lernen: Grundlagen, Risiko, Praxis |
 | **N** | Neue Mitglieder | Einstieg in drei Schritten |
 | **G** | Signale | Das neueste Signal, Winrate und Pips von heute, dahinter die Historie |
@@ -115,8 +115,7 @@ sich nach der Fenstergröße.
 ## Noch einzutragen
 
 Alle offenen Stellen stehen auf der Seite in Gold und eckigen Klammern,
-z. B. `[Jahr]`, `[Ort]`, `[dein Handle]`. Im Quelltext findest du sie über die
-Klasse `ph`:
+z. B. `[%]` oder `[4h / 1d]`. Im Quelltext findest du sie über die Klasse `ph`:
 
 ```bash
 grep -n 'class="ph"' index.html
@@ -124,7 +123,10 @@ grep -n 'class="ph"' index.html
 
 Dazu kommen: die echte E-Mail-Adresse (`hallo@bengx.de` ist ein Platzhalter),
 das Vorstellungsvideo unter `media/ben-vorstellung.mp4` sowie die Funktionen
-von Entdecken, Neue Mitglieder und XAU Bot.
+von Entdecken, Neue Mitglieder und den Bots.
+
+Eine Angabe altert: die Kachel **Erfahrung** bei B steht auf `1 Jahr`.
+Sie gehört einmal im Jahr hochgezählt.
 
 ## Hinweis
 

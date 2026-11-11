@@ -4,13 +4,14 @@ cd /d "%~dp0"
 title BENGX Telegram-Bot
 
 echo.
-echo   BENGX - Telegram-Bot laeuft
-echo   ===========================
-echo   Dieses Fenster offen lassen. Zum Beenden: Strg+C
+echo   BENGX - Telegram-Bot
+echo   ====================
+echo   Dieses Fenster offen lassen. Solange es laeuft, antwortet dein Bot.
+echo   Zum Beenden: Strg+C oder Fenster schliessen.
 echo.
 
 if not exist ".env" (
-  echo   Es gibt noch keine .env.
+  echo   Noch nicht eingerichtet.
   echo   Bitte zuerst einrichten.bat doppelklicken.
   echo.
   pause
@@ -19,7 +20,8 @@ if not exist ".env" (
 
 py -3 --version >nul 2>nul && goto :mitpy
 python --version >nul 2>nul && goto :mitpython
-goto :keinpython
+echo   Python fehlt. Bitte zuerst einrichten.bat doppelklicken.
+goto :ende
 
 :mitpy
 py -3 -m bengx_bot telegram
@@ -27,10 +29,6 @@ goto :ende
 
 :mitpython
 python -m bengx_bot telegram
-goto :ende
-
-:keinpython
-echo   Python wurde nicht gefunden. Bitte zuerst einrichten.bat ausfuehren.
 goto :ende
 
 :ende

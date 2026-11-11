@@ -8,6 +8,7 @@
     python -m bengx_bot report                    Zahlen aus dem Protokoll
     python -m bengx_bot export                    signals.json neu schreiben
     python -m bengx_bot telegram                  den Assistenten in Telegram betreiben
+    python -m bengx_bot pruefen                   prüft Token, Schlüssel und Modelle
     python -m bengx_bot rules                     das Regelwerk im Klartext
     python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
     python -m bengx_bot --bot kopierer rules      das Regelwerk des Kopierers
@@ -299,6 +300,84 @@ def cmd_telegram(args) -> int:
     return 0
 
 
+def cmd_pruefen(args) -> int:
+    """Sagt, was wirklich geht — mit den echten Meldungen der Anbieter."""
+    import os
+
+    from .assistant import Assistant, AssistantSettings
+    from .coder import Coder, CoderSettings
+    from .llm import GeminiProvider, LLMSettings
+    from .telegram import HttpTransport, TelegramSettings, load_env_file
+
+    cfg = _load(args)
+    datei = load_env_file(args.env or ".env")
+    umgebung = {**datei, **{k: v for k, v in os.environ.items() if v}}
+
+    print("BENGX — Prüfung")
+    print("=" * 40)
+    print(f"\nEinstellungen aus: {args.env or '.env'}"
+          f"{' (nicht gefunden)' if not datei else ''}")
+
+    # 1. Telegram
+    tg = TelegramSettings.from_env(umgebung)
+    print("\n1. Telegram")
+    if not tg.token:
+        print("   Kein TELEGRAM_TOKEN. Erst einrichten.py laufen lassen.")
+    else:
+        try:
+            antwort = HttpTransport(tg.token, timeout=15).call("getMe", {})
+            name = (antwort.get("result") or {}).get("username", "?")
+            print(f"   Token gilt. Der Bot heißt @{name}.")
+        except ConnectionError as exc:
+            print(f"   Token wird nicht angenommen: {exc}")
+    print(f"   Chat-Kennung: {tg.chat_id or 'fehlt — der Bot nennt sie dir'}")
+
+    # 2. Anbieter
+    llm = LLMSettings.from_env(umgebung)
+    gewaehlt = llm.gewaehlt()
+    print(f"\n2. Antworten über: {gewaehlt}")
+    print(f"   Google-Schlüssel:    {'ja' if llm.gemini_key else 'nein'}")
+    print(f"   Anthropic-Schlüssel: {'ja' if llm.claude_key else 'nein'}")
+
+    assistent = Assistant(AssistantSettings(llm), config=cfg)
+    hindernis = assistent.hindernis()
+    if hindernis:
+        print(f"   {hindernis}")
+    else:
+        if gewaehlt == "gemini":
+            anbieter = assistent.provider
+            assert isinstance(anbieter, GeminiProvider)
+            anbieter._verbinden()
+            print(f"\n   Modelle, die dein Schlüssel benutzen darf:")
+            namen = anbieter.modelle()
+            if not namen:
+                print("     keine abrufbar — Schlüssel oder Netz prüfen")
+            for name in namen[:12]:
+                marke = "  <- eingestellt" if name == llm.gemini_model else ""
+                print(f"     {name}{marke}")
+            if len(namen) > 12:
+                print(f"     … und {len(namen) - 12} weitere")
+            if namen and llm.gemini_model not in namen:
+                print(f"\n   Achtung: {llm.gemini_model} ist nicht dabei. "
+                      "Ich nehme beim Antworten automatisch ein anderes.")
+
+        print("\n3. Eine Testfrage")
+        text = assistent.answer("Antworte nur mit dem Wort: bereit",
+                                "LAGE\nnichts Besonderes")
+        print(f"   Antwort: {text[:400]}")
+        if gewaehlt == "gemini":
+            for notiz in assistent.provider.notizen:
+                print(f"   Hinweis: {notiz}")
+
+    # 3. Weiterbauen
+    coder = Coder(CoderSettings.from_env(umgebung))
+    print("\n4. Am Code weiterbauen")
+    print("   " + (coder.status() or
+                   f"geht, Ordner {Path(coder.settings.repo).resolve()}"))
+    print()
+    return 0
+
+
 def cmd_selftest(args) -> int:
     import tempfile
 
@@ -382,6 +461,10 @@ def build_parser() -> argparse.ArgumentParser:
     tg.add_argument("--once", action="store_true",
                     help="einmal abrufen statt dauerhaft zu laufen")
     tg.set_defaults(func=cmd_telegram)
+
+    pr = sub.add_parser("pruefen", help="prüft Token, Schlüssel und Modelle")
+    pr.add_argument("--env", help="Datei mit den Zugangsdaten (Standard: .env)")
+    pr.set_defaults(func=cmd_pruefen)
 
     sub.add_parser("rules", help="Regelwerk im Klartext").set_defaults(func=cmd_rules)
     sub.add_parser("selftest", help="Mechanik auf erfundenen Daten prüfen").set_defaults(

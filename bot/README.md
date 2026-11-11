@@ -121,6 +121,8 @@ Ein Bot, dem man normal schreibt. Er läuft auf derselben Maschine wie der
 Handelsbot und liest dessen Protokoll, Zustand und Aufgaben.
 
 **Unter Windows:** `einrichten.bat` doppelklicken, danach `starten.bat`.
+Hakt etwas: `pruefen.bat` — es sagt, welcher Token gilt, welche Modelle dein
+Schlüssel benutzen darf und was der Anbieter wirklich antwortet.
 **Unter macOS oder Linux:**
 
 ```bash
@@ -342,7 +344,7 @@ nachrechnen, was die breiteren Spreads kosten.
 | `telegram.py` | Telegram-Anbindung, langer Abruf, Befehle |
 | `cli.py` | Kommandozeile |
 | `einrichten.py` | Einrichtung: .env anlegen, Token prüfen, Chat-Kennung holen |
-| `einrichten.bat`, `starten.bat` | zum Doppelklicken unter Windows |
+| `einrichten.bat`, `starten.bat`, `pruefen.bat` | zum Doppelklicken unter Windows |
 
 Backtest und Live benutzen **dieselbe** `engine.py`. Was der Test prüft, läuft
 später auch wirklich so.

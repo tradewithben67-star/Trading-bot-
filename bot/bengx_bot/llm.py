@@ -168,6 +168,8 @@ class GeminiProvider:
     client: Any = None
     modell: str = ""
     ohne_suche: bool = False          # merkt sich, wenn Suche nicht mitgeht
+    versucht: set = field(default_factory=set)
+    _kandidaten: list[str] = field(default_factory=list)
     notizen: list[str] = field(default_factory=list)
 
     def hindernis(self) -> str:
@@ -187,23 +189,41 @@ class GeminiProvider:
             self.modell = self.modell or self.s.gemini_model
         return self.client
 
-    def _ersatzmodell(self) -> str:
-        """Sucht ein verfügbares Modell, falls der eingestellte Name nicht
-        mehr stimmt — Modellnamen ändern sich häufiger als dieser Code."""
+    def modelle(self) -> list[str]:
+        """Welche Modelle dieser Schlüssel benutzen darf — günstigste zuerst.
+
+        Modellnamen und Kontingente ändern sich häufiger als dieser Code,
+        deshalb wird gefragt statt geraten.
+        """
         try:
             namen = []
             for m in self.client.models.list():
                 name = (getattr(m, "name", "") or "").split("/")[-1]
                 aktionen = getattr(m, "supported_actions", None) or []
-                if name and (not aktionen or "generateContent" in aktionen):
-                    namen.append(name)
+                if not name or "embedding" in name or "imagen" in name:
+                    continue
+                if aktionen and "generateContent" not in aktionen:
+                    continue
+                namen.append(name)
         except Exception:
-            return ""
-        for muster in ("flash-latest", "flash", "pro"):
-            for name in namen:
-                if muster in name and "embedding" not in name:
-                    return name
-        return namen[0] if namen else ""
+            return []
+
+        def rang(name: str) -> tuple[int, int]:
+            # Erst die kleinen: die liegen am ehesten im freien Kontingent.
+            for i, muster in enumerate(("flash-lite", "flash", "pro")):
+                if muster in name:
+                    return (i, len(name))
+            return (3, len(name))
+
+        return sorted(dict.fromkeys(namen), key=rang)
+
+    def _naechstes_modell(self) -> str:
+        if not self._kandidaten:
+            self._kandidaten = self.modelle()
+        for name in self._kandidaten:
+            if name not in self.versucht:
+                return name
+        return ""
 
     def _inhalte(self, verlauf, nachricht, bilder):
         from google.genai import types
@@ -238,42 +258,76 @@ class GeminiProvider:
         client = self._verbinden()
         inhalte = self._inhalte(verlauf, nachricht, bilder)
         mit_suche = self.s.websuche and not self.ohne_suche
+        letzter_fehler = ""
 
-        for versuch in range(3):
+        for _ in range(5):
+            self.versucht.add(self.modell)
             try:
                 antwort = client.models.generate_content(
                     model=self.modell, contents=inhalte,
                     config=self._config(system, werkzeuge, mit_suche))
                 return (getattr(antwort, "text", "") or "").strip()
             except errors.ClientError as exc:
-                text = str(exc).lower()
+                roh = str(exc)
+                text = roh.lower()
+                letzter_fehler = _kurz(roh)
+
                 if mit_suche and ("tool" in text or "search" in text):
-                    # Suche und eigene Werkzeuge vertragen sich hier nicht.
                     self.ohne_suche = True
                     mit_suche = False
-                    self.notizen.append("Websuche abgeschaltet: geht nicht "
-                                        "zusammen mit den Werkzeugen.")
+                    self.notizen.append("Websuche abgeschaltet: geht hier "
+                                        "nicht zusammen mit den Werkzeugen.")
                     continue
-                if versuch == 0 and ("not found" in text or "404" in text
-                                     or "not supported" in text):
-                    ersatz = self._ersatzmodell()
-                    if ersatz and ersatz != self.modell:
+
+                if "api key" in text or "api_key" in text or "401" in text:
+                    return ("Der Google-Schlüssel wird nicht angenommen. "
+                            "Neu anlegen unter aistudio.google.com/apikey.")
+
+                erschoepft = ("quota" in text or "429" in text
+                              or "resource_exhausted" in text)
+                unbekannt = ("not found" in text or "404" in text
+                             or "not supported" in text)
+                if erschoepft or unbekannt:
+                    naechstes = self._naechstes_modell()
+                    if naechstes:
+                        grund = ("Kontingent erschöpft" if erschoepft
+                                 else "Modell nicht verfügbar")
                         self.notizen.append(
-                            f"Modell {self.modell} gibt es nicht mehr, "
-                            f"nehme {ersatz}.")
-                        self.modell = ersatz
+                            f"{self.modell}: {grund} — versuche {naechstes}.")
+                        self.modell = naechstes
                         continue
-                if "api key" in text or "permission" in text or "401" in text:
-                    return "Der Google-Schlüssel wird nicht angenommen."
-                if "quota" in text or "429" in text or "resource_exhausted" in text:
-                    return ("Das kostenlose Kontingent ist gerade "
-                            "aufgebraucht. Später noch einmal.")
-                return f"Google lehnt die Anfrage ab: {exc}"
-            except errors.ServerError:
-                return "Bei Google hakt es gerade. Gleich noch einmal."
+                    if erschoepft:
+                        return ("Das kostenlose Kontingent ist aufgebraucht — "
+                                "bei allen Modellen, die dein Schlüssel darf. "
+                                "Meist hilft Warten (es füllt sich pro Minute "
+                                "und pro Tag auf).\n\n"
+                                f"Googles Meldung: {letzter_fehler}")
+                    return ("Kein Modell gefunden, das dein Schlüssel benutzen "
+                            f"darf.\n\nGoogles Meldung: {letzter_fehler}")
+
+                return f"Google lehnt ab: {letzter_fehler}"
+            except errors.ServerError as exc:
+                return f"Bei Google hakt es gerade: {_kurz(str(exc))}"
             except Exception as exc:
-                return f"Keine Antwort von Google: {exc}"
-        return ""
+                return f"Keine Antwort von Google: {_kurz(str(exc))}"
+
+        return (f"Nach mehreren Versuchen keine Antwort.\n\n"
+                f"Letzte Meldung: {letzter_fehler}")
+
+
+def _kurz(text: str, laenge: int = 300) -> str:
+    """Googles Meldungen sind lang und voller JSON — das Wesentliche reicht."""
+    text = " ".join(text.split())
+    for marke in ("'message': '", '"message": "'):
+        if marke in text:
+            rest = text.split(marke, 1)[1]
+            for ende in ("', '", '", "'):
+                if ende in rest:
+                    rest = rest.split(ende, 1)[0]
+                    break
+            text = rest
+            break
+    return text[:laenge] + ("…" if len(text) > laenge else "")
 
 
 def anbieter_bauen(s: LLMSettings) -> Provider:

@@ -143,6 +143,15 @@ def alte_einstellungen(start: Path, tiefe: int = 3) -> list[Path]:
     return einmalig
 
 
+def _weiter_so() -> str:
+    """Wie es weitergeht — abhängig vom Betriebssystem."""
+    if os.name == "nt":
+        return ("Weiter mit:  LOSGEHTS.bat doppelklicken\n"
+                "Die prüft erst, ob alles da ist, und startet dann.")
+    return ("Weiter mit:  ./LOSGEHTS.command\n"
+            "Die prüft erst, ob alles da ist, und startet dann.")
+
+
 def _doppelt() -> None:
     print()
     print("   Es läuft noch ein zweiter Bot mit demselben Token.")
@@ -294,8 +303,7 @@ def main() -> int:
                 except OSError:
                     pass
                 print(f"\nÜbernommen nach {ENV}")
-                print("Fertig. Starten mit:  python3 -m bengx_bot telegram")
-                print("(oder starten.bat doppelklicken)")
+                print("\n" + _weiter_so())
                 return 0
             break
 
@@ -496,8 +504,8 @@ def main() -> int:
             for paket, _ in fehlt:
                 print(f"   pip install {paket}")
 
-    print("\nFertig. Starten mit:")
-    print("   python3 -m bengx_bot telegram")
+    print("\nFertig.")
+    print(_weiter_so())
     if not kennung:
         print("\nSchreib dem Bot dann einmal — er nennt dir die Kennung,")
         print("die du bei TELEGRAM_CHAT_ID einträgst.")

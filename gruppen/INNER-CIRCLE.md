@@ -22,19 +22,37 @@ Telegram → Menü → **Neue Gruppe** → dich selbst hinzufügen → Name:
 BENGX Inner Circle
 ```
 
-> **Stell den Gruppentyp ein, BEVOR du die Kennung einträgst.** Sobald
-> eine einfache Gruppe öffentlich wird, macht Telegram still eine
-> Supergruppe daraus — und vergibt dabei eine **neue** Chat-Kennung. Die
-> alte in `bot/.env` zeigt dann ins Leere. Erst den Typ setzen, dann
-> `einrichten.bat`.
+> **Mach ALLE Gruppeneinstellungen zuerst, und trag die Kennung erst
+> danach ein.** Fast jede Einstellung aus dieser Anleitung — öffentlicher
+> Link, Berechtigungen, langsamer Modus — verwandelt eine einfache Gruppe
+> still in eine Supergruppe. Dabei bekommt sie eine **neue**
+> Chat-Kennung, und die alte in `bot/.env` zeigt ins Leere. Also: erst
+> einrichten, dann `einrichten.bat`.
 
 Gruppe öffnen → Name antippen → **Bearbeiten**:
 
-- **Gruppentyp:** Öffentlich
-- **Link:** `t.me/bengx_inner` (oder was frei ist — notier dir, was du
-  genommen hast)
+- **Gruppentyp:** **Privat** zum Anfangen. Dann kommt nur rein, wer
+  deinen Einladungslink hat — du behältst die Kontrolle, solange noch
+  wenig läuft.
 - **Verlauf für neue Mitglieder:** Sichtbar. Wer reinkommt, soll die
   letzten Signale und Ergebnisse sehen. Das ist dein bester Verkäufer.
+
+### Später öffentlich machen
+
+Sobald du Leute anziehen willst, stellst du denselben Schalter auf
+**Öffentlich** und vergibst einen Link, etwa `t.me/bengx_inner`. Ab dann
+findet die Gruppe jeder, der den Namen kennt.
+
+Solange sie privat ist, wächst sie **nur über den Einladungslink**, den
+du selbst verteilst. Den bekommst du so:
+
+Gruppeninfo → **Einladungslinks** → den Haupt-Link kopieren. Anders als
+bei VIP darfst du den hier ruhig weitergeben — er gilt unbegrenzt und
+für beliebig viele Leute. Genau das willst du beim Inner Circle.
+
+Diesen Link kannst du auf die Website setzen, in deine Bio, unter deine
+Videos. Dann sag mir Bescheid, dann baue ich ihn in den Bereich
+„Neue Mitglieder" ein.
 
 ---
 

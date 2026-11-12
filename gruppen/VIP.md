@@ -17,10 +17,10 @@ Telegram → Menü → **Neue Gruppe** → dich selbst hinzufügen → Name:
 BENGX VIP
 ```
 
-> **Stell den Gruppentyp ein, BEVOR du die Kennung einträgst.** Wandelt
-> Telegram eine einfache Gruppe in eine Supergruppe um — das passiert bei
-> öffentlichem Link oder vielen Mitgliedern —, bekommt sie eine **neue**
-> Chat-Kennung, und die alte in `bot/.env` zeigt ins Leere.
+> **Mach ALLE Gruppeneinstellungen zuerst, und trag die Kennung erst
+> danach ein.** Berechtigungen und langsamer Modus verwandeln eine
+> einfache Gruppe still in eine Supergruppe, und dabei bekommt sie eine
+> **neue** Chat-Kennung. Die alte in `bot/.env` zeigt dann ins Leere.
 
 Gruppe öffnen → Name antippen → **Bearbeiten**:
 

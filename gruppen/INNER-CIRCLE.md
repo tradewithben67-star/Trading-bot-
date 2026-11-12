@@ -101,11 +101,12 @@ REGELN
 4. Wer andere abzieht, fliegt sofort und dauerhaft.
 
 Ich bin Ben, 18, aus Deutschland, handle seit einem Jahr ausschließlich
-Gold. Alles über mich und die Bots: [Website-Adresse]
+Gold.
 
 VIP
-Alle Signale, sofort, mit Begründung — Sweep, BOS, FVG. Nur auf
-Einladung. Wenn du rein willst, schreib mir: @[dein Telegram-Name]
+Alle Signale, mit Begründung — Sweep, BOS, FVG — und das
+Chance-Risiko-Verhältnis. Nur auf Einladung. Wenn du rein willst,
+schreib mir hier.
 
 Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.
 ```

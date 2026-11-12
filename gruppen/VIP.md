@@ -88,7 +88,7 @@ Dein Einladungslink gilt genau einmal und läuft nach 24 Stunden ab. Gib
 ihn nicht weiter — er funktioniert ohnehin nur für dich.
 
 Ich bin Ben, 18, aus Deutschland, handle seit einem Jahr ausschließlich
-Gold. Alles über mich und die Bots: [Website-Adresse]
+Gold.
 
 Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.
 ```

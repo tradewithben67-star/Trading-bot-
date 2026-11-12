@@ -12,9 +12,17 @@ from bengx_bot.telegram import FakeTransport
 
 
 class Uhr:
-    """Eine Uhr, die nur vorgeht, wenn der Test es sagt."""
+    """Eine Uhr, die nur vorgeht, wenn der Test es sagt.
 
-    def __init__(self, start: float = 1_700_000_000.0) -> None:
+    Die Vorgabe ist ein Werktag um 11:00 Ortszeit — mitten in der
+    London-Sitzung, damit ein Gratis-Signal durchgeht.
+    """
+
+    def __init__(self, start: float | None = None, stunde: int = 11,
+                 minute: int = 0) -> None:
+        if start is None:
+            from datetime import datetime
+            start = datetime(2026, 3, 10, stunde, minute).timestamp()
         self.jetzt = start
 
     def __call__(self) -> float:
@@ -29,13 +37,15 @@ SIGNAL = {"side": "long", "entry": 4012.40, "sl": 4004.10, "tp": 4029.00,
 
 
 def bauen(ordner: str, inner: str = "-100", vip: str = "-200",
-          verzug: int = 20, frei: int = 2,
+          verzug: int = 20, london: str = "09:00-15:30",
+          newyork: str = "15:30-23:00",
           uhr: Uhr | None = None) -> tuple[Verteiler, FakeTransport, Uhr]:
     takt = uhr or Uhr()
     netz = FakeTransport()
     v = Verteiler(
         GruppenSettings(inner_chat_id=inner, vip_chat_id=vip,
-                        inner_verzug_min=verzug, inner_pro_tag=frei,
+                        inner_verzug_min=verzug,
+                        frei_london=london, frei_newyork=newyork,
                         state_file=str(Path(ordner) / "gruppen.json")),
         netz, pip=0.1, uhr=takt)
     return v, netz, takt
@@ -279,7 +289,7 @@ class TestAuskunft(unittest.TestCase):
             text = v.uebersicht()
             self.assertIn("VIP: sofort, mit Begründung", text)
             self.assertIn("Inner Circle: nach 20 min, knapp", text)
-            self.assertIn("noch 2 von 2 heute frei", text)
+            self.assertIn("noch offen: London, New York", text)
 
     def test_uebersicht_zeigt_wartende(self):
         with tempfile.TemporaryDirectory() as ordner:
@@ -303,10 +313,11 @@ class TestEinstellungen(unittest.TestCase):
             "TELEGRAM_INNER_CHAT_ID": " -100 ",
             "TELEGRAM_VIP_CHAT_ID": "-200",
             "TELEGRAM_INNER_VERZUG": "15",
-            "TELEGRAM_INNER_PRO_TAG": "3"})
+            "TELEGRAM_FREI_LONDON": "08:00-14:00"})
         self.assertEqual(s.inner_chat_id, "-100")
         self.assertEqual(s.inner_verzug_min, 15)
-        self.assertEqual(s.inner_pro_tag, 3)
+        self.assertEqual(s.frei_london, "08:00-14:00")
+        self.assertEqual(s.frei_newyork, "15:30-23:00")
 
     def test_ohne_angabe_kein_verzug(self):
         # Die zwei Gratis-Signale sollen mithandelbar sein. Mit Vorsprung
@@ -321,7 +332,8 @@ class TestEinstellungen(unittest.TestCase):
         self.assertEqual(
             GruppenSettings.from_env({"TELEGRAM_INNER_VERZUG": "-3"}).inner_verzug_min, 0)
         self.assertEqual(
-            GruppenSettings.from_env({"TELEGRAM_INNER_PRO_TAG": "x"}).inner_pro_tag, 2)
+            GruppenSettings.from_env({"TELEGRAM_FREI_LONDON": ""}).frei_london,
+            "09:00-15:30")
 
 
 if __name__ == "__main__":
@@ -402,78 +414,89 @@ class TestEntwurf(unittest.TestCase):
                 v.freigeben()
 
 
-class TestGratisKontingent(unittest.TestCase):
-    """Der Inner Circle ist offen — also bekommt er nur zwei am Tag."""
+class TestSitzungen(unittest.TestCase):
+    """Eins in London, eins in New York — mehr nicht."""
 
-    def test_drittes_signal_geht_nur_an_vip(self):
+    def test_zweites_in_derselben_sitzung_geht_nur_an_vip(self):
         with tempfile.TemporaryDirectory() as ordner:
-            v, netz, takt = bauen(ordner, frei=2)
-            for _ in range(2):
-                raus = v.signal_senden(SIGNAL)
-                self.assertEqual(raus["ausgelassen"], [])
+            v, netz, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            self.assertEqual(v.signal_senden(SIGNAL)["ausgelassen"], [])
+            takt.weiter(90 * 60)                      # 11:30, noch London
             raus = v.signal_senden(SIGNAL)
             self.assertEqual(raus["sofort"], ["VIP"])
-            self.assertEqual(raus["wartet"], [])
-            self.assertIn("Inner Circle", raus["ausgelassen"][0])
-            self.assertIn("2 für heute sind raus", raus["ausgelassen"][0])
-            # Nur zwei warten auf den Inner Circle, nicht drei.
-            takt.weiter(25 * 60)
-            self.assertEqual(v.faellige_senden(), 2)
-            an_inner = [n for n in netz.sent if n["chat_id"] == "-100"]
-            self.assertEqual(len(an_inner), 2)
+            self.assertIn("London-Signal von heute ist schon raus",
+                          raus["ausgelassen"][0])
+            self.assertEqual(len([n for n in netz.sent if n["chat_id"] == "-100"]), 1)
 
-    def test_naechster_tag_fuellt_wieder_auf(self):
+    def test_new_york_hat_ein_eigenes_kontingent(self):
         with tempfile.TemporaryDirectory() as ordner:
-            v, _, takt = bauen(ordner, frei=2)
+            v, netz, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            v.signal_senden(SIGNAL)                   # London
+            takt.weiter(7 * 3600)                     # 17:00, New York
+            self.assertEqual(v.signal_senden(SIGNAL)["ausgelassen"], [])
+            self.assertEqual(len([n for n in netz.sent if n["chat_id"] == "-100"]), 2)
+
+    def test_nachts_geht_nichts_an_den_inner_circle(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, netz, _ = bauen(ordner, verzug=0, uhr=Uhr(stunde=3))
+            raus = v.signal_senden(SIGNAL)
+            self.assertEqual(raus["sofort"], ["VIP"])
+            self.assertIn("ausserhalb der Sitzungen", raus["ausgelassen"][0])
+            self.assertEqual([n["chat_id"] for n in netz.sent], ["-200"])
+
+    def test_fenster_erkennen(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            for stunde, minute, erwartet in (
+                    (8, 59, None), (9, 0, "london"), (15, 29, "london"),
+                    (15, 30, "newyork"), (22, 59, "newyork"), (23, 0, None)):
+                v, _, _ = bauen(ordner, uhr=Uhr(stunde=stunde, minute=minute))
+                wo = v.fenster_jetzt()
+                self.assertEqual(wo[0] if wo else None, erwartet,
+                                 f"{stunde:02d}:{minute:02d}")
+
+    def test_naechster_tag_fuellt_beide_wieder_auf(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, _, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
             v.signal_senden(SIGNAL)
-            v.signal_senden(SIGNAL)
-            self.assertEqual(v.frei_offen(), 0)
-            takt.weiter(26 * 3600)
-            self.assertEqual(v.frei_offen(), 2)
+            self.assertIn("New York", v.uebersicht())
+            takt.weiter(24 * 3600)
             self.assertEqual(v.signal_senden(SIGNAL)["ausgelassen"], [])
 
     def test_kontingent_ueberlebt_neustart(self):
         with tempfile.TemporaryDirectory() as ordner:
-            takt = Uhr()
-            v, _, _ = bauen(ordner, frei=2, uhr=takt)
+            takt = Uhr(stunde=10)
+            v, _, _ = bauen(ordner, verzug=0, uhr=takt)
             v.signal_senden(SIGNAL)
-            zweiter, _, _ = bauen(ordner, frei=2, uhr=takt)
-            self.assertEqual(zweiter.frei_offen(), 1)
+            zweiter, netz2, _ = bauen(ordner, verzug=0, uhr=takt)
+            self.assertIn("schon raus", zweiter.signal_senden(SIGNAL)["ausgelassen"][0])
 
     def test_gratis_signal_wirbt_fuer_vip(self):
         with tempfile.TemporaryDirectory() as ordner:
-            v, netz, takt = bauen(ordner)
+            v, netz, _ = bauen(ordner, verzug=0)
             v.signal_senden(SIGNAL)
-            takt.weiter(25 * 60)
-            v.faellige_senden()
             an_inner = [n for n in netz.sent if n["chat_id"] == "-100"][0]["text"]
             an_vip = [n for n in netz.sent if n["chat_id"] == "-200"][0]["text"]
             self.assertIn("laufen in VIP", an_inner)
             self.assertNotIn("laufen in VIP", an_vip)
 
-    def test_kontingent_null_heisst_nur_vip(self):
-        with tempfile.TemporaryDirectory() as ordner:
-            v, netz, _ = bauen(ordner, frei=0)
-            raus = v.signal_senden(SIGNAL)
-            self.assertEqual(raus["sofort"], ["VIP"])
-            self.assertEqual(len(netz.sent), 1)
-
     def test_ergebnis_geht_nicht_an_wer_das_signal_nie_bekam(self):
-        # Sonst stuende im Inner Circle "Ziel erreicht" zu einem Signal,
-        # das dort nie stand.
         with tempfile.TemporaryDirectory() as ordner:
-            v, netz, _ = bauen(ordner, frei=0)
+            v, netz, _ = bauen(ordner, verzug=0, uhr=Uhr(stunde=3))
             kennung = v.signal_senden(SIGNAL)["id"]
             netz.sent.clear()
             raus = v.ergebnis_senden(kennung, "gewonnen")
             self.assertEqual(raus["gruppen"], ["VIP"])
             self.assertEqual([n["chat_id"] for n in netz.sent], ["-200"])
 
-    def test_uebersicht_zeigt_den_rest(self):
+    def test_uebersicht_nennt_die_offenen_sitzungen(self):
         with tempfile.TemporaryDirectory() as ordner:
-            v, _, _ = bauen(ordner, frei=2)
+            v, _, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            self.assertIn("noch offen: London, New York", v.uebersicht())
             v.signal_senden(SIGNAL)
-            self.assertIn("noch 1 von 2 heute frei", v.uebersicht())
+            self.assertIn("noch offen: New York", v.uebersicht())
+            takt.weiter(7 * 3600)
+            v.signal_senden(SIGNAL)
+            self.assertIn("beide Sitzungen für heute raus", v.uebersicht())
 
 
 class TestOhneVerzug(unittest.TestCase):
@@ -489,13 +512,14 @@ class TestOhneVerzug(unittest.TestCase):
 
     def test_der_unterschied_ist_die_menge_nicht_die_zeit(self):
         with tempfile.TemporaryDirectory() as ordner:
-            v, netz, _ = bauen(ordner, verzug=0, frei=2)
+            v, netz, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
             for _ in range(3):
                 v.signal_senden(SIGNAL)
+                takt.weiter(30 * 60)
             vip = [n for n in netz.sent if n["chat_id"] == "-200"]
             inner = [n for n in netz.sent if n["chat_id"] == "-100"]
             self.assertEqual(len(vip), 3)
-            self.assertEqual(len(inner), 2)
+            self.assertEqual(len(inner), 1)
             self.assertIn("CRV", vip[0]["text"])
             self.assertNotIn("CRV", inner[0]["text"])
             self.assertIn("handel sie mit", inner[0]["text"])

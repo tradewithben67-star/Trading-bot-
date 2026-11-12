@@ -1,8 +1,9 @@
 # BENGX Inner Circle — alles für die Telegram-Gruppe
 
 Die offene Gruppe. Jeder darf rein. Zwei Gratis-Signale am Tag, direkt
-aus VIP — **zur selben Zeit**, damit sie mitgehandelt werden können,
-aber knapp und ohne Begründung, mit dem Hinweis auf VIP darunter.
+aus VIP: **eins in der London-Sitzung, eins in der New-York-Sitzung.**
+Zur selben Zeit wie in VIP, damit sie mitgehandelt werden können, aber
+knapp und ohne Begründung, mit dem Hinweis auf VIP darunter.
 
 VIP ist das Gegenstück: bezahlt, nur auf deine Einladung, **jedes**
 Signal mit Begründung und Chance-Risiko-Verhältnis.
@@ -36,10 +37,10 @@ Danach die Gruppe öffnen → Name antippen → **Bearbeiten**:
 Telegram erlaubt 255 Zeichen. Diese hat 243:
 
 ```
-Gold, XAU/USD. Zwei Signale am Tag, kostenlos und zum Mithandeln —
-Einstieg, Stop, Ziel. Jedes Ergebnis wird gepostet, auch die Verluste.
-Wer alle Signale mit Begründung will: VIP, nur auf Einladung. Keine
-Anlageberatung.
+Gold, XAU/USD. Zwei Signale am Tag, kostenlos: eins in London, eins in
+New York. Einstieg, Stop, Ziel, zum Mithandeln. Jedes Ergebnis wird
+gepostet, auch die Verluste. Alle Signale mit Begründung: VIP, nur auf
+Einladung. Keine Anlageberatung.
 ```
 
 ---
@@ -55,10 +56,10 @@ Hier läuft Gold. Nur Gold, XAU/USD — kein Krypto, keine Aktien, keine
 zehn Paare nebenher.
 
 WAS DU HIER BEKOMMST
-Zwei Signale am Tag, kostenlos — zur selben Zeit, zu der sie auch in
-VIP stehen. Du kannst sie also wirklich mitnehmen. Einstieg, Stop,
-Ziel. Jedes Ergebnis wird gepostet, auch wenn es ein Verlust war.
-Besonders dann.
+Zwei Signale am Tag, kostenlos: eins in der London-Sitzung, eins in
+der New-York-Sitzung. Zur selben Zeit, zu der sie auch in VIP stehen —
+du kannst sie also wirklich mitnehmen. Einstieg, Stop, Ziel. Jedes
+Ergebnis wird gepostet, auch wenn es ein Verlust war. Besonders dann.
 
 WAS DU HIER NICHT BEKOMMST
 Keine Gewinnversprechen. Keine Kontoverdopplung. Keine Anlageberatung.
@@ -141,15 +142,18 @@ welche ist. Alternativ von Hand in `bot/.env`:
 ```
 TELEGRAM_INNER_CHAT_ID=-1001234567890
 TELEGRAM_INNER_VERZUG=0
-TELEGRAM_INNER_PRO_TAG=2
+TELEGRAM_FREI_LONDON=09:00-15:30
+TELEGRAM_FREI_NEWYORK=15:30-23:00
 ```
 
 - `TELEGRAM_INNER_VERZUG` — Minuten Vorsprung für VIP. **0**, also
   gleichzeitig: nur so können die Leute im Inner Circle den Trade
   wirklich mitnehmen. Falls du VIP später doch einen Vorsprung geben
   willst, trag hier Minuten ein.
-- `TELEGRAM_INNER_PRO_TAG` — wie viele am Tag. 2, wie besprochen.
-  0 schaltet den Inner Circle ab.
+- `TELEGRAM_FREI_LONDON` und `TELEGRAM_FREI_NEWYORK` — die beiden
+  Sitzungsfenster in deutscher Zeit. Je Fenster geht **genau ein**
+  Gratis-Signal raus. London endet dort, wo New York beginnt, damit
+  jedes Signal in höchstens ein Fenster fällt.
 
 ---
 
@@ -160,8 +164,12 @@ Nach dem Anpinnen, damit die Gruppe nicht leer wirkt:
 ```
 Die Gruppe ist offen.
 
-Ab heute kommen hier zwei Signale am Tag auf Gold. Einstieg, Stop,
-Ziel — und das Ergebnis, sobald der Trade zu ist.
+Ab heute kommen hier zwei Signale am Tag auf Gold: eins in der
+London-Sitzung, eins in der New-York-Sitzung. Einstieg, Stop, Ziel —
+und das Ergebnis, sobald der Trade zu ist.
+
+Sie gehen zur selben Zeit raus wie in VIP. Ihr könnt sie also
+mitnehmen, nicht nur hinterherschauen.
 
 Ich fange bei null an und zeige jede Zahl. Wenn eine Woche schlecht
 läuft, steht das hier genauso wie eine gute.
@@ -183,8 +191,9 @@ Sobald die Kennungen in `bot/.env` stehen und `starten.bat` läuft:
 - Nach dem Ja geht es **an beide Gruppen gleichzeitig**: an VIP mit
   Begründung und CRV, in den Inner Circle knapp und ohne Begründung,
   mit dem VIP-Hinweis darunter.
-- Sind die zwei für heute schon raus, geht das Signal **nur an VIP**,
-  und der Assistent sagt dir das.
+- Ist das Signal das zweite in derselben Sitzung, oder liegt es
+  ausserhalb beider Fenster (nachts, Asien), geht es **nur an VIP** —
+  und der Assistent sagt dir den Grund.
 - Sagst du später „das Signal ist im Ziel", hängt das Ergebnis als
   Antwort unter dem ursprünglichen Signal — in jeder Gruppe, die es
   bekommen hat.
@@ -213,6 +222,11 @@ dauerhaft — mit einem neuen Link darf die Person wieder rein.
 Signale am Tag sind genug, damit Leute mithandeln und sehen, dass es
 funktioniert — und wenig genug, dass VIP sich lohnt. Wenn du mehr
 durchlässt, kauft niemand.
+
+**Eins je Sitzung, nicht die ersten zwei des Tages.** Sonst entscheidet
+der Zufall: liegen morgens zwei schwache Signale und nachmittags das
+gute, sähe der Inner Circle nur die schwachen. So ist in jeder
+wichtigen Handelszeit eins dabei.
 
 **Deshalb gehen die zwei ohne Verzug raus.** Ein Signal, das man nicht
 mehr mitnehmen kann, überzeugt niemanden. Der Unterschied zu VIP ist

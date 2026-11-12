@@ -339,7 +339,8 @@ def main() -> int:
     print("\n3. Deine Gruppen")
     print("   VIP ist bezahlt und nur auf deine Einladung: jedes Signal")
     print("   mit Begründung. Der Inner Circle ist offen für alle und")
-    print("   bekommt zwei Signale am Tag — gleichzeitig, aber knapper.")
+    print("   bekommt zwei Signale am Tag — eins in der London-, eins in")
+    print("   der New-York-Sitzung, gleichzeitig mit VIP, aber knapper.")
     print()
     if ja("   Hast du die Gruppen schon angelegt?", False):
         print("   Gut. Füge den Bot in JEDE Gruppe ein, mach ihn zum")
@@ -363,8 +364,7 @@ def main() -> int:
                     print(f"   {beschriftung}: {gefunden[nummer - 1][1]}")
             verzug = frage("\n   Minuten Vorsprung für VIP? (0 = gleichzeitig)", "0")
             werte["TELEGRAM_INNER_VERZUG"] = verzug if verzug.isdigit() else "0"
-            frei = frage("   Wie viele Gratis-Signale am Tag im Inner Circle?", "2")
-            werte["TELEGRAM_INNER_PRO_TAG"] = frei if frei.isdigit() else "2"
+
         else:
             print("   Nichts angekommen. Steht der Bot wirklich in den Gruppen")
             print("   und hast du dort geschrieben? Du kannst die Kennungen")

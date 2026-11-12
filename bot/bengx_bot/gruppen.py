@@ -4,8 +4,13 @@ Zwei Stufen:
 
     VIP            bezahlt. Bekommt jedes Signal, mit Begründung
                    (Sweep, BOS, FVG) und dem Chance-Risiko-Verhältnis.
-    Inner Circle   offen. Bekommt höchstens zwei Signale am Tag, ohne
-                   Begründung, und darunter den Hinweis auf VIP.
+    Inner Circle   offen. Bekommt genau zwei Signale am Tag — eins in
+                   der London-Sitzung, eins in der New-York-Sitzung —
+                   ohne Begründung, mit dem Hinweis auf VIP darunter.
+
+Nicht die ersten zwei des Tages, sondern eins je Sitzung. Sonst
+entscheidet der Zufall: liegen morgens zwei schwache Signale und
+nachmittags das gute, sähe der Inner Circle nur die schwachen.
 
 Die zwei gehen zur selben Zeit raus wie an VIP, nicht später. Wer sie
 nicht mithandeln kann, weil der Einstieg längst weg ist, sieht auch
@@ -15,8 +20,9 @@ Der Unterschied zu VIP ist nicht die Zeit, sondern die Menge: zwei
 statt aller, und ohne die Begründung. Ein Verzug lässt sich über
 TELEGRAM_INNER_VERZUG trotzdem einstellen.
 
-Der Zähler läuft nach dem Datum dieser Maschine und steht in derselben
-Datei wie der Rest.
+Die Fenster gelten nach der Uhr dieser Maschine — Ben sitzt in
+Deutschland, also deutsche Zeit. Fällt ein Signal in kein Fenster
+(nachts, Asien), geht es nur an VIP.
 
 Verschickt wird über dieselbe Bot-API wie beim Assistenten. Der Verzug
 läuft ohne Hintergrundfaden: wartende Nachrichten stehen in einer Datei,
@@ -64,7 +70,10 @@ class GruppenSettings:
     inner_chat_id: str = ""
     vip_chat_id: str = ""
     inner_verzug_min: int = 0
-    inner_pro_tag: int = 2
+    # Je ein Gratis-Signal pro Fenster, in deutscher Zeit. London endet,
+    # wo New York beginnt: so faellt jedes Signal in hoechstens eins.
+    frei_london: str = "09:00-15:30"
+    frei_newyork: str = "15:30-23:00"
     state_file: str = "state/gruppen.json"
 
     @staticmethod
@@ -74,15 +83,14 @@ class GruppenSettings:
             verzug = int(e.get("TELEGRAM_INNER_VERZUG", "0") or 0)
         except (TypeError, ValueError):
             verzug = 0
-        try:
-            frei = int(e.get("TELEGRAM_INNER_PRO_TAG", "2") or 2)
-        except (TypeError, ValueError):
-            frei = 2
         return GruppenSettings(
             inner_chat_id=str(e.get("TELEGRAM_INNER_CHAT_ID", "")).strip(),
             vip_chat_id=str(e.get("TELEGRAM_VIP_CHAT_ID", "")).strip(),
             inner_verzug_min=max(0, min(240, verzug)),
-            inner_pro_tag=max(0, min(20, frei)),
+            frei_london=str(e.get("TELEGRAM_FREI_LONDON", "09:00-15:30")).strip()
+                        or "09:00-15:30",
+            frei_newyork=str(e.get("TELEGRAM_FREI_NEWYORK", "15:30-23:00")).strip()
+                         or "15:30-23:00",
             state_file=str(e.get("TELEGRAM_GRUPPEN_STATE", "state/gruppen.json")).strip()
             or "state/gruppen.json",
         )
@@ -261,24 +269,61 @@ class Verteiler:
                        encoding="utf-8")
         tmp.replace(p)
 
-    # ---- Gratis-Kontingent ------------------------------------------------
+    # ---- Gratis-Kontingent nach Sitzung -----------------------------------
+    def fenster(self) -> list[tuple[str, str, int, int]]:
+        """Die Sitzungsfenster als (Schlüssel, Name, von, bis) in Minuten."""
+        raus = []
+        for schluessel, name, spanne in (
+                ("london", "London", self.settings.frei_london),
+                ("newyork", "New York", self.settings.frei_newyork)):
+            grenzen = _spanne_lesen(spanne)
+            if grenzen:
+                raus.append((schluessel, name, grenzen[0], grenzen[1]))
+        return raus
+
+    def fenster_jetzt(self) -> tuple[str, str] | None:
+        """In welcher Sitzung wir gerade sind, oder None."""
+        from datetime import datetime
+        jetzt = datetime.fromtimestamp(self.uhr())
+        minute = jetzt.hour * 60 + jetzt.minute
+        for schluessel, name, von, bis in self.fenster():
+            if von <= minute < bis:
+                return schluessel, name
+        return None
+
+    def _frei_tag(self) -> dict[str, int]:
+        frei = self._stand.setdefault("frei", {})
+        eintrag = frei.get(self._tag())
+        if not isinstance(eintrag, dict):      # alte Form war eine Zahl
+            eintrag = {}
+            frei[self._tag()] = eintrag
+        return eintrag
+
     def _tag(self) -> str:
         """Datum nach der Uhr dieses Rechners — Ben sitzt in Deutschland."""
         from datetime import datetime
         return datetime.fromtimestamp(self.uhr()).strftime("%Y-%m-%d")
 
-    def frei_heute(self) -> int:
-        return int((self._stand.get("frei") or {}).get(self._tag(), 0))
-
-    def frei_offen(self) -> int:
-        return max(0, self.settings.inner_pro_tag - self.frei_heute())
+    def frei_moeglich(self) -> tuple[bool, str]:
+        """Darf jetzt ein Gratis-Signal raus? Mit Begründung, wenn nicht."""
+        wo = self.fenster_jetzt()
+        if wo is None:
+            namen = " und ".join(n for _, n, _, _ in self.fenster()) or "keine"
+            return False, f"ausserhalb der Sitzungen ({namen})"
+        schluessel, name = wo
+        if self._frei_tag().get(schluessel, 0) >= 1:
+            return False, f"das {name}-Signal von heute ist schon raus"
+        return True, name
 
     def _frei_buchen(self) -> None:
-        tag = self._tag()
-        frei = self._stand.setdefault("frei", {})
-        frei[tag] = int(frei.get(tag, 0)) + 1
+        wo = self.fenster_jetzt()
+        if wo is None:
+            return
+        eintrag = self._frei_tag()
+        eintrag[wo[0]] = int(eintrag.get(wo[0], 0)) + 1
         # Alte Tage nicht mitschleppen.
-        for alt in [k for k in frei if k < tag][:-14]:
+        frei = self._stand["frei"]
+        for alt in sorted(k for k in frei if k < self._tag())[:-14]:
             frei.pop(alt, None)
 
     # ---- Versand ----------------------------------------------------------
@@ -298,9 +343,10 @@ class Verteiler:
     def signal_senden(self, signal: dict[str, Any]) -> dict[str, Any]:
         """Verteilt ein Signal an beide Gruppen.
 
-        Der Inner Circle bekommt höchstens `inner_pro_tag` Signale am Tag.
-        Ist das Kontingent aufgebraucht, geht das Signal nur an VIP — und
-        die Antwort sagt das, damit Ben es weiß.
+        Der Inner Circle bekommt eins je Sitzung: London und New York.
+        Ist das Fenster schon belegt oder liegt die Zeit ausserhalb beider
+        Sitzungen, geht das Signal nur an VIP — und die Antwort sagt den
+        Grund, damit Ben es weiss.
         """
         sauber = pruefen(signal)
         if not sauber["id"]:
@@ -323,10 +369,11 @@ class Verteiler:
         jetzt = self.uhr()
         for g in ziele:
             frei = g.schluessel == "inner"
-            if frei and self.frei_offen() <= 0:
-                ausgelassen.append(
-                    f"{g.name} (die {self.settings.inner_pro_tag} für heute sind raus)")
-                continue
+            if frei:
+                darf, grund = self.frei_moeglich()
+                if not darf:
+                    ausgelassen.append(f"{g.name} ({grund})")
+                    continue
             text = text_signal(sauber, g.ausfuehrlich, self.pip, werbung=frei)
             if frei:
                 self._frei_buchen()
@@ -529,8 +576,10 @@ class Verteiler:
             tiefe = "mit Begründung" if g.ausfuehrlich else "knapp"
             zusatz = ""
             if g.schluessel == "inner":
-                zusatz = (f", noch {self.frei_offen()} von "
-                          f"{self.settings.inner_pro_tag} heute frei")
+                offen = [n for k, n, _, _ in self.fenster()
+                         if self._frei_tag().get(k, 0) < 1]
+                zusatz = (", noch offen: " + ", ".join(offen)) if offen \
+                    else ", beide Sitzungen für heute raus"
             zeilen.append(f"{g.name}: {wann}, {tiefe}{zusatz}")
         wartend = self._stand.get("wartend") or []
         if wartend:
@@ -559,6 +608,25 @@ class Verteiler:
         signale = list((self._stand.get("signale") or {}).values())
         signale.sort(key=lambda s: str(s.get("openedAt", "")), reverse=True)
         return signale[:max(1, anzahl)]
+
+
+def _spanne_lesen(text: str) -> tuple[int, int] | None:
+    """"09:00-15:30" -> (540, 930). Unlesbares ergibt None."""
+    teile = str(text or "").replace(" ", "").split("-")
+    if len(teile) != 2:
+        return None
+    raus = []
+    for stueck in teile:
+        stunde, _, minute = stueck.partition(":")
+        if not stunde.isdigit() or (minute and not minute.isdigit()):
+            return None
+        h, m = int(stunde), int(minute or 0)
+        if not (0 <= h <= 24 and 0 <= m < 60):
+            return None
+        raus.append(h * 60 + m)
+    if raus[0] >= raus[1]:
+        return None
+    return raus[0], raus[1]
 
 
 def _jetzt_iso(epoch: float) -> str:

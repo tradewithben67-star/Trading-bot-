@@ -37,6 +37,14 @@ from .llm import LLMSettings
 API = "https://api.telegram.org"
 
 
+DOPPELT = (
+    "Es läuft noch ein zweiter Bot mit demselben Token.\n"
+    "Telegram lässt immer nur einen gleichzeitig zu.\n\n"
+    "Schließ alle anderen schwarzen Fenster — auch die aus einer "
+    "älteren Entpackung — und starte dann neu. Solange zwei laufen, "
+    "nimmt der eine dem anderen die Nachrichten weg.")
+
+
 class Umgezogen(ConnectionError):
     """Die Gruppe wurde zur Supergruppe und hat dabei eine neue Kennung.
 
@@ -111,6 +119,10 @@ class HttpTransport:
             neu = _umgezogen_nach(roh)
             if neu:
                 raise Umgezogen(payload.get("chat_id", "?"), neu) from exc
+            # Telegrams eigener Text dazu ist englisch und sagt einem
+            # Menschen nichts. Das hier ist die haeufigste Ursache.
+            if exc.code == 409:
+                raise ConnectionError(DOPPELT) from exc
             raise ConnectionError(
                 f"Telegram antwortet {exc.code}: {roh[:300]}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:

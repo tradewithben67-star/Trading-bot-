@@ -220,3 +220,45 @@ class TestGruppenErkennen(unittest.TestCase):
     def test_leeres_ergebnis(self):
         self.assertEqual(einrichten.gruppen_aus_updates({}), [])
         self.assertEqual(einrichten.gruppen_aus_updates({"result": []}), [])
+
+
+class TestZweiterBot(unittest.TestCase):
+    """409 heisst: ein zweiter Bot hoert schon zu. Das muss gesagt werden,
+    statt 90 Sekunden ins Leere zu warten."""
+
+    def test_409_wird_zu_einer_eigenen_meldung(self):
+        import urllib.error, io
+        def kaputt(*a, **k):
+            raise urllib.error.HTTPError("u", 409, "Conflict", {}, io.BytesIO(b"{}"))
+        alt = einrichten.urllib.request.urlopen
+        einrichten.urllib.request.urlopen = kaputt
+        try:
+            with self.assertRaises(einrichten.LaeuftSchon):
+                einrichten.telegram("t", "getUpdates")
+        finally:
+            einrichten.urllib.request.urlopen = alt
+
+    def test_andere_fehler_bleiben_wie_sie_sind(self):
+        import urllib.error, io
+        def kaputt(*a, **k):
+            raise urllib.error.HTTPError("u", 401, "Unauthorized", {}, io.BytesIO(b"{}"))
+        alt = einrichten.urllib.request.urlopen
+        einrichten.urllib.request.urlopen = kaputt
+        try:
+            with self.assertRaises(urllib.error.HTTPError):
+                einrichten.telegram("t", "getUpdates")
+        finally:
+            einrichten.urllib.request.urlopen = alt
+
+    def test_gruppensuche_bricht_ab_statt_zu_warten(self):
+        import urllib.error, io, time
+        def kaputt(*a, **k):
+            raise urllib.error.HTTPError("u", 409, "Conflict", {}, io.BytesIO(b"{}"))
+        alt = einrichten.urllib.request.urlopen
+        einrichten.urllib.request.urlopen = kaputt
+        t0 = time.time()
+        try:
+            self.assertEqual(einrichten.gruppen_suchen("t", sekunden=90), [])
+        finally:
+            einrichten.urllib.request.urlopen = alt
+        self.assertLess(time.time() - t0, 5, "haette sofort abbrechen muessen")

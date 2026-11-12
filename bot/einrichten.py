@@ -143,6 +143,17 @@ def alte_einstellungen(start: Path, tiefe: int = 3) -> list[Path]:
     return einmalig
 
 
+def _doppelt() -> None:
+    print()
+    print("   Es läuft noch ein zweiter Bot mit demselben Token.")
+    print("   Telegram lässt immer nur einen gleichzeitig zu, deshalb")
+    print("   komme ich gerade nicht an die Nachrichten heran.")
+    print()
+    print("   Schließ alle anderen schwarzen Fenster — auch die aus")
+    print("   einer älteren Entpackung — und starte das hier neu.")
+    print()
+
+
 def gruppen_suchen(token: str, sekunden: int = 90) -> list[tuple[str, str]]:
     """Wartet darauf, dass in den Gruppen etwas geschrieben wird."""
     gefunden: list[tuple[str, str]] = []
@@ -153,6 +164,9 @@ def gruppen_suchen(token: str, sekunden: int = 90) -> list[tuple[str, str]]:
         try:
             antwort = telegram(token, "getUpdates",
                                {"offset": letzte, "timeout": 20}, frist=35)
+        except LaeuftSchon:
+            _doppelt()
+            return gefunden
         except (urllib.error.URLError, TimeoutError, OSError):
             continue
         for update in antwort.get("result") or []:
@@ -207,14 +221,28 @@ def gruppen_aus_updates(antwort: dict) -> list[tuple[str, str]]:
 
 
 # ---- Netz ----------------------------------------------------------------
+class LaeuftSchon(Exception):
+    """Ein zweiter Bot mit demselben Token hoert bereits zu.
+
+    Telegram laesst nur einen gleichzeitig abrufen. Ohne diese Meldung
+    wartet die Einrichtung 90 Sekunden ins Leere und sagt dann nur
+    "Nichts angekommen" — der eigentliche Grund bleibt verborgen.
+    """
+
+
 def telegram(token: str, methode: str, nutzlast: dict | None = None,
              frist: float = 40.0) -> dict:
     daten = json.dumps(nutzlast or {}).encode("utf-8")
     anfrage = urllib.request.Request(
         f"{API}/bot{token}/{methode}", data=daten,
         headers={"Content-Type": "application/json"})
-    with urllib.request.urlopen(anfrage, timeout=frist) as antwort:
-        return json.loads(antwort.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(anfrage, timeout=frist) as antwort:
+            return json.loads(antwort.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        if exc.code == 409:
+            raise LaeuftSchon() from exc
+        raise
 
 
 # ---- Ablauf ---------------------------------------------------------------
@@ -320,6 +348,9 @@ def main() -> int:
         try:
             antwort = telegram(token, "getUpdates",
                                {"offset": letzte, "timeout": 25}, frist=40)
+        except LaeuftSchon:
+            _doppelt()
+            break
         except (urllib.error.URLError, TimeoutError, OSError):
             continue
         treffer = chat_aus_updates(antwort)

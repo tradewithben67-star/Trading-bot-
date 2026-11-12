@@ -327,6 +327,10 @@ def cmd_pruefen(args) -> int:
 
     print("BENGX — Prüfung")
     print("=" * 40)
+    # Gesammelt, damit am Ende ein Rückgabewert steht, auf den sich eine
+    # Startdatei verlassen kann. Vorher meldete die Prüfung immer Erfolg,
+    # auch wenn gar nichts ging.
+    fehlt: list[str] = []
     print(f"\nEinstellungen aus: {args.env or '.env'}"
           f"{' (nicht gefunden)' if not datei else ''}")
 
@@ -335,6 +339,7 @@ def cmd_pruefen(args) -> int:
     print("\n1. Telegram")
     if not tg.token:
         print("   Kein TELEGRAM_TOKEN. Erst einrichten.py laufen lassen.")
+        fehlt.append("der Telegram-Token")
     else:
         try:
             antwort = HttpTransport(tg.token, timeout=15).call("getMe", {})
@@ -342,7 +347,10 @@ def cmd_pruefen(args) -> int:
             print(f"   Token gilt. Der Bot heißt @{name}.")
         except ConnectionError as exc:
             print(f"   Token wird nicht angenommen: {exc}")
+            fehlt.append("ein gültiger Telegram-Token")
     print(f"   Chat-Kennung: {tg.chat_id or 'fehlt — der Bot nennt sie dir'}")
+    if not tg.chat_id:
+        fehlt.append("deine Chat-Kennung")
 
     # 2. Anbieter
     llm = LLMSettings.from_env(umgebung)
@@ -355,6 +363,7 @@ def cmd_pruefen(args) -> int:
     hindernis = assistent.hindernis()
     if hindernis:
         print(f"   {hindernis}")
+        fehlt.append("ein Modell, das antwortet")
     else:
         if gewaehlt == "gemini":
             anbieter = assistent.provider
@@ -386,6 +395,10 @@ def cmd_pruefen(args) -> int:
         text = assistent.answer("Antworte nur mit dem Wort: bereit",
                                 "LAGE\nnichts Besonderes")
         print(f"   Antwort: {text[:400]}")
+        # Bleibt die Antwort leer oder kommt eine Absage zurück, ist der
+        # Assistent nicht einsatzbereit — auch wenn der Schlüssel da ist.
+        if not text.strip() or "Solange gehen nur die Befehle" in text:
+            fehlt.append("eine Antwort vom Modell")
         if gewaehlt == "gemini":
             for notiz in assistent.provider.notizen:
                 print(f"   Hinweis: {notiz}")
@@ -395,6 +408,16 @@ def cmd_pruefen(args) -> int:
     print("\n4. Am Code weiterbauen")
     print("   " + (coder.status() or
                    f"geht, Ordner {Path(coder.settings.repo).resolve()}"))
+
+    print("\n" + "=" * 40)
+    if fehlt:
+        print("Noch nicht startklar. Es fehlt:")
+        for was in dict.fromkeys(fehlt):
+            print(f"  - {was}")
+        print("\nMach ein Foto von diesem Fenster und schick es Claude.")
+        print()
+        return 1
+    print("Alles da. Der Bot ist startklar.")
     print()
     return 0
 

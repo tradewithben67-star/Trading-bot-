@@ -82,7 +82,35 @@ deinem letzten Download hat sich viel geändert.
 Deine alten Zugangsdaten gehen nicht verloren — die Einrichtung fragt,
 ob sie sie aus der vorherigen Entpackung übernehmen soll.
 
-### 7. `einrichten.bat` doppelklicken
+### 7. `LOSGEHTS.bat` doppelklicken
+
+Eine Datei, die alles der Reihe nach macht: einrichten, prüfen, und
+**nur bei grün** starten. Fehlt Python, bietet sie an, es zu
+installieren — dann danach noch einmal doppelklicken.
+
+Sie führt dich durch fünf Schritte:
+
+1. **Token** — von @BotFather. Rechtsklick fügt ein.
+2. **Deine Chat-Kennung** — schreib deinem Bot privat „hallo", er
+   erkennt sie selbst.
+3. **Deine Gruppen** — sag Ja, er findet beide und fragt, welche welche
+   ist. Beim Vorsprung für VIP: **0** eingeben.
+4. **Wer antwortet** — `1` für Gemini, dann deinen Schlüssel einfügen.
+5. **Am Code weiterbauen** — kommt nur bei Claude, überspring es.
+
+Danach prüft sie von selbst. Fehlt etwas, **startet sie den Bot nicht**
+und sagt dir genau, was. Mach davon ein Foto und schick es mir.
+
+Ist alles da, läuft der Bot sofort los. Das Fenster **offen lassen** —
+schließt du es, ist er aus.
+
+Die einzelnen Dateien gibt es weiterhin, falls du nur einen Schritt
+willst: `einrichten.bat`, `pruefen.bat`, `starten.bat`.
+
+<details>
+<summary>Der alte Weg mit drei Doppelklicks</summary>
+
+### `einrichten.bat` doppelklicken
 
 Im Ordner `bot`. Fehlt Python, bietet das Fenster an, es selbst zu
 installieren — dann danach **noch einmal** doppelklicken.
@@ -97,18 +125,17 @@ Es führt dich durch fünf Schritte:
 4. **Wer antwortet** — `1` für Gemini, dann deinen Schlüssel einfügen.
 5. **Am Code weiterbauen** — kommt nur bei Claude, überspring es.
 
-### 8. `pruefen.bat` doppelklicken
+### `pruefen.bat` doppelklicken
 
-**Das ist der wichtigste Schritt.** Er sagt dir, ob dein Gemini-Schlüssel
-wirklich funktioniert. Das wissen wir bis heute nicht.
+Sagt dir, ob dein Gemini-Schlüssel wirklich funktioniert. Das wissen wir
+bis heute nicht.
 
-Kommt eine Fehlermeldung: mach ein Foto und schick es mir. Nicht weiter
-machen, bis das grün ist — ohne Antwortmodell kann der Assistent nichts.
-
-### 9. `starten.bat` doppelklicken
+### `starten.bat` doppelklicken
 
 Das Fenster **offen lassen**. Solange es läuft, antwortet dein Bot.
 Schließt du es, ist er aus.
+
+</details>
 
 ---
 

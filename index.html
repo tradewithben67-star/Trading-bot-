@@ -72,67 +72,90 @@ a{color:var(--fg)}
   max-width:1200px;
   margin:0 auto;
   display:grid;
-  grid-template-columns:clamp(140px,16vw,212px) minmax(0,1fr);
-  gap:clamp(26px,5vw,74px);
+  grid-template-columns:minmax(0,1fr);
   padding-left:max(16px,env(safe-area-inset-left,0px));
   padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:clamp(28px,5vw,64px);
+  padding-top:calc(var(--bar,64px) + clamp(10px,2vw,26px));
+  padding-bottom:clamp(28px,5vw,64px);
 }
 
-/* ---------- Leiste ---------- */
-.rail{position:sticky;top:clamp(28px,5vw,64px);align-self:start}
-.rail::after{
-  content:"";
-  position:absolute;
-  left:0;top:2px;bottom:2px;
-  width:1px;
-  background:linear-gradient(180deg,transparent,rgba(255,255,255,.16) 18%,rgba(255,255,255,.16) 82%,transparent);
+/* ---------- Kopfleiste ----------
+   Die Buchstaben standen früher links untereinander. Jetzt stehen sie oben
+   quer und bleiben beim Scrollen stehen. */
+.topbar{
+  position:fixed;top:0;left:0;right:0;z-index:40;
+  background:rgba(7,8,10,.58);
+  -webkit-backdrop-filter:blur(12px) saturate(125%);
+  backdrop-filter:blur(12px) saturate(125%);
+  border-bottom:1px solid rgba(239,196,94,.22);
+  padding-top:env(safe-area-inset-top,0px);
 }
-.rail__list{list-style:none;margin:0;padding:0;display:grid;gap:clamp(2px,.5vw,7px);position:relative;z-index:1}
+.topbar__in{
+  max-width:1200px;margin:0 auto;
+  display:flex;align-items:center;gap:clamp(12px,2.4vw,30px);
+  padding:clamp(9px,1.5vw,15px) max(16px,env(safe-area-inset-left,0px))
+          clamp(9px,1.5vw,15px) max(16px,env(safe-area-inset-right,0px));
+  transition:padding .4s cubic-bezier(.22,1,.36,1);
+}
+/* Beim Runterscrollen rückt die Leiste zusammen. */
+.topbar.is-compact .topbar__in{padding-top:clamp(5px,.8vw,8px);padding-bottom:clamp(5px,.8vw,8px)}
+
+.rail__list{
+  list-style:none;margin:0;padding:0;
+  display:flex;align-items:baseline;gap:clamp(7px,1.9vw,26px);
+}
 .ltr{
-  appearance:none;background:none;border:0;margin:0;
-  padding:0 0 0 20px;
-  width:100%;
-  text-align:left;
-  cursor:pointer;
-  position:relative;
-  font-family:var(--f-display);
-  font-weight:800;
-  font-size:clamp(40px,5.8vw,68px);
-  line-height:1.02;
-  letter-spacing:-.045em;
-  background-image:var(--chrome);
-  background-size:100% 100%;
-  -webkit-background-clip:text;
-  background-clip:text;
-  color:transparent;
-  opacity:.5;
-  transition:opacity .25s ease;
+  appearance:none;background:none;border:0;margin:0;padding:0 0 6px;
+  cursor:pointer;position:relative;display:block;
+  font-family:var(--f-display);font-weight:800;
+  font-size:clamp(26px,3.6vw,40px);
+  line-height:1;letter-spacing:-.045em;
+  background-image:var(--chrome);background-size:100% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  opacity:.52;
+  transition:opacity .36s cubic-bezier(.22,1,.36,1),
+             font-size .4s cubic-bezier(.22,1,.36,1),
+             background-image .36s ease;
 }
+.topbar.is-compact .ltr{font-size:clamp(21px,2.7vw,30px)}
+/* Der Strich saß links neben dem Buchstaben; quer gehört er darunter. */
 .ltr::before{
-  content:"";
-  position:absolute;
-  left:-1px;top:18%;bottom:18%;
-  width:2px;
-  background:var(--gold);
-  box-shadow:0 0 10px rgba(239,196,94,.55);
-  opacity:0;
-  transform:scaleY(.4);
-  transform-origin:center;
-  transition:opacity .25s ease,transform .25s ease;
+  content:"";position:absolute;left:4%;right:4%;bottom:0;height:2px;
+  background:var(--gold);box-shadow:0 0 10px rgba(239,196,94,.55);
+  opacity:0;transform:scaleX(.3);transform-origin:50% 50%;
+  transition:opacity .36s cubic-bezier(.22,1,.36,1),transform .36s cubic-bezier(.22,1,.36,1);
 }
-.ltr:hover{opacity:.84}
+.ltr:hover{opacity:.85}
 .ltr[aria-current="true"]{opacity:1;background-image:var(--gilt);background-size:100% 240%}
-.ltr[aria-current="true"]::before{opacity:1;transform:scaleY(1)}
+.ltr[aria-current="true"]::before{opacity:1;transform:scaleX(1)}
 @media (prefers-reduced-motion:no-preference){
   .ltr[aria-current="true"]{animation:gleam 8s ease-in-out infinite}
   @keyframes gleam{0%,100%{background-position:0 0}50%{background-position:0 100%}}
 }
-.rail__meta{margin-top:24px;padding-left:20px;display:grid;gap:5px}
+
 .rail__word{
-  font-family:var(--f-data);font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--fg-mid);
+  margin:0;flex:1 1 auto;min-width:0;
+  font-family:var(--f-data);font-size:11px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--fg-mid);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  transition:opacity .28s ease;
 }
-.rail__hint{font-family:var(--f-data);font-size:10px;letter-spacing:.1em;color:rgba(125,132,141,.7)}
+.rail__word.is-out{opacity:0}
+
+/* Fortschritt: füllt sich stufenlos von links nach rechts. */
+.topbar__fill{
+  position:absolute;left:0;bottom:-1px;height:2px;width:100%;
+  background:linear-gradient(90deg,var(--gold-dim),var(--gold));
+  box-shadow:0 0 10px rgba(239,196,94,.45);
+  transform:scaleX(0);transform-origin:0 50%;
+}
+
+@media (max-width:620px){
+  .topbar__in{gap:10px}
+  .rail__word{display:none}        /* auf dem Handy zählt die Breite */
+  .count{margin-left:auto}         /* ohne Wort fehlt sonst der Abstand */
+  .ltr{font-size:clamp(23px,7.2vw,32px)}
+}
 
 /* ---------- Tafeln ---------- */
 .stage{min-width:0}
@@ -240,7 +263,8 @@ a{color:var(--fg)}
 }
 .rules li:hover{background:rgba(255,255,255,.035)}
 .rules i{font-style:normal;font-family:var(--f-data);font-size:11px;color:var(--gold);letter-spacing:.08em}
-.rules b{display:block;font-weight:500;font-size:16px;color:var(--fg);letter-spacing:-.005em}
+.rules li>div>b{display:block;font-weight:500;font-size:16px;color:var(--fg);letter-spacing:-.005em}
+.rules span b{font-weight:600;color:var(--fg)}
 .rules span{color:var(--fg-mid);font-size:14.5px}
 .chip{
   display:inline-flex;align-items:center;gap:8px;
@@ -343,7 +367,6 @@ a{color:var(--fg)}
   .split{grid-template-columns:minmax(0,1fr)}
 }
 @media (max-width:760px){
-  .shell{grid-template-columns:clamp(50px,13vw,96px) minmax(0,1fr);gap:clamp(15px,4vw,30px)}
   .ltr{font-size:clamp(29px,7.8vw,44px);padding-left:13px}
   .rail__meta{display:none}
   .panel{gap:20px}
@@ -481,6 +504,84 @@ a{color:var(--fg)}
 }
 .selbar b{color:var(--gold);font-weight:400}
 
+/* ================= Durchgehender Fluss =================
+   Vorher war jeder Buchstabe eine eigene Seite, die ein- und ausgeblendet
+   wurde. Jetzt stehen alle fünf untereinander und man scrollt hindurch. */
+.panel{
+  padding-block:clamp(52px,8vw,108px);
+  min-height:100vh;
+  min-height:calc(100svh - var(--bar,64px));
+  display:flex;flex-direction:column;justify-content:center;
+  /* Beim Springen darf die Überschrift nicht unter der Leiste liegen. */
+  scroll-margin-top:calc(var(--bar,64px) + 12px);
+}
+.panel:first-of-type{padding-top:clamp(12px,2vw,30px)}
+
+/* Trenner: zieht sich beim Reinscrollen von links nach rechts auf. */
+.seam{
+  height:1px;border:0;margin:0;
+  background:linear-gradient(90deg,transparent 0%,rgba(176,142,54,.5) 16%,var(--gold) 50%,rgba(176,142,54,.5) 84%,transparent 100%);
+  opacity:.55;
+  transform:scaleX(0);transform-origin:0 50%;
+  transition:transform 1.15s cubic-bezier(.22,1,.36,1);
+}
+.seam.is-in{transform:scaleX(1)}
+
+/* Inhalte gleiten gestaffelt herein statt aufzuploppen. */
+[data-reveal]{
+  opacity:0;
+  transform:translateY(26px);
+  filter:blur(4px);
+  transition:opacity .6s cubic-bezier(.22,1,.36,1) var(--d,0s),
+             transform .6s cubic-bezier(.22,1,.36,1) var(--d,0s),
+             filter .6s cubic-bezier(.22,1,.36,1) var(--d,0s);
+  will-change:opacity,transform;
+}
+[data-reveal].is-in{opacity:1;transform:none;filter:none;will-change:auto}
+
+/* Zähler oben rechts, zählt beim Scrollen mit.
+   Negative Grundlinie: er soll Platz einnehmen, aber den Text nicht
+   nach unten schieben. */
+.count{
+  display:flex;gap:7px;align-items:baseline;flex:0 0 auto;
+  font-family:var(--f-data);font-size:11px;letter-spacing:.2em;
+  color:var(--fg-dim);pointer-events:none;
+}
+.count__win{display:block;overflow:hidden;height:1.25em}
+.count__strip{display:block;transition:transform .5s cubic-bezier(.22,1,.36,1)}
+.count__strip i{display:block;height:1.25em;font-style:normal;color:var(--gold)}
+.count__tot{opacity:.75}
+
+/* Hover: weicher Gold-Schein und ein, zwei Pixel Auftrieb. */
+.rules li,.bot,.facts li,.btn,.tab,.pick{
+  transition:background .3s ease,border-color .3s ease,color .3s ease,
+             transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s ease;
+}
+.rules li:hover,.bot:hover,.facts li:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 26px -14px rgba(239,196,94,.5),0 0 0 1px rgba(239,196,94,.18) inset;
+}
+.btn:hover,.tab:hover,.pick:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 20px -10px rgba(239,196,94,.6);
+}
+
+/* Wer Bewegung abgestellt hat, bekommt alles sofort und ruhig. */
+@media (prefers-reduced-motion:reduce){
+  [data-reveal],[data-reveal].is-in{opacity:1;transform:none;filter:none;transition:none}
+  .seam,.seam.is-in{transform:scaleX(1);transition:none}
+  .count__strip{transition:none}
+  .rules li:hover,.bot:hover,.facts li:hover,.btn:hover,.tab:hover,.pick:hover{transform:none}
+  html{scroll-behavior:auto}
+}
+
+@media (max-width:760px){
+  .count{font-size:10px}
+  .panel{padding-block:clamp(44px,11vw,76px)}
+}
+
+/* Über eigenen Scrollflächen soll das Rad die Fläche bewegen, nicht die Seite. */
+[data-eigen-scroll]{overscroll-behavior:contain}
 </style>
 </head>
 <body>
@@ -493,26 +594,33 @@ a{color:var(--fg)}
 </div>
 </div>
 
-<div class="shell">
-  <nav class="rail" aria-label="Abschnitte">
-    <ul class="rail__list" id="rail">
-      <li><button class="ltr" type="button" data-key="ben" aria-current="true">B</button></li>
-      <li><button class="ltr" type="button" data-key="entdecken">E</button></li>
-      <li><button class="ltr" type="button" data-key="mitglieder">N</button></li>
-      <li><button class="ltr" type="button" data-key="gold">G</button></li>
-      <li><button class="ltr" type="button" data-key="xaubot">X</button></li>
-    </ul>
-    <div class="rail__meta">
-      <p class="rail__word" id="railword">Ben</p>
-      <p class="rail__hint">Buchstabe drücken</p>
+<header class="topbar" id="topbar">
+  <div class="topbar__in">
+    <nav class="rail" aria-label="Abschnitte">
+      <ul class="rail__list" id="rail">
+        <li><button class="ltr" type="button" data-key="ben" aria-current="true">B</button></li>
+        <li><button class="ltr" type="button" data-key="entdecken">E</button></li>
+        <li><button class="ltr" type="button" data-key="mitglieder">N</button></li>
+        <li><button class="ltr" type="button" data-key="gold">G</button></li>
+        <li><button class="ltr" type="button" data-key="xaubot">X</button></li>
+      </ul>
+    </nav>
+    <p class="rail__word" id="railword">Ben</p>
+    <div class="count num" aria-hidden="true">
+      <span class="count__win"><span class="count__strip" id="countstrip"><i>01</i><i>02</i><i>03</i><i>04</i><i>05</i></span></span>
+      <span class="count__tot">/ 05</span>
     </div>
-  </nav>
+  </div>
+  <span class="topbar__fill" id="railfill" aria-hidden="true"></span>
+</header>
+
+<div class="shell">
 
   <main class="stage" id="stage">
 
     <section class="panel" id="p-ben" data-panel="ben">
       <header class="phead">
-        <div class="phead__top"><p class="kick">B — Ben</p><p class="idx num">01 / 05</p></div>
+        <div class="phead__top"><p class="kick">B — Ben</p></div>
         <h1 class="chrome">Ben</h1>
         <p class="lead">18, aus Deutschland, seit einem Jahr am Markt — und das ausschließlich auf Gold.</p>
       </header>
@@ -552,12 +660,13 @@ a{color:var(--fg)}
         <li><p class="k">Markt</p><p class="v">XAU/USD</p></li>
       </ul>
 
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="entdecken">E — Entdecken →</button></nav>
     </section>
 
-    <section class="panel" id="p-entdecken" data-panel="entdecken" hidden>
+    <hr class="seam" aria-hidden="true">
+
+    <section class="panel" id="p-entdecken" data-panel="entdecken">
       <header class="phead">
-        <div class="phead__top"><p class="kick">E — Entdecken</p><p class="idx num">02 / 05</p></div>
+        <div class="phead__top"><p class="kick">E — Entdecken</p></div>
         <h2 class="chrome">Lernen, Schritt für Schritt</h2>
         <p class="lead">Vom ersten Chart bis zum eigenen Regelwerk. Kein Hype, keine Abkürzung — der Weg, den ich selbst gegangen bin.</p>
       </header>
@@ -568,12 +677,13 @@ a{color:var(--fg)}
         <li><i>03</i><div><b>Praxis</b><span>Am Papierkonto üben, protokollieren, auswerten. Erst dann echtes Geld.</span></div></li>
       </ul>
       <p class="note">Inhalte und Funktionen folgen. Sag mir, was in diesen Bereich soll — Videos, Kurse, Texte, Downloads — dann baue ich es ein.</p>
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="mitglieder">N — Neue Mitglieder →</button></nav>
     </section>
 
-    <section class="panel" id="p-mitglieder" data-panel="mitglieder" hidden>
+    <hr class="seam" aria-hidden="true">
+
+    <section class="panel" id="p-mitglieder" data-panel="mitglieder">
       <header class="phead">
-        <div class="phead__top"><p class="kick">N — Neue Mitglieder</p><p class="idx num">03 / 05</p></div>
+        <div class="phead__top"><p class="kick">N — Neue Mitglieder</p></div>
         <h2 class="chrome">Neu dabei</h2>
         <p class="lead">Konto bei Tradequo, Bot verbinden, laufen lassen. Danach brauchst du nichts weiter als Empfang.</p>
       </header>
@@ -595,12 +705,13 @@ a{color:var(--fg)}
         <button class="btn btn--plain" type="button" data-goto="ben">Wer ist Ben?</button>
       </div>
       <p class="note">Preise und Mitgliederbereich folgen. Der Handel läuft über dein eigenes Konto bei Tradequo — ich fasse dein Geld nie an und kann es auch nicht. Keine Anlageberatung; Verluste bis zum Totalverlust sind möglich.</p>
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="gold">G — Signale →</button></nav>
     </section>
 
-    <section class="panel" id="p-gold" data-panel="gold" hidden>
+    <hr class="seam" aria-hidden="true">
+
+    <section class="panel" id="p-gold" data-panel="gold">
       <header class="phead">
-        <div class="phead__top"><p class="kick">G — Signale</p><p class="idx num">04 / 05</p></div>
+        <div class="phead__top"><p class="kick">G — Signale</p></div>
         <h2 class="gilt">Signale</h2>
         <p class="lead">Oben steht immer nur das neueste Signal auf XAU/USD, dazu die Winrate und die Pips von heute. Alles Ältere liegt in der Historie.</p>
       </header>
@@ -624,12 +735,13 @@ a{color:var(--fg)}
       </div>
 
       <p class="note">Keine Anlageberatung. Ein Signal ist meine eigene Entscheidung, keine Empfehlung an dich. Der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
-      <nav class="next"><span class="next__lbl">Weiter</span><button type="button" data-goto="xaubot">X — Bots →</button></nav>
     </section>
 
-    <section class="panel" id="p-xaubot" data-panel="xaubot" hidden>
+    <hr class="seam" aria-hidden="true">
+
+    <section class="panel" id="p-xaubot" data-panel="xaubot">
       <header class="phead">
-        <div class="phead__top"><p class="kick">X — Bots</p><p class="idx num">05 / 05</p></div>
+        <div class="phead__top"><p class="kick">X — Bots</p></div>
         <h2 class="gilt">Bots</h2>
         <p class="lead">Drei Bots, drei Arbeitsweisen. Nimm einen — oder lass mehrere gleichzeitig laufen.</p>
       </header>
@@ -703,19 +815,18 @@ a{color:var(--fg)}
       </div>
 
       <p class="note">Alle drei Bots sind gebaut und getestet und laufen auf dem Papierkonto. Echtes Geld fassen sie erst an, wenn das Regelwerk über echte Golddaten nachgerechnet und ein Broker angebunden ist — beides erzwingen die Bots selbst. Keine Anlageberatung; der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
-      <nav class="next"><span class="next__lbl">Zurück zum Anfang</span><button type="button" data-goto="ben">B — Ben →</button></nav>
     </section>
 
     <section class="panel" id="p-assistent" data-panel="assistent" hidden>
       <header class="phead">
-        <div class="phead__top"><p class="kick">A — Assistent</p><p class="idx num">intern</p></div>
+        <div class="phead__top"><p class="kick">A — Assistent</p></div>
         <h2 class="chrome">Assistent</h2>
         <p class="lead">Schreib normal. Er liest deine Signale, rechnet nach, schaut sich Bilder an und notiert, was repariert werden muss.</p>
       </header>
       <div class="rule"></div>
 
       <div class="chat">
-        <div class="chat__log" id="chatlog"></div>
+        <div class="chat__log" id="chatlog" data-eigen-scroll></div>
         <div class="chat__files" id="chatfiles" hidden></div>
         <div class="chat__bar">
           <textarea id="chatinput" rows="1" placeholder="Zum Beispiel: Wie waren die Signale heute?"></textarea>
@@ -750,43 +861,248 @@ a{color:var(--fg)}
 (function(){
   "use strict";
 
-  var keys=["ben","entdecken","mitglieder","gold","xaubot","assistent"];
+  /* ---------------- Durchgehender Seitenfluss ----------------
+     Alle fünf Abschnitte stehen untereinander. Die Leiste links folgt der
+     Scrollposition, statt Inhalte umzuschalten. Der Assistent ist davon
+     ausgenommen: er ist Bens Werkzeug und wird über die Fußzeile geöffnet. */
+
+  var FLUSS=["ben","entdecken","mitglieder","gold","xaubot"];
   var words={ben:"Ben",entdecken:"Entdecken",mitglieder:"Neue Mitglieder",gold:"Signale",xaubot:"Bots",assistent:"Assistent"};
   var letters={b:"ben",e:"entdecken",n:"mitglieder",g:"gold",x:"xaubot",a:"assistent"};
   var buttons=Array.prototype.slice.call(document.querySelectorAll(".ltr"));
   var word=document.getElementById("railword");
+  var fill=document.getElementById("railfill");
+  var strip=document.getElementById("countstrip");
+  var bar=document.getElementById("topbar");
 
-  function show(key,push){
-    if(keys.indexOf(key)<0){key="ben";}
-    /* Der Assistent ist Bens Werkzeug, keine Seite für Besucher. */
-    if(key==="assistent"&&!window.__bengxEditor){key="ben";}
-    buttons.forEach(function(b){
-      b.setAttribute("aria-current",b.getAttribute("data-key")===key?"true":"false");
-    });
-    keys.forEach(function(k){
-      var el=document.getElementById("p-"+k);
-      if(!el){return;}
-      if(k===key){
-        el.hidden=false;
-        el.removeAttribute("data-enter");
-        void el.offsetWidth;
-        el.setAttribute("data-enter","");
-      }else{
-        el.hidden=true;
-      }
-    });
-    if(word){word.textContent=words[key];}
-    if(push&&location.hash.slice(1)!==key){
-      try{location.hash=key;}catch(e){}
-    }
-    window.scrollTo({top:0,behavior:"auto"});
+  /* Die Leiste liegt fest über dem Inhalt. Ihre Höhe ändert sich mit der
+     Breite und beim Zusammenrücken, deshalb wird sie gemessen statt geraten —
+     sonst verschwindet beim Springen die Überschrift darunter. */
+  function leisteMessen(){
+    if(!bar){return;}
+    document.documentElement.style.setProperty(
+      "--bar",Math.round(bar.getBoundingClientRect().height)+"px");
+  }
+  var ruhig=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+
+  function sektion(k){return document.getElementById("p-"+k);}
+
+  /* ---- Weiches Scrollen ----
+     Selbst gebaut statt einer fremden Bibliothek: die Seite haengt sonst an
+     einer Datei von aussen, die ausfallen kann — genau das ist beim Bauen
+     passiert. Geglaettet wird nur das Mausrad. Finger und Trackpad bringen
+     ihren eigenen Schwung schon mit; den noch einmal zu glaetten fuehlt
+     sich traege an. */
+  var zielY=0,laeuft=false,letzteZeit=0,selbstGesetzt=-1;
+
+  function grenze(v){
+    var max=document.documentElement.scrollHeight-window.innerHeight;
+    return v<0?0:(v>max?max:v);
   }
 
+  /* Liegt der Zeiger ueber einer eigenen Scrollflaeche (Chat-Protokoll),
+     gehoert das Rad dorthin und nicht der Seite. */
+  function eigeneFlaeche(el,richtung){
+    for(var n=el;n&&n!==document.body;n=n.parentElement){
+      if(!n.hasAttribute||!n.hasAttribute("data-eigen-scroll")){continue;}
+      var oben=n.scrollTop,platz=n.scrollHeight-n.clientHeight;
+      if(platz>1&&((richtung<0&&oben>0)||(richtung>0&&oben<platz-1))){return true;}
+    }
+    return false;
+  }
+
+  function schritt(zeit){
+    var dt=letzteZeit?Math.min(64,zeit-letzteZeit):16.7;
+    letzteZeit=zeit;
+    var jetzt=window.scrollY,weg=zielY-jetzt;
+    if(Math.abs(weg)<0.4){
+      selbstGesetzt=zielY;window.scrollTo(0,zielY);
+      laeuft=false;letzteZeit=0;return;
+    }
+    /* Zeitbezogen geglaettet, damit es bei 120 Hz nicht doppelt so schnell ist. */
+    var k=1-Math.pow(1-0.16,dt/16.7);
+    var neu=jetzt+weg*k;
+    selbstGesetzt=neu;window.scrollTo(0,neu);
+    requestAnimationFrame(schritt);
+  }
+
+  function anstossen(){
+    if(laeuft){return;}
+    laeuft=true;letzteZeit=0;requestAnimationFrame(schritt);
+  }
+
+  function rad(e){
+    if(e.ctrlKey||e.metaKey){return;}                 /* Zoom in Ruhe lassen */
+    var richtung=e.deltaY>0?1:-1;
+    if(eigeneFlaeche(e.target,richtung)){return;}
+    /* Scrollt jemand nebenher mit Leiste oder Tastatur, neu ausrichten. */
+    if(Math.abs(window.scrollY-selbstGesetzt)>2){zielY=window.scrollY;}
+    var mass=e.deltaMode===1?16:(e.deltaMode===2?window.innerHeight:1);
+    e.preventDefault();
+    zielY=grenze(zielY+e.deltaY*mass);
+    anstossen();
+  }
+
+  function scrollEinrichten(){
+    if(ruhig){return;}
+    zielY=window.scrollY;selbstGesetzt=window.scrollY;
+    window.addEventListener("wheel",rad,{passive:false});
+    /* Finger, Tastatur und Scrollleiste laufen nativ — dann nur mitziehen. */
+    window.addEventListener("scroll",function(){
+      if(!laeuft){zielY=window.scrollY;selbstGesetzt=window.scrollY;}
+    },{passive:true});
+  }
+
+  function gleiteZu(y){
+    if(ruhig){window.scrollTo(0,y);return;}
+    zielY=grenze(y);anstossen();
+  }
+
+  function springe(k){
+    var el=sektion(k);
+    if(!el){return;}
+    var abstand=bar?bar.getBoundingClientRect().height+12:18;
+    gleiteZu(el.getBoundingClientRect().top+window.scrollY-abstand);
+  }
+
+  /* ---- Welcher Abschnitt ist dran ----
+     Maßgeblich ist, was oberhalb eines Drittels der Höhe zuletzt begonnen
+     hat. Das trifft das Gefühl besser als „am meisten sichtbar“, weil man
+     beim Lesen oben steht. */
+  var aktiv="";
+  function aktuell(){
+    var marke=window.innerHeight*0.34;
+    var treffer=FLUSS[0];
+    for(var i=0;i<FLUSS.length;i++){
+      var el=sektion(FLUSS[i]);
+      if(el&&el.getBoundingClientRect().top<=marke){treffer=FLUSS[i];}
+    }
+    return treffer;
+  }
+
+  function wortSetzen(k){
+    if(!word||word.textContent===words[k]){return;}
+    if(ruhig){word.textContent=words[k];return;}
+    word.classList.add("is-out");
+    setTimeout(function(){word.textContent=words[k];word.classList.remove("is-out");},200);
+  }
+
+  function aktualisieren(){
+    var k=aktuell();
+    if(k!==aktiv){
+      aktiv=k;
+      buttons.forEach(function(b){
+        b.setAttribute("aria-current",b.getAttribute("data-key")===k?"true":"false");
+      });
+      wortSetzen(k);
+      if(strip){strip.style.transform="translateY("+(-FLUSS.indexOf(k)*1.25)+"em)";}
+    }
+    var hoehe=document.documentElement.scrollHeight-window.innerHeight;
+    var teil=hoehe>0?Math.min(1,Math.max(0,window.scrollY/hoehe)):0;
+    if(fill){fill.style.transform="scaleX("+teil+")";}
+    if(bar){bar.classList.toggle("is-compact",window.scrollY>90);}
+    if(restAufdecken){restAufdecken();}
+  }
+
+  /* ---- Einblenden beim Scrollen ----
+     Die Staffelung steht nicht im Markup, sondern wird hier vergeben: so
+     bleibt der Quelltext lesbar und jede neue Karte macht automatisch mit. */
+  var restAufdecken=null;
+  function einblendenVorbereiten(){
+    if(ruhig){return;}
+    var warte=[];
+    FLUSS.concat(["assistent"]).forEach(function(k){
+      var el=sektion(k);
+      if(!el){return;}
+      var teile=[];
+      Array.prototype.forEach.call(el.children,function(kind){
+        if(kind.classList.contains("phead")){
+          Array.prototype.push.apply(teile,Array.prototype.slice.call(kind.children));
+        }else{
+          teile.push(kind);
+        }
+      });
+      /* Listen und Kartenreihen gliedern sich noch einmal selbst auf. */
+      var fein=[];
+      teile.forEach(function(t){
+        if(t.classList&&(t.classList.contains("facts")||t.classList.contains("rules")||t.classList.contains("bots"))){
+          Array.prototype.push.apply(fein,Array.prototype.slice.call(t.children));
+        }else{
+          fein.push(t);
+        }
+      });
+      fein.forEach(function(t,i){
+        t.setAttribute("data-reveal","");
+        t.style.setProperty("--d",Math.min(i*70,420)+"ms");
+        warte.push(t);
+      });
+    });
+    Array.prototype.push.apply(warte,Array.prototype.slice.call(document.querySelectorAll(".seam")));
+
+    if(!("IntersectionObserver" in window)){
+      warte.forEach(function(t){t.classList.add("is-in");});
+      return;
+    }
+    var beobachter=new IntersectionObserver(function(eintraege){
+      eintraege.forEach(function(e){
+        if(e.isIntersecting){e.target.classList.add("is-in");beobachter.unobserve(e.target);}
+      });
+    },{rootMargin:"0px 0px -12% 0px",threshold:0.08});
+    warte.forEach(function(t){beobachter.observe(t);});
+
+    /* Die 12 % Sicherheitszone am unteren Rand lassen die Staffelung schön
+       aussehen — aber was ganz unten auf der Seite steht, erreicht sie nie
+       und bliebe für immer unsichtbar. Am Seitenende deshalb alles aufdecken. */
+    restAufdecken=function(){
+      if(window.scrollY+window.innerHeight<document.documentElement.scrollHeight-2){return;}
+      warte.forEach(function(t){
+        if(!t.classList.contains("is-in")){t.classList.add("is-in");beobachter.unobserve(t);}
+      });
+    };
+  }
+
+  /* ---- Der Assistent: eigene Ansicht, nicht Teil des Flusses ---- */
+  var imAssistenten=false;
+  function assistentZeigen(an){
+    if(an&&!window.__bengxEditor){return;}
+    imAssistenten=!!an;
+    FLUSS.forEach(function(k){var el=sektion(k);if(el){el.hidden=an;}});
+    Array.prototype.forEach.call(document.querySelectorAll(".seam"),function(el){el.hidden=an;});
+    var zaehler=document.querySelector(".count");
+    if(zaehler){zaehler.hidden=an;}
+    if(fill){fill.style.transform=an?"scaleX(0)":fill.style.transform;}
+    var a=sektion("assistent");
+    if(a){a.hidden=!an;}
+    buttons.forEach(function(b){
+      b.setAttribute("aria-current",
+        an?(b.getAttribute("data-key")==="assistent"?"true":"false")
+          :(b.getAttribute("data-key")===aktiv?"true":"false"));
+    });
+    if(an){wortSetzen("assistent");}
+    window.scrollTo({top:0,behavior:"auto"});
+    /* Die Assistentenansicht ist oft kuerzer als der Bildschirm. Dann kommt
+       kein Scrollereignis, und ohne Anstoss bliebe das Letzte unsichtbar. */
+    setTimeout(function(){if(restAufdecken){restAufdecken();}},80);
+    if(!an){aktiv="";aktualisieren();}
+  }
+
+  function gehe(k,merken){
+    if(k==="assistent"){assistentZeigen(true);}
+    else{
+      if(imAssistenten){assistentZeigen(false);}
+      springe(k);
+    }
+    if(merken&&location.hash.slice(1)!==k){
+      try{history.replaceState(null,"","#"+k);}catch(e){}
+    }
+  }
+  window.__bengxGehe=gehe;
+
   buttons.forEach(function(b){
-    b.addEventListener("click",function(){show(b.getAttribute("data-key"),true);});
+    b.addEventListener("click",function(){gehe(b.getAttribute("data-key"),true);});
   });
   Array.prototype.forEach.call(document.querySelectorAll("[data-goto]"),function(el){
-    el.addEventListener("click",function(){show(el.getAttribute("data-goto"),true);});
+    el.addEventListener("click",function(){gehe(el.getAttribute("data-goto"),true);});
   });
 
   document.addEventListener("keydown",function(e){
@@ -794,16 +1110,22 @@ a{color:var(--fg)}
     var t=e.target;
     if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT")){return;}
     var k=(e.key||"").toLowerCase();
-    if(letters[k]){e.preventDefault();show(letters[k],true);return;}
-    var ring=keys.slice(0,5);
-    var i=ring.indexOf(location.hash.slice(1));
-    if(i<0){i=0;}
-    if(e.key==="ArrowDown"||e.key==="ArrowRight"){e.preventDefault();show(ring[(i+1)%ring.length],true);}
-    if(e.key==="ArrowUp"||e.key==="ArrowLeft"){e.preventDefault();show(ring[(i+ring.length-1)%ring.length],true);}
+    if(letters[k]){e.preventDefault();gehe(letters[k],true);}
   });
 
-  window.addEventListener("hashchange",function(){show(location.hash.slice(1),false);});
-  show(location.hash.slice(1)||"ben",false);
+  window.addEventListener("scroll",aktualisieren,{passive:true});
+  window.addEventListener("resize",function(){leisteMessen();aktualisieren();});
+  if(window.ResizeObserver&&bar){new ResizeObserver(leisteMessen).observe(bar);}
+
+  leisteMessen();
+  scrollEinrichten();
+  einblendenVorbereiten();
+  aktualisieren();
+
+  var ziel=location.hash.slice(1);
+  if(ziel&&FLUSS.indexOf(ziel)>=0){
+    setTimeout(function(){springe(ziel);},60);
+  }
 
   var y=document.getElementById("yr");
   if(y){y.textContent=String(new Date().getFullYear());}
@@ -1134,9 +1456,9 @@ a{color:var(--fg)}
         var link=document.getElementById("toassist");
         if(link){
           link.hidden=false;
-          link.addEventListener("click",function(){show("assistent",true);});
+          link.addEventListener("click",function(){window.__bengxGehe("assistent",true);});
         }
-        if(location.hash.slice(1)==="assistent"){show("assistent",false);}
+        if(location.hash.slice(1)==="assistent"){window.__bengxGehe("assistent",false);}
       },function(){});
     }
 

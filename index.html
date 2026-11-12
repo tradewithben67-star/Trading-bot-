@@ -622,13 +622,18 @@ a{color:var(--fg)}
   --glas-schatten:0 18px 44px -28px rgba(0,0,0,.95);
 }
 
+/* Eine Kartensprache fuer die ganze Seite: ruhige dunkle Flaeche, feine
+   Kante, gleiche Rundung. Der glaeserne Schleier mit Glanzkante ist
+   draussen — neben den schlichten Bot-Karten sah die Seite aus, als haette
+   sie zwei Handschriften. */
 .glas,
 .facts li,.rules li,.bot,.goal,.sig,.video__frame,.chat__empty{
-  background:var(--glas);
-  border:1px solid var(--glas-kante);
+  background:rgba(10,10,12,.6);
+  border:1px solid var(--line-soft);
   border-radius:var(--r-karte);
-  box-shadow:var(--glas-glanz),var(--glas-schatten);
+  box-shadow:none;
 }
+.facts li:hover,.rules li:hover{background:rgba(16,16,20,.72)}
 
 /* Kacheln stehen jetzt einzeln nebeneinander statt in einem Raster mit
    geteilten Linien. */
@@ -674,9 +679,9 @@ a{color:var(--fg)}
   border-radius:var(--r-knopf);
 }
 .btn--plain,.tab{
-  background:var(--glas);
-  border-color:var(--glas-kante);
-  box-shadow:var(--glas-glanz);
+  background:rgba(255,255,255,.028);
+  border-color:var(--line);
+  box-shadow:none;
 }
 .btn--plain:hover,.tab:hover{border-color:rgba(255,255,255,.22)}
 
@@ -688,6 +693,129 @@ a{color:var(--fg)}
 
 @media (prefers-reduced-motion:reduce){
   .bot,.facts li,.rules li{transition:none}
+}
+/* ================= Bots als Produktkarten =================
+   Vorher: drei hohe Bloecke mit je zwei dicken Absaetzen, untereinander
+   gestapelt. Jetzt: ein Satz pro Bot, das volle Regelwerk zum Aufklappen,
+   und auf dem Rechner stehen die drei nebeneinander. Kein Glas. */
+.bots{
+  display:grid;gap:14px;
+  grid-template-columns:repeat(auto-fit,minmax(272px,1fr));
+}
+.bot{
+  display:flex;flex-direction:column;gap:14px;
+  padding:clamp(20px,2.4vw,26px);
+  border:1px solid var(--line-soft);
+  border-radius:14px;
+  background:rgba(10,10,12,.6);
+  box-shadow:none;
+  transition:border-color .25s ease,background .25s ease;
+}
+.bots>.bot:first-child{padding-top:clamp(20px,2.4vw,26px)}
+.bot[data-on="true"]{
+  border-color:rgba(239,196,94,.5);
+  background:rgba(239,196,94,.05);
+}
+.bot:hover{border-color:rgba(255,255,255,.17);background:rgba(16,16,20,.7)}
+.bot[data-on="true"]:hover{border-color:rgba(239,196,94,.72)}
+
+.bot__kopf{display:flex;align-items:baseline;gap:11px}
+.bot__satz{color:var(--fg-mid);font-size:15px;margin:0}
+
+/* Die Kennzahlen untereinander: in einer schmalen Karte passen vier
+   Spalten nicht, und untereinander liest es sich ohnehin schneller. */
+.bot__spec{
+  display:grid;grid-template-columns:minmax(0,1fr);gap:0;
+  background:none;border:0;border-radius:0;overflow:visible;
+  border-top:1px solid var(--line-soft);
+}
+.bot__spec>div{
+  background:none;
+  display:flex;align-items:baseline;justify-content:space-between;gap:14px;
+  padding:9px 0;
+  border-bottom:1px solid var(--line-soft);
+}
+.bot__spec .k{margin:0}
+.bot__spec .v{margin:0;text-align:right}
+
+/* Das Regelwerk steht da, nimmt aber keinen Platz, bis man es will. */
+.bot__regeln{margin:0}
+.bot__regeln summary{
+  cursor:pointer;list-style:none;
+  font-family:var(--f-data);font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--fg-dim);
+  display:flex;align-items:center;gap:8px;
+  transition:color .2s ease;
+}
+.bot__regeln summary::-webkit-details-marker{display:none}
+.bot__regeln summary::after{
+  content:"";width:6px;height:6px;flex:0 0 auto;
+  border-right:1px solid currentColor;border-bottom:1px solid currentColor;
+  transform:rotate(45deg) translateY(-2px);
+  transition:transform .25s ease;
+}
+.bot__regeln[open] summary::after{transform:rotate(225deg) translateY(-2px)}
+.bot__regeln summary:hover{color:var(--gold)}
+.bot__regeln p{
+  margin:13px 0 0;color:var(--fg-mid);font-size:14px;line-height:1.68;
+}
+
+/* Der Knopf sitzt unten, auf gleicher Hoehe in allen drei Karten. */
+.bot .pick{margin-top:auto;align-self:flex-start}
+
+@media (max-width:620px){
+  .bots{grid-template-columns:minmax(0,1fr)}
+}
+
+/* ================= Signale als Zeile =================
+   Die Karte war ein Formularauszug. Ein Signal ist eine Zeile. */
+.sigrow{
+  display:flex;flex-wrap:wrap;align-items:baseline;
+  gap:10px clamp(16px,2.4vw,30px);
+  padding:16px 0 16px 15px;
+  border-top:1px solid var(--line-soft);
+  border-bottom:1px solid var(--line-soft);
+  position:relative;min-width:0;
+}
+/* Ein Strich links zeigt die Richtung, noch bevor man liest. */
+.sigrow::before{
+  content:"";position:absolute;left:0;top:14px;bottom:14px;width:2px;
+  border-radius:2px;background:#55D6A6;
+}
+.sigrow--short::before{background:#FF8E7E}
+.sigrow__dir{
+  font-family:var(--f-data);font-size:10.5px;letter-spacing:.18em;
+  text-transform:uppercase;color:#55D6A6;
+}
+.sigrow--short .sigrow__dir{color:#FF8E7E}
+.sigrow__pair{
+  font-family:var(--f-display);font-weight:700;letter-spacing:-.02em;
+  font-size:clamp(17px,2vw,21px);color:var(--fg);
+}
+.sigrow__lv{display:flex;align-items:baseline;gap:8px;min-width:0}
+.sigrow__lv i{
+  font-style:normal;font-family:var(--f-data);font-size:10px;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--fg-dim);
+}
+.sigrow__lv b{
+  font-family:var(--f-data);font-weight:500;font-size:15px;
+  color:var(--fg);font-variant-numeric:tabular-nums;white-space:nowrap;
+}
+.sigrow__st{
+  font-family:var(--f-data);font-size:10.5px;letter-spacing:.14em;
+  text-transform:uppercase;color:var(--fg-dim);
+}
+.sigrow__st.pos{color:#55D6A6}
+.sigrow__st.neg{color:#FF8E7E}
+.sigrow__zeit{
+  margin-left:auto;font-family:var(--f-data);font-size:11px;
+  color:var(--fg-dim);white-space:nowrap;
+}
+.sigrow__note{
+  margin:12px 0 0 15px;color:var(--fg-mid);font-size:14.5px;max-width:72ch;
+}
+@media (max-width:620px){
+  .sigrow__zeit{margin-left:0;width:100%}
 }
 </style>
 </head>
@@ -847,57 +975,72 @@ a{color:var(--fg)}
 
       <div class="bots">
         <article class="bot" data-bot="copy" data-on="false">
-          <div class="bot__top">
+          <div class="bot__kopf">
             <span class="bot__n">01</span>
             <h3 class="bot__name">Signal-Kopierer</h3>
           </div>
-          <p class="bot__d">Kopiert jedes Signal aus dem Bereich <b>G</b> in dein Konto — gleiche Richtung, gleicher Stop, gleiches Ziel. Schließe ich, schließt er mit. Du musst nichts entscheiden und nichts mitlesen.</p>
-          <p class="bot__d">Zwei Dinge übernimmt er bewusst nicht. Die <b>Positionsgröße</b> rechnet er aus deinem Konto, nicht aus meinem. Und ist der Kurs weggelaufen, steigt er <b>nicht hinterher</b>, sondern lässt das Signal aus — was weg ist, ist weg.</p>
+          <p class="bot__satz">Spiegelt jedes Signal aus dem Bereich <b>G</b> in dein Konto — gleiche Richtung, gleicher Stop, gleiches Ziel.</p>
+
           <div class="bot__spec">
-            <div><p class="k">Quelle</p><p class="v">Bens Signale</p></div>
-            <div><p class="k">Größe</p><p class="v">dein Konto</p></div>
-            <div><p class="k">Nachlaufen</p><p class="v">max. 30 Pips</p></div>
-            <div><p class="k">Ausstieg</p><p class="v">mit mir</p></div>
+              <div><p class="k">Quelle</p><p class="v">Bens Signale</p></div>
+              <div><p class="k">Größe</p><p class="v">dein Konto</p></div>
+              <div><p class="k">Nachlaufen</p><p class="v">max. 30 Pips</p></div>
+              <div><p class="k">Ausstieg</p><p class="v">mit mir</p></div>
           </div>
-          <div class="bot__foot">
-            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-          </div>
+
+          <details class="bot__regeln">
+            <summary>Regelwerk</summary>
+            <p>Kopiert jedes Signal aus dem Bereich <b>G</b> in dein Konto — gleiche Richtung, gleicher Stop, gleiches Ziel. Schließe ich, schließt er mit. Du musst nichts entscheiden und nichts mitlesen.</p>
+            <p>Zwei Dinge übernimmt er bewusst nicht. Die <b>Positionsgröße</b> rechnet er aus deinem Konto, nicht aus meinem. Und ist der Kurs weggelaufen, steigt er <b>nicht hinterher</b>, sondern lässt das Signal aus — was weg ist, ist weg.</p>
+          </details>
+
+          <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
         </article>
 
         <article class="bot" data-bot="auto" data-on="false">
-          <div class="bot__top">
+          <div class="bot__kopf">
             <span class="bot__n">02</span>
             <h3 class="bot__name">Dauerläufer</h3>
           </div>
-          <p class="bot__d">Prüft jede geschlossene Stundenkerze und steigt nur ein, wenn fünf Dinge zugleich stimmen: der Trend zeigt in eine Richtung, der Markt ist klar gerichtet, die Schwankung liegt im Korridor, die Handelszeit passt — und der Kurs bricht über das Hoch der letzten 20 Kerzen aus. Fehlt eins davon, passiert nichts.</p>
-          <p class="bot__d">Danach übernimmt das Risiko. Stop bei 2 × ATR, bei 1,5 R geht die Hälfte raus und der Stop wandert auf Einstand: ab da kann der Trade nicht mehr ins Minus drehen. Der Rest läuft mit einem Stop, der nur enger wird, nie wieder weiter. Freitagabend ist alles glatt — über das Wochenende reißen Kurslücken jeden Stop.</p>
+          <p class="bot__satz">Handelt selbstständig rund um die Uhr und steigt nur ein, wenn fünf Filter zugleich stimmen.</p>
+
           <div class="bot__spec">
-            <div><p class="k">Einstieg</p><p class="v">Ausbruch 20</p></div>
-            <div><p class="k">Filter</p><p class="v">EMA 200 &middot; ADX 18</p></div>
-            <div><p class="k">Stop</p><p class="v">2 &times; ATR</p></div>
-            <div><p class="k">Risiko / Trade</p><p class="v">0,5 %</p></div>
+              <div><p class="k">Einstieg</p><p class="v">Ausbruch 20</p></div>
+              <div><p class="k">Filter</p><p class="v">EMA 200 &middot; ADX 18</p></div>
+              <div><p class="k">Stop</p><p class="v">2 &times; ATR</p></div>
+              <div><p class="k">Risiko / Trade</p><p class="v">0,5 %</p></div>
           </div>
-          <div class="bot__foot">
-            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-          </div>
+
+          <details class="bot__regeln">
+            <summary>Regelwerk</summary>
+            <p>Prüft jede geschlossene Stundenkerze und steigt nur ein, wenn fünf Dinge zugleich stimmen: der Trend zeigt in eine Richtung, der Markt ist klar gerichtet, die Schwankung liegt im Korridor, die Handelszeit passt — und der Kurs bricht über das Hoch der letzten 20 Kerzen aus. Fehlt eins davon, passiert nichts.</p>
+            <p>Danach übernimmt das Risiko. Stop bei 2 × ATR, bei 1,5 R geht die Hälfte raus und der Stop wandert auf Einstand: ab da kann der Trade nicht mehr ins Minus drehen. Der Rest läuft mit einem Stop, der nur enger wird, nie wieder weiter. Freitagabend ist alles glatt — über das Wochenende reißen Kurslücken jeden Stop.</p>
+          </details>
+
+          <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
         </article>
 
         <article class="bot" data-bot="swing" data-on="false">
-          <div class="bot__top">
+          <div class="bot__kopf">
             <span class="bot__n">03</span>
             <h3 class="bot__name">Swing</h3>
           </div>
-          <p class="bot__d">Wartet, bis der Markt auf der Stunde Liquidität abholt: ein Stich unter das letzte Tief, Schluss wieder darüber. Dann muss eine 5-Minuten-Kerze die Richtung bestätigen, und auf der Minute muss die Struktur brechen oder eine Lücke reißen.</p>
-          <p class="bot__d">Eingestiegen wird im Rücklauf in diese Lücke — oder wenn der Kurs durch eine gegenläufige Lücke schließt und sie dadurch dreht. Jede Stufe hat eine Frist: läuft sie ab oder kommt ein neuer Sweep, beginnt alles von vorn.</p>
+          <p class="bot__satz">Wartet auf einen Liquiditätsgriff auf der Stunde und steigt erst ein, wenn 5- und 1-Minute bestätigen.</p>
+
           <div class="bot__spec">
-            <div><p class="k">Zeitrahmen</p><p class="v">1h &rarr; 5m &rarr; 1m</p></div>
-            <div><p class="k">Einstieg</p><p class="v">FVG oder IFVG</p></div>
-            <div><p class="k">Stop</p><p class="v">Struktur + Puffer</p></div>
-            <div><p class="k">Ziel</p><p class="v">3 R</p></div>
+              <div><p class="k">Zeitrahmen</p><p class="v">1h &rarr; 5m &rarr; 1m</p></div>
+              <div><p class="k">Einstieg</p><p class="v">FVG oder IFVG</p></div>
+              <div><p class="k">Stop</p><p class="v">Struktur + Puffer</p></div>
+              <div><p class="k">Ziel</p><p class="v">3 R</p></div>
           </div>
-          <div class="bot__foot">
-            <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-          </div>
+
+          <details class="bot__regeln">
+            <summary>Regelwerk</summary>
+            <p>Wartet, bis der Markt auf der Stunde Liquidität abholt: ein Stich unter das letzte Tief, Schluss wieder darüber. Dann muss eine 5-Minuten-Kerze die Richtung bestätigen, und auf der Minute muss die Struktur brechen oder eine Lücke reißen.</p>
+            <p>Eingestiegen wird im Rücklauf in diese Lücke — oder wenn der Kurs durch eine gegenläufige Lücke schließt und sie dadurch dreht. Jede Stufe hat eine Frist: läuft sie ab oder kommt ein neuer Sweep, beginnt alles von vorn.</p>
+          </details>
+
+          <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
         </article>
       </div>
 
@@ -1396,31 +1539,29 @@ a{color:var(--fg)}
       box.appendChild(e);
       return;
     }
+    /* Ein Signal ist eine Zeile, keine Karte: Richtung, Paar, die drei
+       Kurse, der Stand. Der Strich links sagt die Richtung, bevor man
+       ueberhaupt liest. */
     var r=rows[0];
-    var card=el("article","sig");
+    var zeile=el("div","sigrow"+(r.side==="short"?" sigrow--short":""));
+    zeile.appendChild(el("span","sigrow__dir",r.side==="short"?"Short":"Long"));
+    zeile.appendChild(el("span","sigrow__pair",r.pair||"XAU/USD"));
 
-    var top=el("div","sig__top");
-    top.appendChild(el("span","sig__side sig__side--"+(r.side==="short"?"short":"long"),r.side==="short"?"Short":"Long"));
-    top.appendChild(el("span","sig__pair",r.pair||"XAU/USD"));
-    top.appendChild(el("span","sig__st",statusTxt(r)));
-    top.appendChild(el("time","sig__time",timeTxt(r.openedAt)));
-    card.appendChild(top);
-
-    var lv=el("div","sig__levels");
     [["Einstieg",r.entry==null?"—":nf(r.entry,2)],
      ["Stop",r.sl==null?"—":nf(r.sl,2)],
-     ["Ziel",r.tp==null?"—":nf(r.tp,2)],
-     ["Pips",isOpen(r)?"läuft":pipTxt(r.pips)]].forEach(function(pair,i){
-      var d=el("div");
-      d.appendChild(el("p","k",pair[0]));
-      var v=el("p","v"+(i===3&&!isOpen(r)?" "+pipCls(r.pips):""),pair[1]);
-      d.appendChild(v);
-      lv.appendChild(d);
+     ["Ziel",r.tp==null?"—":nf(r.tp,2)]].forEach(function(paar){
+      var g=el("span","sigrow__lv");
+      g.appendChild(el("i",null,paar[0]));
+      g.appendChild(el("b",null,paar[1]));
+      zeile.appendChild(g);
     });
-    card.appendChild(lv);
 
-    if(r.note){card.appendChild(el("p","sig__note",r.note));}
-    box.appendChild(card);
+    var stand=isOpen(r)?"läuft":statusTxt(r)+" · "+pipTxt(r.pips);
+    zeile.appendChild(el("span","sigrow__st"+(isOpen(r)?"":" "+pipCls(r.pips)),stand));
+    zeile.appendChild(el("time","sigrow__zeit",timeTxt(r.openedAt)));
+    box.appendChild(zeile);
+
+    if(r.note){box.appendChild(el("p","sigrow__note",r.note));}
 
     if(canWrite&&isOpen(r)){box.appendChild(closeForm(r));}
   }

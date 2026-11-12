@@ -74,6 +74,7 @@ class GruppenSettings:
     # wo New York beginnt: so faellt jedes Signal in hoechstens eins.
     frei_london: str = "09:00-15:30"
     frei_newyork: str = "15:30-23:00"
+    rueckblick_um: str = "23:15"        # leer schaltet ihn ab
     state_file: str = "state/gruppen.json"
 
     @staticmethod
@@ -91,6 +92,7 @@ class GruppenSettings:
                         or "09:00-15:30",
             frei_newyork=str(e.get("TELEGRAM_FREI_NEWYORK", "15:30-23:00")).strip()
                          or "15:30-23:00",
+            rueckblick_um=str(e.get("TELEGRAM_RUECKBLICK", "23:15")).strip(),
             state_file=str(e.get("TELEGRAM_GRUPPEN_STATE", "state/gruppen.json")).strip()
             or "state/gruppen.json",
         )
@@ -426,6 +428,10 @@ class Verteiler:
         self._stand.pop("entwurf", None)
         return self.signal_senden(dict(entwurf["signal"]))
 
+    def entwurf_liegt(self) -> bool:
+        """Wartet gerade ein Entwurf auf das Ja?"""
+        return bool(self._stand.get("entwurf"))
+
     def entwurf_verwerfen(self) -> str:
         if not self._stand.pop("entwurf", None):
             return "Es lag kein Entwurf bereit."
@@ -588,6 +594,100 @@ class Verteiler:
             zeilen.append(f"Wartend: {len(wartend)}, nächste in "
                           f"{offen[0] / 60:.0f} min")
         return "\n".join(zeilen)
+
+    # ---- Tagesrückblick ---------------------------------------------------
+    def signale_am(self, tag: str) -> list[dict[str, Any]]:
+        """Alle Signale eines Tages, älteste zuerst."""
+        raus = [x for x in (self._stand.get("signale") or {}).values()
+                if str(x.get("openedAt", ""))[:10] == tag]
+        raus.sort(key=lambda x: str(x.get("openedAt", "")))
+        return raus
+
+    def rueckblick_text(self, tag: str, ausfuehrlich: bool) -> str:
+        """Was heute lief — als Nachricht für eine Gruppe."""
+        from datetime import datetime
+        heute = self.signale_am(tag)
+        datum = datetime.strptime(tag, "%Y-%m-%d")
+        wochentage = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+        kopf = (f"Tagesrückblick · {wochentage[datum.weekday()]} "
+                f"{datum.day:02d}.{datum.month:02d}.")
+
+        if not heute:
+            return kopf + "\n\nHeute kein Signal. Kein Setup heißt kein Trade."
+
+        zu = [x for x in heute if x.get("status") in ("gewonnen", "verloren", "be")]
+        gewonnen = sum(1 for x in zu if x.get("status") == "gewonnen")
+        verloren = sum(1 for x in zu if x.get("status") == "verloren")
+        offen = len(heute) - len(zu)
+        summe = sum(float(x.get("pips") or 0) for x in zu)
+
+        zeilen = [kopf, ""]
+        zeilen.append(f"{len(heute)} Signal" + ("e" if len(heute) != 1 else ""))
+        teile = []
+        if gewonnen:
+            teile.append(f"{gewonnen} im Ziel")
+        if verloren:
+            teile.append(f"{verloren} am Stop")
+        if offen:
+            teile.append(f"{offen} läuft noch" if offen == 1 else f"{offen} laufen noch")
+        if teile:
+            zeilen.append(", ".join(teile))
+        if zu:
+            zeilen.append(f"{summe:+.0f} Pips")
+
+        if ausfuehrlich and zu:
+            zeilen.append("")
+            for x in heute:
+                lage = x.get("status", "offen")
+                seite = "LONG " if x.get("side") == "long" else "SHORT"
+                if lage == "offen":
+                    zeilen.append(f"{seite}  {de(x['entry'])}   läuft")
+                else:
+                    zeilen.append(f"{seite}  {de(x['entry'])}   "
+                                  f"{float(x.get('pips') or 0):+.0f}  "
+                                  f"{STATUS_TEXT.get(lage, lage)}")
+
+        if not ausfuehrlich:
+            # Ehrlich bleiben: der Inner Circle hat nicht alle gesehen.
+            # "3 Signale, +166 Pips" ohne diesen Zusatz waere
+            # schoengerechnet.
+            hier = sum(1 for x in heute
+                       if "inner" in (self._stand.get("nachrichten") or {})
+                       .get(x.get("id", ""), {}))
+            if hier < len(heute):
+                zeilen.append(f"davon hier: {hier}")
+            zeilen += ["", WERBUNG]
+        zeilen += ["", HINWEIS]
+        return "\n".join(zeilen)
+
+    def rueckblick_faellig(self) -> bool:
+        """Ist der Rückblick für heute dran und noch nicht raus?"""
+        grenzen = _spanne_lesen((self.settings.rueckblick_um or "") + "-23:59")
+        if not self.settings.rueckblick_um or not grenzen:
+            return False
+        from datetime import datetime
+        jetzt = datetime.fromtimestamp(self.uhr())
+        if jetzt.hour * 60 + jetzt.minute < grenzen[0]:
+            return False
+        return not (self._stand.get("rueckblick") or {}).get(self._tag())
+
+    def rueckblick_senden(self, tag: str | None = None) -> dict[str, Any]:
+        """Schickt den Rückblick an alle Gruppen und merkt sich den Tag."""
+        tag = tag or self._tag()
+        ziele = self.gruppen()
+        if not ziele:
+            raise RuntimeError("Keine Gruppe eingerichtet.")
+        erreicht = []
+        for g in ziele:
+            self._senden(g.chat_id, self.rueckblick_text(tag, g.ausfuehrlich))
+            erreicht.append(g.name)
+        marken = self._stand.setdefault("rueckblick", {})
+        marken[tag] = True
+        for alt in sorted(k for k in marken if k < tag)[:-14]:
+            marken.pop(alt, None)
+        self._sichern()
+        return {"tag": tag, "gruppen": erreicht,
+                "signale": len(self.signale_am(tag))}
 
     def stand_text(self, anzahl: int = 5) -> str:
         """Übersicht plus die zuletzt verschickten Signale mit Kennung."""

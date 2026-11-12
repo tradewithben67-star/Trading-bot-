@@ -290,10 +290,9 @@ def main() -> int:
             print(f"   Token {maskieren(alt['TELEGRAM_TOKEN'])}"
                   + (", Chat-Kennung " + alt["TELEGRAM_CHAT_ID"]
                      if alt.get("TELEGRAM_CHAT_ID") else "")
-                  + (", Google-Schlüssel vorhanden"
-                     if alt.get("GOOGLE_API_KEY") else "")
-                  + (", Anthropic-Schlüssel vorhanden"
-                     if alt.get("ANTHROPIC_API_KEY") else ""))
+                  + (", beide Gruppen"
+                     if alt.get("TELEGRAM_VIP_CHAT_ID")
+                     and alt.get("TELEGRAM_INNER_CHAT_ID") else ""))
             if ja("   Übernehmen?", True):
                 vorlage = (VORLAGE.read_text(encoding="utf-8")
                            if VORLAGE.exists() else "")
@@ -412,55 +411,15 @@ def main() -> int:
         print("   Kein Problem — leg sie später an. Der Signal-Bot ruht so")
         print("   lange, alles andere läuft.")
 
-    # 4. Wer antwortet
-    print("\n4. Wer soll antworten?")
-    print("   [1] Gemini von Google — hat ein kostenloses Kontingent.")
-    print("       Schlüssel unter aistudio.google.com, ohne Kreditkarte.")
-    print("   [2] Claude von Anthropic — kostet Geld, antwortet gründlicher")
-    print("       und kann als einziger am Code weiterbauen.")
-    print("   [3] Erst mal keiner — dann gehen nur die Befehle.")
-    print()
-    print("   Hinweis zum kostenlosen Kontingent: Google behält sich vor,")
-    print("   die Inhalte zur Verbesserung seiner Dienste auszuwerten.")
-    print("   Schick also nichts durch, was niemanden angehen soll.")
-    wahl = frage("   Deine Wahl [1/2/3]", "1")
+    # 4. Rückblick
+    print("\n4. Tagesrückblick")
+    print("   Einmal am Tag schickt der Bot von selbst eine Zusammen-")
+    print("   fassung in beide Gruppen: wie viele Signale, wie viele im")
+    print("   Ziel, wie viele Pips.")
+    zeit = frage("   Um wie viel Uhr? (leer = aus)", "23:15")
+    werte["TELEGRAM_RUECKBLICK"] = zeit
 
-    schluessel = ""
-    if wahl == "1":
-        print("\n   aistudio.google.com öffnen, anmelden, Schlüssel erstellen.")
-        print("   Rechtsklick fügt ein. Oder Enter, dann hole ich ihn aus")
-        print("   der Zwischenablage.")
-        schluessel = geheimnis_abfragen("   Google-Schlüssel: ")
-        if schluessel:
-            werte["GOOGLE_API_KEY"] = schluessel
-            werte["BENGX_ANBIETER"] = "gemini"
-            print(f"   Übernommen ({maskieren(schluessel)}).")
-    elif wahl == "2":
-        print("\n   platform.claude.com öffnen, anmelden, Schlüssel erstellen.")
-        print("   Achtung: das ist nicht dein Claude-Abo, sondern getrennt")
-        print("   abgerechnet — dort muss Guthaben liegen.")
-        schluessel = geheimnis_abfragen("   Anthropic-Schlüssel: ")
-        if schluessel:
-            werte["ANTHROPIC_API_KEY"] = schluessel
-            werte["BENGX_ANBIETER"] = "claude"
-            print(f"   Übernommen ({maskieren(schluessel)}).")
-    if not schluessel:
-        print("   Übersprungen. Du kannst den Schlüssel später in .env "
-              "nachtragen.")
-
-    # 5. Weiterbauen — geht nur mit Claude
-    if wahl == "2" and schluessel:
-        print("\n5. Am Code weiterbauen")
-        print("   Damit startet „baue an der Website weiter“ einen Coding-Agenten,")
-        print("   der hier Dateien ändert, testet und committet. Er schiebt nichts")
-        print("   nach außen und hört nach 40 Schritten oder 2 Dollar auf.")
-        if ja("   Einschalten?"):
-            werte["BENGX_CODER"] = "1"
-    elif wahl == "1" and schluessel:
-        print("\n   (Am Code weiterbauen geht nur mit Claude. Mit Gemini")
-        print("   notiert der Assistent stattdessen eine Aufgabe.)")
-
-    # 6. Schreiben
+    # 5. Schreiben
     vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
     ENV.write_text(zusammenfuehren(vorlage, werte), encoding="utf-8")
     try:

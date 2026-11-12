@@ -251,9 +251,6 @@ def cmd_rules(args) -> int:
 def cmd_telegram(args) -> int:
     import os
 
-    from .assistant import Assistant, AssistantSettings
-    from .coder import Coder, CoderSettings
-    from .llm import LLMSettings
     from .gruppen import GruppenSettings, Verteiler
     from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
                            load_env_file)
@@ -274,29 +271,13 @@ def cmd_telegram(args) -> int:
             file=sys.stderr)
         return 1
 
-    llm = LLMSettings.from_env(umgebung)
-    coder = Coder(CoderSettings.from_env(umgebung))
     netz = HttpTransport(tg.token)
     verteiler = Verteiler(GruppenSettings.from_env(umgebung), netz,
                           pip=cfg.market.pip)
-    assistent = Assistant(AssistantSettings(llm), config=cfg, coder=coder,
-                          verteiler=verteiler)
 
     if not tg.chat_id:
         print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
               "Schreiben deine Kennung und antwortet sonst nichts.", file=sys.stderr)
-    hindernis_ai = assistent.hindernis()
-    # Bei Gemini steht das Modell erst nach der ersten Verbindung fest —
-    # es wird beim Schluessel erfragt, nicht geraten. Vorher stand hier
-    # ein leeres Klammerpaar, das wie ein Fehler aussah.
-    modell = (llm.gemini_model if assistent.anbieter == "Gemini"
-              else llm.claude_model) or "Modell wird beim ersten Mal gewählt"
-    print("Assistent: " + (hindernis_ai or f"{assistent.anbieter} ({modell})"),
-          file=sys.stderr)
-
-    hindernis = coder.status()
-    print("Weiterbauen: " + (hindernis or
-          f"an, Ordner {Path(coder.settings.repo).resolve()}"), file=sys.stderr)
 
     gruppen = verteiler.gruppen()
     print("Gruppen: " + (", ".join(
@@ -304,8 +285,11 @@ def cmd_telegram(args) -> int:
         for g in gruppen) if gruppen else
         "keine — TELEGRAM_INNER_CHAT_ID / TELEGRAM_VIP_CHAT_ID fehlen"),
         file=sys.stderr)
+    if gruppen and verteiler.settings.rueckblick_um:
+        print(f"Rückblick täglich um {verteiler.settings.rueckblick_um}",
+              file=sys.stderr)
 
-    bot = TelegramBot(cfg, tg, netz, assistent, coder, verteiler)
+    bot = TelegramBot(cfg, tg, netz, verteiler)
     if args.once:
         print(f"{bot.poll_once()} Nachricht(en) verarbeitet.")
         return 0
@@ -320,9 +304,7 @@ def cmd_pruefen(args) -> int:
     """Sagt, was wirklich geht — mit den echten Meldungen der Anbieter."""
     import os
 
-    from .assistant import Assistant, AssistantSettings
-    from .coder import Coder, CoderSettings
-    from .llm import GeminiProvider, LLMSettings
+    from .gruppen import GruppenSettings, Verteiler
     from .telegram import HttpTransport, TelegramSettings, load_env_file
 
     cfg = _load(args)
@@ -332,8 +314,7 @@ def cmd_pruefen(args) -> int:
     print("BENGX — Prüfung")
     print("=" * 40)
     # Gesammelt, damit am Ende ein Rückgabewert steht, auf den sich eine
-    # Startdatei verlassen kann. Vorher meldete die Prüfung immer Erfolg,
-    # auch wenn gar nichts ging.
+    # Startdatei verlassen kann.
     fehlt: list[str] = []
     print(f"\nEinstellungen aus: {args.env or '.env'}"
           f"{' (nicht gefunden)' if not datei else ''}")
@@ -356,62 +337,30 @@ def cmd_pruefen(args) -> int:
     if not tg.chat_id:
         fehlt.append("deine Chat-Kennung")
 
-    # 2. Anbieter
-    llm = LLMSettings.from_env(umgebung)
-    gewaehlt = llm.gewaehlt()
-    print(f"\n2. Antworten über: {gewaehlt}")
-    print(f"   Google-Schlüssel:    {'ja' if llm.gemini_key else 'nein'}")
-    print(f"   Anthropic-Schlüssel: {'ja' if llm.claude_key else 'nein'}")
-
-    assistent = Assistant(AssistantSettings(llm), config=cfg)
-    hindernis = assistent.hindernis()
-    if hindernis:
-        print(f"   {hindernis}")
-        fehlt.append("ein Modell, das antwortet")
+    # 2. Gruppen
+    print("\n2. Gruppen")
+    verteiler = Verteiler(GruppenSettings.from_env(umgebung),
+                          HttpTransport(tg.token or "x", timeout=15),
+                          pip=cfg.market.pip)
+    gruppen = verteiler.gruppen()
+    if not gruppen:
+        print("   Keine eingerichtet. Ohne Gruppen kann nichts gepostet werden.")
+        fehlt.append("mindestens eine Gruppe")
     else:
-        if gewaehlt == "gemini":
-            anbieter = assistent.provider
-            assert isinstance(anbieter, GeminiProvider)
-            anbieter._verbinden()
-            print(f"\n   Gewähltes Modell: {anbieter.modell}")
-            print(f"   Modelle, die dein Schlüssel benutzen darf:")
-            namen = anbieter.modelle()
-            if not namen:
-                print("     keine abrufbar — Schlüssel oder Netz prüfen")
-            for name in namen[:12]:
-                marke = "  <- wird benutzt" if name == anbieter.modell else ""
-                print(f"     {name}{marke}")
-            if len(namen) > 12:
-                print(f"     … und {len(namen) - 12} weitere")
-            if llm.gemini_model and llm.gemini_model not in namen:
-                print(f"\n   Achtung: das eingestellte {llm.gemini_model} ist "
-                      "nicht dabei.")
+        for g in gruppen:
+            wann = "sofort" if not g.verzug else f"nach {g.verzug // 60} min"
+            print(f"   {g.name}: {g.chat_id}, {wann}")
+        fenster = ", ".join(f"{n} {vo // 60:02d}:{vo % 60:02d}–{b // 60:02d}:{b % 60:02d}"
+                            for _, n, vo, b in verteiler.fenster())
+        print(f"   Gratis-Signale je Sitzung: {fenster or 'keine Fenster gesetzt'}")
+        print(f"   Rückblick täglich um: "
+              f"{verteiler.settings.rueckblick_um or 'aus'}")
 
-            if namen and not args.schnell:
-                import time as _zeit
-                print("\n   Jedes Modell einzeln geprüft "
-                      "(ohne Werkzeuge, ohne Suche):")
-                for name in namen[:6]:
-                    print(f"     {name}: {anbieter.testen(name)}", flush=True)
-                    _zeit.sleep(1)
-
-        print("\n3. Eine Testfrage")
-        text = assistent.answer("Antworte nur mit dem Wort: bereit",
-                                "LAGE\nnichts Besonderes")
-        print(f"   Antwort: {text[:400]}")
-        # Bleibt die Antwort leer oder kommt eine Absage zurück, ist der
-        # Assistent nicht einsatzbereit — auch wenn der Schlüssel da ist.
-        if not text.strip() or "Solange gehen nur die Befehle" in text:
-            fehlt.append("eine Antwort vom Modell")
-        if gewaehlt == "gemini":
-            for notiz in assistent.provider.notizen:
-                print(f"   Hinweis: {notiz}")
-
-    # 3. Weiterbauen
-    coder = Coder(CoderSettings.from_env(umgebung))
-    print("\n4. Am Code weiterbauen")
-    print("   " + (coder.status() or
-                   f"geht, Ordner {Path(coder.settings.repo).resolve()}"))
+    # 3. Handelsbot
+    print("\n3. Handelsbot")
+    print(f"   Regelwerk: {cfg.bot.name}")
+    p = Path(cfg.live.killswitch_file)
+    print(f"   Not-Aus: {'GESETZT — es wird nicht gehandelt' if p.exists() else 'nicht gesetzt'}")
 
     print("\n" + "=" * 40)
     if fehlt:

@@ -95,8 +95,8 @@ Sie führt dich durch fünf Schritte:
    erkennt sie selbst.
 3. **Deine Gruppen** — sag Ja, er findet beide und fragt, welche welche
    ist. Beim Vorsprung für VIP: **0** eingeben.
-4. **Wer antwortet** — `1` für Gemini, dann deinen Schlüssel einfügen.
-5. **Am Code weiterbauen** — kommt nur bei Claude, überspring es.
+4. **Tagesrückblick** — um wie viel Uhr er die Zusammenfassung in beide
+   Gruppen schickt. Enter nimmt 23:15.
 
 Danach prüft sie von selbst. Fehlt etwas, **startet sie den Bot nicht**
 und sagt dir genau, was. Mach davon ein Foto und schick es mir.
@@ -122,8 +122,8 @@ Es führt dich durch fünf Schritte:
    erkennt sie selbst.
 3. **Deine Gruppen** — sag Ja, er findet beide und fragt, welche welche
    ist. Beim Vorsprung für VIP: **0** eingeben.
-4. **Wer antwortet** — `1` für Gemini, dann deinen Schlüssel einfügen.
-5. **Am Code weiterbauen** — kommt nur bei Claude, überspring es.
+4. **Tagesrückblick** — um wie viel Uhr er die Zusammenfassung in beide
+   Gruppen schickt. Enter nimmt 23:15.
 
 ### `pruefen.bat` doppelklicken
 
@@ -141,22 +141,24 @@ Schließt du es, ist er aus.
 
 ## Teil 3 — Probe
 
-### 10. Schreib deinem Bot privat
+### 10. Ein Testsignal
 
-```
-wie läuft es
-```
-
-Er muss mit Zahlen antworten, nicht mit einer Fehlermeldung.
-
-### 11. Ein Testsignal
+Schreib deinem Bot privat, ganz normal:
 
 ```
 long 4012, stop 4004, ziel 4029, 1h sweep und 1m bos
 ```
 
-Er zeigt dir, wie es in **beiden** Gruppen aussieht, und fragt, ob er es
-verschicken soll. Sag **nein** — es war nur eine Probe.
+Er zeigt dir sofort, wie es in **beiden** Gruppen aussieht, und fragt
+nach. Sag **nein** — es war nur eine Probe.
+
+### 11. Die anderen Befehle
+
+```
+/gruppen     was eingerichtet ist, was heute noch frei ist
+/rueckblick  den Tagesrückblick jetzt schicken
+/hilfe       alles auf einen Blick
+```
 
 Schau dir die Vorschau genau an: VIP mit Begründung und CRV, Inner
 Circle knapp mit dem VIP-Hinweis darunter. Stimmt das, ist alles
@@ -174,6 +176,22 @@ benachrichtigen" **aus**.
 
 Der Bot läuft, solange `starten.bat` offen ist. Du gibst Signale normal
 durch, er fragt nach, du sagst ja.
+
+**So gibst du ein Signal durch:** einfach tippen, wie du es ohnehin
+schreiben würdest.
+
+```
+long 4012, stop 4004, ziel 4029, 1h sweep und 1m bos
+```
+
+Er versteht auch `buy`, `sell`, `sl`, `tp`, deutsche und englische
+Zahlen, und die Reihenfolge ist ihm egal.
+
+**Ergebnis melden**, wenn der Trade zu ist: `ziel`, `stop` oder `be`.
+Das nimmt immer das neueste offene Signal. Für ein bestimmtes:
+`sig-3 ziel`.
+
+**Einmal am Tag** schickt er von selbst den Rückblick in beide Gruppen.
 
 Was noch offen ist:
 

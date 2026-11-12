@@ -533,3 +533,52 @@ class TestOhneVerzug(unittest.TestCase):
             self.assertEqual(len(netz.sent), 2)
             for n in netz.sent:
                 self.assertTrue(n.get("reply_to_message_id"))
+
+
+class TestRueckblick(unittest.TestCase):
+    def test_zaehlt_was_heute_lief(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, netz, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            a = v.signal_senden(SIGNAL)["id"]
+            v.ergebnis_senden(a, "gewonnen")
+            takt.weiter(7 * 3600)
+            b = v.signal_senden(SIGNAL)["id"]
+            v.ergebnis_senden(b, "verloren")
+            text = v.rueckblick_text(v._tag(), True)
+            self.assertIn("2 Signale", text)
+            self.assertIn("1 im Ziel", text)
+            self.assertIn("1 am Stop", text)
+            self.assertIn("+83 Pips", text)      # +166 und -83
+
+    def test_ohne_signal_eine_eigene_zeile(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, _, _ = bauen(ordner)
+            self.assertIn("kein Signal", v.rueckblick_text(v._tag(), True))
+
+    def test_inner_circle_sagt_wie_viele_dort_ankamen(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, _, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            v.signal_senden(SIGNAL)            # London -> auch Inner Circle
+            takt.weiter(60 * 60)
+            v.signal_senden(SIGNAL)            # zweites London -> nur VIP
+            kurz = v.rueckblick_text(v._tag(), False)
+            self.assertIn("2 Signale", kurz)
+            self.assertIn("davon hier: 1", kurz)
+            # In VIP steht der Zusatz nicht, dort kam alles an.
+            self.assertNotIn("davon hier", v.rueckblick_text(v._tag(), True))
+
+    def test_faellig_erst_ab_der_zeit_und_nur_einmal(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, _, takt = bauen(ordner, verzug=0, uhr=Uhr(stunde=10))
+            v.settings.rueckblick_um = "23:15"
+            self.assertFalse(v.rueckblick_faellig())
+            takt.weiter(13 * 3600 + 20 * 60)      # 23:20
+            self.assertTrue(v.rueckblick_faellig())
+            v.rueckblick_senden()
+            self.assertFalse(v.rueckblick_faellig())
+
+    def test_abgeschaltet_wenn_keine_zeit_gesetzt(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, _, takt = bauen(ordner, uhr=Uhr(stunde=23, minute=50))
+            v.settings.rueckblick_um = ""
+            self.assertFalse(v.rueckblick_faellig())

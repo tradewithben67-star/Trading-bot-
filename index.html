@@ -60,12 +60,31 @@ a{color:var(--fg)}
 .bg__sun{
   inset:0;
   background:
-    radial-gradient(120% 70% at 78% -14%,rgba(255,246,226,.07) 0%,rgba(255,240,210,.025) 32%,transparent 62%),
-    radial-gradient(90% 60% at 12% 108%,rgba(96,116,150,.10) 0%,transparent 58%);
+    radial-gradient(120% 70% at 18% -14%,rgba(255,246,226,.07) 0%,rgba(255,240,210,.025) 32%,transparent 62%),
+    radial-gradient(90% 60% at 88% 108%,rgba(96,116,150,.10) 0%,transparent 58%);
 }
 /* Damit die Schrift gewinnt: eine dunkle Decke über dem Gestein. */
-.bg__shade{inset:0;background:linear-gradient(180deg,rgba(6,7,9,.66) 0%,rgba(6,7,9,.70) 44%,rgba(6,7,9,.78) 100%)}
-.bg__vig{inset:0;background:radial-gradient(142% 112% at 50% 36%,transparent 26%,rgba(0,0,0,.42) 58%,rgba(0,0,0,.78) 100%)}
+/* Zwei Schleier statt einem. Der erste nimmt dem ganzen Bild etwas Licht,
+   der zweite legt ein weiches dunkles Band dorthin, wo der Text steht.
+   So bleibt das Gestein an den Raendern hell wie auf der Vorlage, und die
+   Schrift steht trotzdem auf fast Schwarz. */
+.bg__shade{inset:0;background:linear-gradient(180deg,rgba(5,6,8,0.28) 0%,rgba(5,6,8,0.34) 46%,rgba(5,6,8,0.46) 100%)}
+.bg__band{
+  inset:0;
+  background:linear-gradient(90deg,
+    transparent 0%,
+    rgba(4,5,7,0.48) 10%,
+    rgba(4,5,7,0.72) 23%,
+    rgba(4,5,7,0.72) 77%,
+    rgba(4,5,7,0.48) 90%,
+    transparent 100%);
+}
+/* Schmal steht der Text ueber die ganze Breite — dann darf das Band keine
+   hellen Raender mehr haben, sonst liegt Schrift auf hellem Gestein. */
+@media (max-width:900px){
+  .bg__band{background:rgba(4,5,7,.72)}
+}
+.bg__vig{inset:0;background:radial-gradient(150% 118% at 50% 38%,transparent 34%,rgba(0,0,0,.26) 64%,rgba(0,0,0,.6) 100%)}
 
 /* ---------- Gerüst ---------- */
 .shell{
@@ -623,6 +642,7 @@ a{color:var(--fg)}
   <canvas class="bg__rock" id="rock"></canvas>
   <div class="bg__sun"></div>
   <div class="bg__shade"></div>
+  <div class="bg__band"></div>
   <div class="bg__vig"></div>
 </div>
 </div>
@@ -1219,7 +1239,7 @@ a{color:var(--fg)}
         stones: stoneList(w, h),
         drawn: 0
       };
-      var az = 2.5, el = 0.44;
+      var az = -2.5, el = 0.30;
       job.lx = Math.cos(az) * Math.cos(el);
       job.ly = Math.sin(az) * Math.cos(el);
       job.lz = Math.sin(el);
@@ -1235,15 +1255,15 @@ a{color:var(--fg)}
        winzige, wenige grosse. Genau das macht den Eindruck aus. */
     function craterList(w, h){
       var r = rng(4242), out = [];
-      var count = Math.round(w * h / 2400);
-      var maxR = Math.min(w, h) * 0.075;
+      var count = Math.round(w * h / 2600);
+      var maxR = Math.min(w, h) * 0.15;
       for (var c = 0; c < count; c++){
-        var R = 1.9 * Math.pow(1 - 0.99965 * r(), -0.44);
+        var R = 2.3 * Math.pow(1 - 0.9997 * r(), -0.58);
         if (R > maxR) R = maxR;
-        var depth = R * (0.21 + 0.07 * r());
+        var depth = R * (0.26 + 0.10 * r());
         out.push({
           R: R, cx: r() * w, cy: r() * h, depth: depth,
-          rim: depth * (0.18 + 0.12 * r()),
+          rim: depth * (0.24 + 0.14 * r()),
           wobble: 0.012 + 0.016 * r(),
           phase: r() * 6.28318,
           lobes: 5 + ((r() * 7) | 0),
@@ -1252,17 +1272,19 @@ a{color:var(--fg)}
       }
       /* Drei grosse Einschlaege, bewusst an den Rand gelegt: in der Mitte
          steht die Schrift. */
-      for (var g = 0; g < 3; g++){
+      for (var g = 0; g < 2; g++){
         var BR = maxR * (0.62 + 0.38 * r());
-        var bd = BR * (0.21 + 0.07 * r());
-        var ux = r(), uy = r();
+        var bd = BR * (0.26 + 0.10 * r());
+        /* Ganz im Bild halten: angeschnitten liest sich ein grosser
+           Krater als Insel, nicht als Krater. */
+        var rand = BR * 1.25;
         out.push({
           R: BR,
-          cx: ux < 0.5 ? ux * 0.30 * w : w - (1 - ux) * 0.30 * w,
-          cy: uy < 0.5 ? uy * 0.44 * h : h - (1 - uy) * 0.44 * h,
+          cx: rand + r() * Math.max(1, w - 2 * rand),
+          cy: rand + r() * Math.max(1, h - 2 * rand),
           depth: bd,
-          rim: bd * (0.18 + 0.12 * r()),
-          wobble: 0.012 + 0.026 * r(),
+          rim: bd * (0.24 + 0.14 * r()),
+          wobble: 0.014 + 0.022 * r(),
           phase: r() * 6.28318, lobes: 5 + ((r() * 7) | 0), fresh: r() * 0.7
         });
       }
@@ -1272,7 +1294,7 @@ a{color:var(--fg)}
 
     function stoneList(w, h){
       var r = rng(991), out = [];
-      var n = Math.round(w * h / 60000);
+      var n = Math.round(w * h / 48000);
       for (var i = 0; i < n; i++){
         var R = 2 + r() * 3;
         out.push({x: r() * w, y: r() * h, R: R, H: R * (0.7 + r() * 0.8)});
@@ -1294,7 +1316,7 @@ a{color:var(--fg)}
               + 0.32 * perlin(x / 6.7, y / 6.7, p)
               + 0.15 * perlin(x / 3.4, y / 3.4, p2);
         var k = y * w + x;
-        j.height[k] = v * 7.5 + g * 1.6;
+        j.height[k] = v * 9 + g * 1.7;
         j.albedo[k] = 0.87 + 0.09 * perlin(x * 0.0024, y * 0.0024, p2)
                            + 0.035 * perlin(x * 0.031, y * 0.031, p);
       }
@@ -1302,7 +1324,7 @@ a{color:var(--fg)}
 
     function crater(j, c){
       var w = j.w, h = j.h;
-      var reach = c.R * 1.6;
+      var reach = c.R * 1.42;
       var x0 = Math.max(0, (c.cx - reach) | 0), x1 = Math.min(w - 1, (c.cx + reach) | 0);
       var y0 = Math.max(0, (c.cy - reach) | 0), y1 = Math.min(h - 1, (c.cy + reach) | 0);
       for (var y = y0; y <= y1; y++){
@@ -1320,14 +1342,12 @@ a{color:var(--fg)}
           var rr = d / (c.R * wob);
           var k = y * w + x;
           if (rr < 1){
-            j.height[k] -= c.depth * Math.pow(1 - rr * rr, 0.8);
+            j.height[k] -= c.depth * Math.pow(1 - rr * rr, 0.72);
             j.albedo[k] -= 0.03 * (1 - rr * rr);
           }
           var rimAmp = c.rim * (0.80 + 0.26 * Math.sin(c.lobes * 0.6 * ang - c.phase));
           var e = rr - 1.0;
           j.height[k] += rimAmp * Math.exp(-(e * e) / 0.016);
-          var f = rr - 1.28;
-          j.height[k] += rimAmp * 0.1 * Math.exp(-(f * f) / 0.12);
           if (rr > 0.95 && rr < 1.5) j.albedo[k] += 0.03 * Math.exp(-(e * e) / 0.06);
           /* Frische Krater werfen eine helle Auswurfdecke. */
           if (c.fresh > 0.84 && rr > 1 && rr < 2.3){
@@ -1375,14 +1395,14 @@ a{color:var(--fg)}
             px2 += j.sx * step; py2 += j.sy * step;
             var ix = px2 | 0, iy = py2 | 0;
             if (ix < 0 || iy < 0 || ix >= w || iy >= h) break;
-            if (height[iy * w + ix] - hC > j.need * (s + 1) * step){ lit *= 0.22; break; }
+            if (height[iy * w + ix] - hC > j.need * (s + 1) * step){ lit *= 0.05; break; }
             step *= 1.17;
           }
         }
 
         var ao = 0.82 + 0.18 / (1 + Math.exp(-(hC + 2) * 0.22));
-        var v = albedo[k] * (0.09 + 0.91 * Math.pow(lit, 1.05)) * ao;
-        v *= 0.46;
+        var v = albedo[k] * (0.022 + 0.978 * Math.pow(lit, 0.92)) * ao;
+        v *= 0.86;
         v += (j.noise() - 0.5) * 0.006;
         if (v < 0) v = 0; else if (v > 1) v = 1;
 

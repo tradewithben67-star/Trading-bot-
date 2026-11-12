@@ -649,3 +649,28 @@ class TestGruppenWerkzeuge(unittest.TestCase):
         with self.assertRaises(RuntimeError) as fehler:
             w.signal_entwurf("long", 4012.4, 4004.1, 4029.0)
         self.assertIn("nicht eingerichtet", str(fehler.exception))
+
+
+class TestGruppenumzug(unittest.TestCase):
+    """Telegram vergibt beim Umwandeln in eine Supergruppe eine neue
+    Kennung. Das darf nicht als raetselhafter 400er enden."""
+
+    def test_neue_kennung_wird_gelesen(self):
+        from bengx_bot.telegram import _umgezogen_nach
+        koerper = ('{"ok":false,"error_code":400,"description":'
+                   '"Bad Request: group chat was upgraded to a supergroup chat",'
+                   '"parameters":{"migrate_to_chat_id":-1001234567890}}')
+        self.assertEqual(_umgezogen_nach(koerper), "-1001234567890")
+
+    def test_andere_fehler_bleiben_andere_fehler(self):
+        from bengx_bot.telegram import _umgezogen_nach
+        self.assertEqual(_umgezogen_nach('{"ok":false,"error_code":403}'), "")
+        self.assertEqual(_umgezogen_nach("kein json"), "")
+        self.assertEqual(_umgezogen_nach('{"parameters":{}}'), "")
+
+    def test_fehler_sagt_was_zu_tun_ist(self):
+        from bengx_bot.telegram import Umgezogen
+        f = Umgezogen("-12345", "-1001234567890")
+        self.assertIn("-1001234567890", str(f))
+        self.assertIn("bot/.env", str(f))
+        self.assertIsInstance(f, ConnectionError)

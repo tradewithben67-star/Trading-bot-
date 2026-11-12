@@ -22,7 +22,13 @@ Telegram → Menü → **Neue Gruppe** → dich selbst hinzufügen → Name:
 BENGX Inner Circle
 ```
 
-Danach die Gruppe öffnen → Name antippen → **Bearbeiten**:
+> **Stell den Gruppentyp ein, BEVOR du die Kennung einträgst.** Sobald
+> eine einfache Gruppe öffentlich wird, macht Telegram still eine
+> Supergruppe daraus — und vergibt dabei eine **neue** Chat-Kennung. Die
+> alte in `bot/.env` zeigt dann ins Leere. Erst den Typ setzen, dann
+> `einrichten.bat`.
+
+Gruppe öffnen → Name antippen → **Bearbeiten**:
 
 - **Gruppentyp:** Öffentlich
 - **Link:** `t.me/bengx_inner` (oder was frei ist — notier dir, was du

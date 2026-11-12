@@ -35,6 +35,24 @@ from .gruppen import GruppenSettings, Verteiler
 from .llm import LLMSettings
 
 API = "https://api.telegram.org"
+
+
+class Umgezogen(ConnectionError):
+    """Die Gruppe wurde zur Supergruppe und hat dabei eine neue Kennung.
+
+    Telegram vergibt beim Umwandeln einer einfachen Gruppe in eine
+    Supergruppe eine neue Chat-Kennung — das passiert still, sobald man
+    einen öffentlichen Link vergibt oder viele Mitglieder hinzufügt. Ab
+    dann gehen alle Nachrichten an die alte Kennung ins Leere. Statt
+    eines unverständlichen 400er sagt dieser Fehler, was zu tun ist.
+    """
+
+    def __init__(self, alt: str, neu: str) -> None:
+        self.alt, self.neu = str(alt), str(neu)
+        super().__init__(
+            f"Die Gruppe {alt} ist jetzt eine Supergruppe und heißt {neu}. "
+            f"Trag {neu} in bot/.env ein und starte den Bot neu — "
+            "bis dahin kommt dort nichts an.")
 LIMIT = 3900          # Telegram bricht bei 4096 Zeichen ab
 
 
@@ -89,8 +107,12 @@ class HttpTransport:
             with urllib.request.urlopen(request, timeout=self.timeout) as answer:
                 return json.loads(answer.read().decode("utf-8"))
         except urllib.error.HTTPError as exc:
-            body = exc.read().decode("utf-8", "replace")[:300]
-            raise ConnectionError(f"Telegram antwortet {exc.code}: {body}") from exc
+            roh = exc.read().decode("utf-8", "replace")
+            neu = _umgezogen_nach(roh)
+            if neu:
+                raise Umgezogen(payload.get("chat_id", "?"), neu) from exc
+            raise ConnectionError(
+                f"Telegram antwortet {exc.code}: {roh[:300]}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             raise ConnectionError(f"Telegram nicht erreichbar: {exc}") from exc
 
@@ -348,6 +370,16 @@ class TelegramBot:
             except ConnectionError as exc:
                 print(f"Verbindung weg ({exc}) — neuer Versuch in 15 s", flush=True)
                 time.sleep(15)
+
+
+def _umgezogen_nach(body: str) -> str:
+    """Liest die neue Kennung aus einer Telegram-Fehlerantwort, falls da."""
+    try:
+        daten = json.loads(body)
+    except ValueError:
+        return ""
+    neu = (daten.get("parameters") or {}).get("migrate_to_chat_id")
+    return str(neu) if neu else ""
 
 
 def _split(text: str) -> list[str]:

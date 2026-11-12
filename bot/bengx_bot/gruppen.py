@@ -1,10 +1,16 @@
 """Signal-Bot: verteilt Bens Signale an die Telegram-Gruppen.
 
-Zwei Stufen, und der Unterschied ist Zeit und Tiefe:
+Zwei Stufen:
 
-    Inner Circle   bekommt das Signal sofort, mit Begründung (Sweep, BOS,
-                   FVG) und dem Chance-Risiko-Verhältnis.
-    VIP            bekommt dasselbe Signal mit Verzug und ohne Begründung.
+    VIP            bezahlt. Bekommt jedes Signal sofort, mit Begründung
+                   (Sweep, BOS, FVG) und dem Chance-Risiko-Verhältnis.
+    Inner Circle   offen. Bekommt höchstens zwei Signale am Tag, mit
+                   Verzug, ohne Begründung, und darunter den Hinweis auf
+                   VIP. Das Schaufenster, nicht das Produkt.
+
+Mehr als die zwei bekommt der Inner Circle nicht: sonst wäre VIP
+wertlos. Der Zähler läuft nach Berliner Datum und steht in derselben
+Datei wie der Rest.
 
 Verschickt wird über dieselbe Bot-API wie beim Assistenten. Der Verzug
 läuft ohne Hintergrundfaden: wartende Nachrichten stehen in einer Datei,
@@ -33,6 +39,10 @@ from typing import Any, Callable, Iterable
 
 HINWEIS = "Keine Anlageberatung. Risiko selbst bestimmen."
 
+# Steht unter jedem Gratis-Signal im Inner Circle.
+WERBUNG = ("Zwei Signale am Tag gibt es hier. Alle anderen, sofort und "
+           "mit Begründung, laufen in VIP.")
+
 STATUS_TEXT = {
     "gewonnen": "Ziel erreicht",
     "verloren": "Stop",
@@ -46,20 +56,26 @@ STATUS_TEXT = {
 class GruppenSettings:
     inner_chat_id: str = ""
     vip_chat_id: str = ""
-    vip_verzug_min: int = 5
+    inner_verzug_min: int = 20
+    inner_pro_tag: int = 2
     state_file: str = "state/gruppen.json"
 
     @staticmethod
     def from_env(env: dict[str, str] | None = None) -> "GruppenSettings":
         e = env if env is not None else os.environ
         try:
-            verzug = int(e.get("TELEGRAM_VIP_VERZUG", "5") or 5)
+            verzug = int(e.get("TELEGRAM_INNER_VERZUG", "20") or 20)
         except (TypeError, ValueError):
-            verzug = 5
+            verzug = 20
+        try:
+            frei = int(e.get("TELEGRAM_INNER_PRO_TAG", "2") or 2)
+        except (TypeError, ValueError):
+            frei = 2
         return GruppenSettings(
             inner_chat_id=str(e.get("TELEGRAM_INNER_CHAT_ID", "")).strip(),
             vip_chat_id=str(e.get("TELEGRAM_VIP_CHAT_ID", "")).strip(),
-            vip_verzug_min=max(0, min(120, verzug)),
+            inner_verzug_min=max(0, min(240, verzug)),
+            inner_pro_tag=max(0, min(20, frei)),
             state_file=str(e.get("TELEGRAM_GRUPPEN_STATE", "state/gruppen.json")).strip()
             or "state/gruppen.json",
         )
@@ -138,7 +154,8 @@ def pruefen(signal: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def text_signal(signal: dict[str, Any], ausfuehrlich: bool, pip: float) -> str:
+def text_signal(signal: dict[str, Any], ausfuehrlich: bool, pip: float,
+                werbung: bool = False) -> str:
     """Die Nachricht für eine Gruppe."""
     seite = "LONG" if signal["side"] == "long" else "SHORT"
     sl_p = pips(signal["entry"], signal["sl"], pip)
@@ -162,6 +179,8 @@ def text_signal(signal: dict[str, Any], ausfuehrlich: bool, pip: float) -> str:
             f"Stop      {de(signal['sl'])}",
             f"Ziel      {de(signal['tp'])}",
         ]
+    if werbung:
+        zeilen += ["", WERBUNG]
     zeilen += ["", HINWEIS]
     return "\n".join(zeilen)
 
@@ -192,12 +211,13 @@ class Verteiler:
     def gruppen(self) -> list[Gruppe]:
         """Nur Gruppen mit hinterlegter Kennung. Ohne Kennung kein Versand."""
         raus: list[Gruppe] = []
-        if self.settings.inner_chat_id:
-            raus.append(Gruppe("inner", "Inner Circle",
-                               self.settings.inner_chat_id, 0, True))
         if self.settings.vip_chat_id:
             raus.append(Gruppe("vip", "VIP", self.settings.vip_chat_id,
-                               self.settings.vip_verzug_min * 60, False))
+                               0, True))
+        if self.settings.inner_chat_id:
+            raus.append(Gruppe("inner", "Inner Circle",
+                               self.settings.inner_chat_id,
+                               self.settings.inner_verzug_min * 60, False))
         return raus
 
     def gruppe(self, schluessel: str) -> Gruppe:
@@ -224,6 +244,7 @@ class Verteiler:
         self._stand.setdefault("nachrichten", {})
         self._stand.setdefault("signale", {})
         self._stand.setdefault("zaehler", 0)
+        self._stand.setdefault("frei", {})
 
     def _sichern(self) -> None:
         p = self._pfad()
@@ -232,6 +253,26 @@ class Verteiler:
         tmp.write_text(json.dumps(self._stand, ensure_ascii=False, indent=2),
                        encoding="utf-8")
         tmp.replace(p)
+
+    # ---- Gratis-Kontingent ------------------------------------------------
+    def _tag(self) -> str:
+        """Datum nach der Uhr dieses Rechners — Ben sitzt in Deutschland."""
+        from datetime import datetime
+        return datetime.fromtimestamp(self.uhr()).strftime("%Y-%m-%d")
+
+    def frei_heute(self) -> int:
+        return int((self._stand.get("frei") or {}).get(self._tag(), 0))
+
+    def frei_offen(self) -> int:
+        return max(0, self.settings.inner_pro_tag - self.frei_heute())
+
+    def _frei_buchen(self) -> None:
+        tag = self._tag()
+        frei = self._stand.setdefault("frei", {})
+        frei[tag] = int(frei.get(tag, 0)) + 1
+        # Alte Tage nicht mitschleppen.
+        for alt in [k for k in frei if k < tag][:-14]:
+            frei.pop(alt, None)
 
     # ---- Versand ----------------------------------------------------------
     def _senden(self, chat_id: str, text: str,
@@ -248,9 +289,11 @@ class Verteiler:
         return int(kennung) if kennung else None
 
     def signal_senden(self, signal: dict[str, Any]) -> dict[str, Any]:
-        """Verteilt ein Signal: Inner Circle sofort, VIP nach Verzug.
+        """Verteilt ein Signal: VIP sofort, Inner Circle nach Verzug.
 
-        Gibt zurück, was sofort ging und was wartet.
+        Der Inner Circle bekommt höchstens `inner_pro_tag` Signale am Tag.
+        Ist das Kontingent aufgebraucht, geht das Signal nur an VIP — und
+        die Antwort sagt das, damit Ben es weiß.
         """
         sauber = pruefen(signal)
         if not sauber["id"]:
@@ -269,9 +312,17 @@ class Verteiler:
 
         sofort: list[str] = []
         wartet: list[str] = []
+        ausgelassen: list[str] = []
         jetzt = self.uhr()
         for g in ziele:
-            text = text_signal(sauber, g.ausfuehrlich, self.pip)
+            frei = g.schluessel == "inner"
+            if frei and self.frei_offen() <= 0:
+                ausgelassen.append(
+                    f"{g.name} (die {self.settings.inner_pro_tag} für heute sind raus)")
+                continue
+            text = text_signal(sauber, g.ausfuehrlich, self.pip, werbung=frei)
+            if frei:
+                self._frei_buchen()
             if g.verzug <= 0:
                 kennung = self._senden(g.chat_id, text)
                 if kennung:
@@ -288,7 +339,7 @@ class Verteiler:
 
         self._sichern()
         return {"id": sauber["id"], "sofort": sofort, "wartet": wartet,
-                "signal": sauber}
+                "ausgelassen": ausgelassen, "signal": sauber}
 
     # ---- Entwurf und Freigabe --------------------------------------------
     # Ein Signal geht an zahlende Mitglieder und ist nicht zurückzuholen.
@@ -385,7 +436,17 @@ class Verteiler:
 
         text = text_ergebnis(signal, lage, float(pip_zahl))
         erreicht: list[str] = []
+        # Seit der Inner Circle ein Tageskontingent hat, bekommt er nicht
+        # mehr jedes Signal. Ein Ergebnis zu einem Signal, das dort nie
+        # stand, waere ratlos machend — also nur an die Gruppen, die es
+        # wirklich bekommen haben oder noch bekommen.
+        bekam = set(self._stand.get("nachrichten", {}).get(kennung, {}))
+        for e in self._stand.get("wartend") or []:
+            if e.get("signal") == kennung:
+                bekam.add(str(e.get("gruppe", "")))
         for g in self.gruppen():
+            if g.schluessel not in bekam:
+                continue
             # Wartet das Signal für diese Gruppe noch, geht erst das Signal
             # raus und danach das Ergebnis — sonst steht das Ergebnis vor
             # dem Signal in der Gruppe. Der Bezug wird danach gelesen, sonst
@@ -459,7 +520,11 @@ class Verteiler:
         for g in ziele:
             wann = "sofort" if g.verzug <= 0 else f"nach {g.verzug // 60} min"
             tiefe = "mit Begründung" if g.ausfuehrlich else "knapp"
-            zeilen.append(f"{g.name}: {wann}, {tiefe}")
+            zusatz = ""
+            if g.schluessel == "inner":
+                zusatz = (f", noch {self.frei_offen()} von "
+                          f"{self.settings.inner_pro_tag} heute frei")
+            zeilen.append(f"{g.name}: {wann}, {tiefe}{zusatz}")
         wartend = self._stand.get("wartend") or []
         if wartend:
             jetzt = self.uhr()

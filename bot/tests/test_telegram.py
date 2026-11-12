@@ -553,7 +553,7 @@ class TestGruppenImBot(Base):
         self.takt = Uhr()
         self.verteiler = Verteiler(
             GruppenSettings(inner_chat_id="-100", vip_chat_id="-200",
-                            vip_verzug_min=5,
+                            inner_verzug_min=20,
                             state_file=str(Path(self.dir.name) / "g.json")),
             self.net, pip=0.1, uhr=self.takt)
         self.bot = TelegramBot(self.cfg, self.tg, self.net, self.ai,
@@ -561,8 +561,8 @@ class TestGruppenImBot(Base):
 
     def test_gruppen_befehl(self):
         antwort = self.bot.handle(update("/gruppen"))[0]
-        self.assertIn("Inner Circle: sofort", antwort)
-        self.assertIn("VIP: nach 5 min", antwort)
+        self.assertIn("VIP: sofort", antwort)
+        self.assertIn("Inner Circle: nach 20 min", antwort)
 
     def test_einladung_befehl(self):
         antwort = self.bot.handle(update("/einladung inner Max"))[0]
@@ -582,10 +582,10 @@ class TestGruppenImBot(Base):
         self.net.sent.clear()
         self.bot.poll_once()                 # noch nicht faellig
         self.assertEqual(self.net.sent, [])
-        self.takt.weiter(6 * 60)
+        self.takt.weiter(22 * 60)
         self.bot.poll_once()
         self.assertEqual(len(self.net.sent), 1)
-        self.assertEqual(self.net.sent[0]["chat_id"], "-200")
+        self.assertEqual(self.net.sent[0]["chat_id"], "-100")
 
     def test_ohne_verteiler_sagt_der_bot_bescheid(self):
         ohne = TelegramBot(self.cfg, self.tg, self.net, self.ai)
@@ -605,7 +605,7 @@ class TestGruppenWerkzeuge(unittest.TestCase):
         self.takt = Uhr()
         self.verteiler = Verteiler(
             GruppenSettings(inner_chat_id="-100", vip_chat_id="-200",
-                            vip_verzug_min=5,
+                            inner_verzug_min=20,
                             state_file=str(Path(self.dir.name) / "g.json")),
             self.net, pip=0.1, uhr=self.takt)
         self.w = Werkzeuge(Config(), verteiler=self.verteiler)
@@ -615,8 +615,8 @@ class TestGruppenWerkzeuge(unittest.TestCase):
 
     def test_entwurf_zeigt_beide_fassungen_und_schickt_nichts(self):
         text = self.w.signal_entwurf("long", 4012.4, 4004.1, 4029.0, "1H-Sweep")
-        self.assertIn("--- Inner Circle ---", text)
         self.assertIn("--- VIP ---", text)
+        self.assertIn("--- Inner Circle ---", text)
         self.assertIn("Soll ich das so verschicken?", text)
         self.assertEqual(self.net.sent, [])
 

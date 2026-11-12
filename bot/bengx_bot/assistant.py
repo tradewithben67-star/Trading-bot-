@@ -383,6 +383,9 @@ class Assistant:
     provider: Provider | None = None
     history: list[dict[str, str]] = field(default_factory=list)
     verteiler: Any = None
+    # Welche Werkzeuge die letzte Antwort gebraucht hat. Steht im Fenster
+    # neben der Dauer, damit man sieht, wo die Zeit hingeht.
+    letzte_werkzeuge: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.provider is None:
@@ -411,13 +414,19 @@ class Assistant:
         nachricht = (f"LAGE\n{lage}\n\nNACHRICHT\n"
                      f"{frage or 'Schau dir das an.'}")
         werkzeuge: list[Callable[..., Any]] = []
+        kasten = None
+        self.letzte_werkzeuge = []
         if self.config is not None:
-            werkzeuge = werkzeug_funktionen(
-                Werkzeuge(self.config, self.coder, melden, self.verteiler))
+            kasten = Werkzeuge(self.config, self.coder, melden, self.verteiler)
+            werkzeuge = werkzeug_funktionen(kasten)
 
-        text = self.provider.frage(
-            SYSTEM, self.history[-self.settings.history_turns:],
-            nachricht, list(bilder), werkzeuge) or ""
+        try:
+            text = self.provider.frage(
+                SYSTEM, self.history[-self.settings.history_turns:],
+                nachricht, list(bilder), werkzeuge) or ""
+        finally:
+            if kasten is not None:
+                self.letzte_werkzeuge = list(dict.fromkeys(kasten.benutzt))
         text = text.strip()
         if not text:
             return "Darauf kam keine Antwort. Frag es anders."

@@ -713,3 +713,28 @@ class TestSchweigenInGruppen(Base):
             "text": "hallo"}}])
         bot = TelegramBot(self.cfg, self.tg, netz, self.ai)
         self.assertEqual(bot.poll_once(), 1)      # kein Absturz
+
+
+class TestWarteanzeige(Base):
+    """Waehrend gerechnet wird, soll "schreibt ..." stehen bleiben."""
+
+    def test_typing_wird_nachgeschickt(self):
+        import time as _t
+        schluss = self.bot.typing_halten("42")
+        _t.sleep(9.0)
+        schluss.set()
+        _t.sleep(0.2)
+        aktionen = [n for m, n in self.net.calls if m == "sendChatAction"]
+        # einmal sofort, dann alle vier Sekunden
+        self.assertGreaterEqual(len(aktionen), 3, aktionen)
+        self.assertTrue(all(a["action"] == "typing" for a in aktionen))
+
+    def test_hoert_auf_wenn_die_antwort_da_ist(self):
+        import time as _t
+        schluss = self.bot.typing_halten("42")
+        schluss.set()
+        _t.sleep(0.2)
+        vorher = len([n for m, n in self.net.calls if m == "sendChatAction"])
+        _t.sleep(5.0)
+        nachher = len([n for m, n in self.net.calls if m == "sendChatAction"])
+        self.assertEqual(vorher, nachher, "haette aufhoeren muessen")

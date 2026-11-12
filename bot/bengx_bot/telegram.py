@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import json
 import os
+import threading
 import time
 import urllib.error
 import urllib.request
@@ -237,10 +238,22 @@ class TelegramBot:
         if not text and not bilder:
             return ["Damit kann ich nichts anfangen. /hilfe zeigt, was geht."]
 
-        self.typing(chat_id)
-        lage = report.build(self.cfg).text()
-        melden = lambda nachricht: self.send(chat_id, nachricht)
-        return [self.ai.answer(text, lage, bilder, melden=melden)]
+        schluss = self.typing_halten(chat_id)
+        begonnen = time.time()
+        try:
+            lage = report.build(self.cfg).text()
+            melden = lambda nachricht: self.send(chat_id, nachricht)
+            antwort = self.ai.answer(text, lage, bilder, melden=melden)
+        finally:
+            schluss.set()
+        dauer = time.time() - begonnen
+        # Ins Fenster, nicht in den Chat: so sieht Ben, wo die Zeit
+        # hingeht, ohne dass es die Unterhaltung stört.
+        print(f"Antwort nach {dauer:.1f} s"
+              + (f" (Werkzeuge: {', '.join(self.ai.letzte_werkzeuge)})"
+                 if getattr(self.ai, "letzte_werkzeuge", None) else ""),
+              flush=True)
+        return [antwort]
 
     def _command(self, text: str) -> list[str]:
         teile = text.split()
@@ -338,12 +351,30 @@ class TelegramBot:
 
     # ---- Betrieb ----------------------------------------------------------
     def typing(self, chat_id: str) -> None:
-        """Zeigt „schreibt …“ an. Mit Werkzeugen dauert eine Antwort länger,
-        da soll Ben nicht ins Leere schauen."""
+        """Zeigt „schreibt …“ an."""
         try:
             self.net.call("sendChatAction", {"chat_id": chat_id, "action": "typing"})
         except ConnectionError:
             pass
+
+    def typing_halten(self, chat_id: str):
+        """Hält „schreibt …“ am Leben, solange gerechnet wird.
+
+        Telegram blendet den Hinweis nach etwa fünf Sekunden aus. Eine
+        Antwort mit Werkzeugen dauert aber länger — dann sah es aus, als
+        sei der Bot tot. Der Faden schickt ihn alle vier Sekunden neu und
+        hört auf, sobald die Antwort da ist.
+        """
+        ende = threading.Event()
+
+        def schleife():
+            while not ende.wait(4.0):
+                self.typing(chat_id)
+
+        self.typing(chat_id)
+        faden = threading.Thread(target=schleife, daemon=True)
+        faden.start()
+        return ende
 
     def send(self, chat_id: str, text: str) -> None:
         for stueck in _split(text):

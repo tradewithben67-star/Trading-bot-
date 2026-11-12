@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>BENGX Erklaerfilme</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Inter:wght@400;450;500&display=swap">
+<style>
+  html,body{margin:0;background:#000;overflow:hidden}
+  canvas{display:block}
+</style>
+</head>
+<body>
+<canvas id="bild" width="1280" height="720"></canvas>
+<script>
+/* Jede Zeichnung haengt nur an der Bildnummer, nie an der echten Uhr.
+   Nur so kommt bei jedem Lauf dasselbe Bild heraus und die Aufnahme
+   kann sich Zeit lassen. */
+(function(){
+"use strict";
+var c = document.getElementById("bild"), g = c.getContext("2d");
+var W = c.width, H = c.height, FPS = 30;
+
+var GOLD = "#EFC45E", GOLD_D = "#B08E36";
+var FG = "#DCE1E8", MID = "#A4ABB4", DIM = "#7D848D";
+var GRUEN = "#55D6A6", ROT = "#FF8E7E", LINIE = "rgba(255,255,255,.12)";
+var ANZEIGE = '700 {s}px Archivo, Arial, sans-serif';
+var TEXT = '{s}px Inter, Arial, sans-serif';
+var DATEN = '{s}px "IBM Plex Mono", monospace';
+function f(v, s){ return v.replace("{s}", s); }
+
+/* ---- kleine Helfer ---- */
+function klar(){ g.fillStyle = "#000"; g.fillRect(0, 0, W, H); }
+function sanft(t){ return t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.pow(1 - t, 3); }
+function spanne(bild, von, bis){
+  if (bild <= von) return 0;
+  if (bild >= bis) return 1;
+  return (bild - von) / (bis - von);
+}
+function schrift(txt, x, y, stil, farbe, ausrichtung, deckung){
+  g.save();
+  g.globalAlpha = deckung === undefined ? 1 : deckung;
+  g.font = stil; g.fillStyle = farbe;
+  g.textAlign = ausrichtung || "left"; g.textBaseline = "alphabetic";
+  g.fillText(txt, x, y);
+  g.restore();
+}
+function linie(x1, y1, x2, y2, farbe, breite, deckung){
+  g.save();
+  g.globalAlpha = deckung === undefined ? 1 : deckung;
+  g.strokeStyle = farbe; g.lineWidth = breite || 1;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  g.restore();
+}
+function kasten(x, y, b, h, r, fuell, rand, deckung){
+  g.save();
+  g.globalAlpha = deckung === undefined ? 1 : deckung;
+  g.beginPath();
+  if (g.roundRect) g.roundRect(x, y, b, h, r);
+  else g.rect(x, y, b, h);
+  if (fuell){ g.fillStyle = fuell; g.fill(); }
+  if (rand){ g.strokeStyle = rand; g.lineWidth = 1; g.stroke(); }
+  g.restore();
+}
+/* Kopfzeile: Marke links, Kapitel rechts — in jedem Film gleich. */
+function rahmen(kapitel, nummer){
+  g.save();
+  g.globalAlpha = .9;
+  schrift("BENGX", 64, 64, f(DATEN, 15), FG);
+  g.restore();
+  schrift(nummer + " — " + kapitel, W - 64, 64, f(DATEN, 13), DIM, "right");
+  linie(64, 86, W - 64, 86, LINIE, 1);
+  linie(64, H - 70, W - 64, H - 70, LINIE, 1);
+  schrift("Keine Anlageberatung", 64, H - 44, f(DATEN, 12), DIM);
+}
+/* Titelkarte am Anfang jedes Films */
+function titel(bild, gross, klein, bis){
+  var ein = sanft(spanne(bild, 0, 18));
+  var aus = 1 - sanft(spanne(bild, bis - 14, bis));
+  var a = Math.min(ein, aus);
+  if (a <= 0) return false;
+  var y = H / 2 - 10 + (1 - ein) * 18;
+  schrift(gross, W / 2, y, f(ANZEIGE, 62), FG, "center", a);
+  schrift(klein, W / 2, y + 44, f(TEXT, 21), MID, "center", a * .92);
+  linie(W / 2 - 40, y + 72, W / 2 + 40, y + 72, GOLD, 2, a);
+  return true;
+}
+function abspann(bild, von, text){
+  var a = sanft(spanne(bild, von, von + 20));
+  if (a <= 0) return;
+  g.save(); g.globalAlpha = a * .96;
+  g.fillStyle = "rgba(0,0,0,.82)"; g.fillRect(0, 0, W, H);
+  g.restore();
+  schrift(text, W / 2, H / 2 + 8, f(ANZEIGE, 34), FG, "center", a);
+}
+
+/* ================= Kerzen, gemeinsam genutzt ================= */
+var KURSE = [
+  [100,106,98,104],[104,110,102,108],[108,112,104,106],[106,109,101,102],
+  [102,105,97,99],[99,104,97,103],[103,111,102,110],[110,116,108,114],
+  [114,118,110,112],[112,115,106,108],[108,113,106,112],[112,120,111,118],
+  [118,124,116,122],[122,126,118,120],[120,123,115,117],[117,122,115,121]
+];
+function kerze(x, b, o, h, l, s, skala, deckung){
+  var hoch = skala(h), tief = skala(l), auf = skala(o), zu = skala(s);
+  var farbe = s >= o ? GRUEN : ROT;
+  g.save();
+  g.globalAlpha = deckung === undefined ? 1 : deckung;
+  g.strokeStyle = farbe; g.lineWidth = 1.6;
+  g.beginPath(); g.moveTo(x + b / 2, hoch); g.lineTo(x + b / 2, tief); g.stroke();
+  var y = Math.min(auf, zu), hh = Math.max(2, Math.abs(zu - auf));
+  g.fillStyle = farbe; g.globalAlpha = (deckung === undefined ? 1 : deckung) * .9;
+  g.fillRect(x, y, b, hh);
+  g.restore();
+}
+window.__szenen = {};
+window.__kerzen = { KURSE: KURSE, kerze: kerze };
+window.__werkzeug = {
+  klar: klar, sanft: sanft, spanne: spanne, schrift: schrift, linie: linie,
+  kasten: kasten, rahmen: rahmen, titel: titel, abspann: abspann,
+  f: f, ANZEIGE: ANZEIGE, TEXT: TEXT, DATEN: DATEN,
+  GOLD: GOLD, GOLD_D: GOLD_D, FG: FG, MID: MID, DIM: DIM,
+  GRUEN: GRUEN, ROT: ROT, LINIE: LINIE, W: W, H: H, FPS: FPS, g: g
+};
+window.zeichne = function(bild){
+  klar();
+  var s = window.__szenen[window.__aktuelle];
+  if (s) s(bild);
+};
+})();
+</script>
+<script src="szenen.js"></script>
+</body>
+</html>

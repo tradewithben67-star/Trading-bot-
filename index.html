@@ -268,18 +268,6 @@ a{color:var(--fg)}
 .copyline{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
 .copyline .val{font-family:var(--f-data);font-size:15px;color:var(--fg);user-select:all;word-break:break-all}
 
-.goal{
-  border:1px solid rgba(239,196,94,.4);
-  background:linear-gradient(180deg,rgba(239,196,94,.08),transparent 58%),rgba(10,10,12,.74);
-  padding:clamp(20px,2.8vw,28px);
-  display:grid;gap:13px;max-width:64ch;min-width:0;
-}
-.goal h3{font-size:clamp(24px,3.4vw,34px);letter-spacing:-.03em}
-.goal p{color:var(--fg-mid);font-size:15.5px}
-.goal__small{
-  font-family:var(--f-data);font-size:11.5px;line-height:1.75;color:var(--fg-dim);
-  border-top:1px solid var(--line-soft);padding-top:12px;
-}
 
 /* Weiter */
 .next{
@@ -581,7 +569,6 @@ a{color:var(--fg)}
 .btn:hover,.tab:hover,.pick:hover{transform:none;box-shadow:none}
 
 /* --- Das Ziel-Feld hing in einer halben Spalte und wirkte unfertig --- */
-.goal{max-width:78ch;padding:clamp(22px,3vw,32px)}
 
 /* --- Bot-Karten: Kasten im Kasten. Der äußere fällt weg, die Bots
        trennt eine Haarlinie. Innen bleibt die Datentafel. --- */
@@ -627,7 +614,7 @@ a{color:var(--fg)}
    draussen — neben den schlichten Bot-Karten sah die Seite aus, als haette
    sie zwei Handschriften. */
 .glas,
-.facts li,.rules li,.bot,.goal,.sig,.video__frame,.chat__empty{
+.facts li,.rules li,.bot,.sig,.video__frame,.chat__empty{
   background:rgba(10,10,12,.6);
   border:1px solid var(--line-soft);
   border-radius:var(--r-karte);
@@ -664,7 +651,6 @@ a{color:var(--fg)}
 .bot:hover{border-color:rgba(255,255,255,.17)}
 .bot[data-on="true"]:hover{border-color:rgba(239,196,94,.6)}
 
-.goal{padding:clamp(22px,3vw,32px)}
 .sig{padding:clamp(20px,2.6vw,28px)}
 
 /* Datentafeln in den Karten bleiben flach: Glas in Glas wird milchig. */
@@ -817,6 +803,37 @@ a{color:var(--fg)}
 @media (max-width:620px){
   .sigrow__zeit{margin-left:0;width:100%}
 }
+/* ================= Lernfilme ================= */
+.kurse{
+  display:grid;gap:14px;
+  grid-template-columns:repeat(auto-fit,minmax(272px,1fr));
+}
+.kurs{
+  display:flex;flex-direction:column;gap:13px;
+  padding:14px 14px 20px;
+  border:1px solid var(--line-soft);border-radius:14px;
+  background:rgba(10,10,12,.6);
+  transition:border-color .25s ease,background .25s ease;
+}
+.kurs:hover{border-color:rgba(255,255,255,.17);background:rgba(16,16,20,.7)}
+.kurs__film{
+  position:relative;border-radius:10px;overflow:hidden;
+  background:#000;aspect-ratio:16/9;
+}
+.kurs__film video{display:block;width:100%;height:100%;object-fit:cover;background:#000}
+.kurs__kopf{display:flex;align-items:baseline;gap:11px;padding:0 6px}
+.kurs__n{font-family:var(--f-data);font-size:11px;letter-spacing:.1em;color:var(--gold)}
+.kurs__name{
+  font-family:var(--f-display);font-weight:700;letter-spacing:-.025em;
+  font-size:clamp(18px,2.1vw,22px);color:var(--fg);
+}
+.kurs__dauer{
+  margin-left:auto;font-family:var(--f-data);font-size:11px;color:var(--fg-dim);
+}
+.kurs__d{margin:0;padding:0 6px;color:var(--fg-mid);font-size:14.5px}
+@media (max-width:620px){
+  .kurse{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
@@ -899,12 +916,45 @@ a{color:var(--fg)}
         <p class="lead">Vom ersten Chart bis zum eigenen Regelwerk. Kein Hype, keine Abkürzung — der Weg, den ich selbst gegangen bin.</p>
       </header>
       <div class="rule"></div>
-      <ul class="rules">
-        <li><i>01</i><div><b>Grundlagen</b><span>Wie ein Markt funktioniert, was eine Kerze wirklich sagt, wie du einen Chart liest, ohne dich zu verlieren.</span></div></li>
-        <li><i>02</i><div><b>Risiko</b><span>Positionsgröße, Stop und Tageslimit. Der Teil, den die meisten überspringen — und der entscheidet.</span></div></li>
-        <li><i>03</i><div><b>Praxis</b><span>Am Papierkonto üben, protokollieren, auswerten. Erst dann echtes Geld.</span></div></li>
-      </ul>
-      <p class="note">Inhalte und Funktionen folgen. Sag mir, was in diesen Bereich soll — Videos, Kurse, Texte, Downloads — dann baue ich es ein.</p>
+      <div class="kurse">
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/01-grundlagen.jpg" src="media/01-grundlagen.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">01</span>
+            <h3 class="kurs__name">Grundlagen</h3>
+            <span class="kurs__dauer">0:27</span>
+          </div>
+          <p class="kurs__d">Wie ein Markt funktioniert, was eine Kerze wirklich sagt, wie du einen Chart liest, ohne dich zu verlieren.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/02-risiko.jpg" src="media/02-risiko.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">02</span>
+            <h3 class="kurs__name">Risiko</h3>
+            <span class="kurs__dauer">0:27</span>
+          </div>
+          <p class="kurs__d">Positionsgröße, Stop und Tageslimit. Der Teil, den die meisten überspringen — und der entscheidet.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/03-praxis.jpg" src="media/03-praxis.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">03</span>
+            <h3 class="kurs__name">Praxis</h3>
+            <span class="kurs__dauer">0:27</span>
+          </div>
+          <p class="kurs__d">Am Papierkonto üben, protokollieren, auswerten. Erst dann echtes Geld.</p>
+        </article>
+      </div>
+      <p class="note">Drei kurze Filme, ohne Ton — zum Mitlesen. Weitere Inhalte folgen.</p>
     </section>
 
     <hr class="seam" aria-hidden="true">
@@ -921,12 +971,6 @@ a{color:var(--fg)}
         <li><i>03</i><div><b>Laufen lassen</b><span>Der Bot arbeitet nach seinen Regeln, du schaust drauf. Vom Handy, von unterwegs, von wo du willst.</span></div></li>
       </ul>
 
-      <div class="goal">
-        <p class="kick">Das Ziel</p>
-        <h3 class="gilt">WiFi Money</h3>
-        <p>Kein Chef, keine Stechuhr, kein fester Ort. Die Regeln stehen, der Bot führt sie aus, und du brauchst nichts weiter als Empfang. Genau darauf arbeite ich hin — und genau das gebe ich hier weiter.</p>
-        <p class="goal__small">Ein Ziel ist kein Versprechen. Niemand kann dir sagen, was am Ende herauskommt, und es kann weniger als null sein. Wer dir etwas anderes erzählt, verkauft dir etwas.</p>
-      </div>
       <div class="linkrow">
         <button class="btn" type="button" data-goto="xaubot">Zu den Bots</button>
         <button class="btn btn--plain" type="button" data-goto="ben">Wer ist Ben?</button>

@@ -34,10 +34,18 @@ Risiko größer — also nimm eine kleinere Position, nicht denselben Stop
 
 5. TEILGEWINNE
 Das Ziel ist, wo ich den Markt hinlaufen sehe — keine Garantie.
-Deshalb wird unterwegs abgebaut:
-   nach  80 Pips Gewinn   die Hälfte raus
-   nach 150 Pips Gewinn   so viel, dass insgesamt 80 % zu sind
-   der Rest läuft mit Stop auf Einstand bis zum Ziel
+Deshalb wird unterwegs abgebaut und der Gewinn gesichert:
+
+   nach  80 Pips    die Hälfte raus
+   nach 150 Pips    noch einmal 30 % raus
+                    → 80 % der Position zu, 80 % des Gewinns gesichert
+   der Rest (20 %)  läuft mit Stop auf Einstand bis zum Ziel
+
+An 1,00 Lot gerechnet: bei 80 Pips gehen 0,50 raus, bei 150 Pips
+weitere 0,30, und 0,20 bleiben im Markt.
+
+Die 20 %, die stehen bleiben, sind der Teil, der dich nichts mehr
+kosten kann. Alles, was er noch bringt, ist geschenkt.
 
 6. AB EINSTAND LAUFEN LASSEN
 Steht ein Trade auf Einstand, lass ihn laufen. Du kannst nichts mehr
@@ -95,10 +103,10 @@ Einstandsstop hindurch. Ich habe es ehrlich formuliert — wer das später
 einmal erlebt, soll dir nicht vorwerfen können, du hättest es anders
 versprochen.
 
-## Noch nicht entschieden
+## Geklärt
 
-**Regel 5, zweite Stufe.** „Bei 150 Pips 80 % schließen" habe ich so
-gelesen: insgesamt 80 % zu, also nach der Hälfte bei 80 Pips noch einmal
-30 % obendrauf. Übrig bleiben 20 %, die bis zum Ziel laufen. Falls du
-meintest, bei 150 Pips noch einmal 80 % von dem, was übrig ist, sag
-Bescheid — dann steht am Ende nur 10 % im Markt.
+**Regel 5, zweite Stufe.** Gemeint ist: 80 % des Gewinns sichern, also
+80 % der Position zu. Nach der Hälfte bei 80 Pips kommen bei 150 Pips
+noch einmal 30 % dazu; die letzten 20 % laufen weiter. Im Text steht es
+jetzt mit Lot-Zahlen, damit es niemand als „80 % vom Rest" liest — das
+wären nur 10 % gewesen.

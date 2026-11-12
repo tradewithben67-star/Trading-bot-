@@ -541,3 +541,111 @@ class TestModellfilter(unittest.TestCase):
         from bengx_bot.llm import GeminiProvider, LLMSettings
         g = GeminiProvider(LLMSettings(gemini_key="x"))
         self.assertEqual(g.hinweis_modell("irgendein anderer Fehler"), "")
+
+
+class TestGruppenImBot(Base):
+    """Der Signal-Bot haengt an derselben Abrufschleife."""
+
+    def setUp(self):
+        super().setUp()
+        from bengx_bot.gruppen import GruppenSettings, Verteiler
+        from tests.test_gruppen import Uhr
+        self.takt = Uhr()
+        self.verteiler = Verteiler(
+            GruppenSettings(inner_chat_id="-100", vip_chat_id="-200",
+                            vip_verzug_min=5,
+                            state_file=str(Path(self.dir.name) / "g.json")),
+            self.net, pip=0.1, uhr=self.takt)
+        self.bot = TelegramBot(self.cfg, self.tg, self.net, self.ai,
+                               verteiler=self.verteiler)
+
+    def test_gruppen_befehl(self):
+        antwort = self.bot.handle(update("/gruppen"))[0]
+        self.assertIn("Inner Circle: sofort", antwort)
+        self.assertIn("VIP: nach 5 min", antwort)
+
+    def test_einladung_befehl(self):
+        antwort = self.bot.handle(update("/einladung inner Max"))[0]
+        self.assertIn("https://t.me/+", antwort)
+
+    def test_einladung_ohne_gruppe_erklaert_sich(self):
+        self.assertIn("/einladung inner",
+                      self.bot.handle(update("/einladung"))[0])
+
+    def test_unbekannte_gruppe_wird_gemeldet(self):
+        self.assertIn("kenne ich nicht",
+                      self.bot.handle(update("/einladung platin"))[0])
+
+    def test_abrufschleife_schiebt_wartende_nach(self):
+        self.verteiler.signal_senden(
+            {"side": "long", "entry": 4012.4, "sl": 4004.1, "tp": 4029.0})
+        self.net.sent.clear()
+        self.bot.poll_once()                 # noch nicht faellig
+        self.assertEqual(self.net.sent, [])
+        self.takt.weiter(6 * 60)
+        self.bot.poll_once()
+        self.assertEqual(len(self.net.sent), 1)
+        self.assertEqual(self.net.sent[0]["chat_id"], "-200")
+
+    def test_ohne_verteiler_sagt_der_bot_bescheid(self):
+        ohne = TelegramBot(self.cfg, self.tg, self.net, self.ai)
+        self.assertIn("nicht eingerichtet", ohne.handle(update("/gruppen"))[0])
+        ohne.poll_once()                     # darf nicht stolpern
+
+
+class TestGruppenWerkzeuge(unittest.TestCase):
+    """Was der Assistent mit den Gruppen tun kann."""
+
+    def setUp(self):
+        from bengx_bot.assistant import Werkzeuge
+        from bengx_bot.gruppen import GruppenSettings, Verteiler
+        from tests.test_gruppen import Uhr
+        self.dir = tempfile.TemporaryDirectory()
+        self.net = FakeTransport()
+        self.takt = Uhr()
+        self.verteiler = Verteiler(
+            GruppenSettings(inner_chat_id="-100", vip_chat_id="-200",
+                            vip_verzug_min=5,
+                            state_file=str(Path(self.dir.name) / "g.json")),
+            self.net, pip=0.1, uhr=self.takt)
+        self.w = Werkzeuge(Config(), verteiler=self.verteiler)
+
+    def tearDown(self):
+        self.dir.cleanup()
+
+    def test_entwurf_zeigt_beide_fassungen_und_schickt_nichts(self):
+        text = self.w.signal_entwurf("long", 4012.4, 4004.1, 4029.0, "1H-Sweep")
+        self.assertIn("--- Inner Circle ---", text)
+        self.assertIn("--- VIP ---", text)
+        self.assertIn("Soll ich das so verschicken?", text)
+        self.assertEqual(self.net.sent, [])
+
+    def test_freigeben_schickt_wirklich(self):
+        self.w.signal_entwurf("long", 4012.4, 4004.1, 4029.0)
+        text = self.w.signal_freigeben()
+        self.assertIn("Raus als sig-", text)
+        self.assertEqual(len(self.net.sent), 1)
+
+    def test_falsche_seite_wird_abgelehnt_bevor_etwas_rausgeht(self):
+        with self.assertRaises(ValueError):
+            self.w.signal_entwurf("long", 4012.4, 4020.0, 4029.0)
+        self.assertEqual(self.net.sent, [])
+
+    def test_ergebnis_melden(self):
+        self.w.signal_entwurf("long", 4012.4, 4004.1, 4029.0)
+        self.w.signal_freigeben()
+        kennung = self.verteiler.letzte(1)[0]["id"]
+        text = self.w.signal_ergebnis(kennung, "gewonnen")
+        self.assertIn("+166 Pips", text)
+
+    def test_stand_nennt_die_kennungen(self):
+        self.w.signal_entwurf("long", 4012.4, 4004.1, 4029.0)
+        self.w.signal_freigeben()
+        self.assertIn("sig-0001", self.w.gruppen_stand())
+
+    def test_ohne_gruppen_eine_klare_ansage(self):
+        from bengx_bot.assistant import Werkzeuge
+        w = Werkzeuge(Config())
+        with self.assertRaises(RuntimeError) as fehler:
+            w.signal_entwurf("long", 4012.4, 4004.1, 4029.0)
+        self.assertIn("nicht eingerichtet", str(fehler.exception))

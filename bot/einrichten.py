@@ -144,14 +144,40 @@ def alte_einstellungen(start: Path, tiefe: int = 3) -> list[Path]:
 
 
 def chat_aus_updates(antwort: dict) -> tuple[str, str] | None:
-    """Holt Chat-Kennung und Namen aus einer getUpdates-Antwort."""
+    """Holt Chat-Kennung und Namen aus einer getUpdates-Antwort.
+
+    Nur Einzelchats. Hängt der Bot schon in einer Gruppe, käme sonst deren
+    Kennung als persönliche heraus — und danach würde der Bot nur noch die
+    Gruppe bedienen statt Ben.
+    """
     for update in antwort.get("result") or []:
         nachricht = update.get("message") or update.get("edited_message") or {}
         chat = nachricht.get("chat") or {}
-        if chat.get("id") is not None:
-            name = chat.get("first_name") or chat.get("username") or ""
-            return str(chat["id"]), name
+        if chat.get("id") is None:
+            continue
+        if chat.get("type") not in (None, "private"):
+            continue
+        name = chat.get("first_name") or chat.get("username") or ""
+        return str(chat["id"]), name
     return None
+
+
+def gruppen_aus_updates(antwort: dict) -> list[tuple[str, str]]:
+    """Alle Gruppen, aus denen etwas angekommen ist — ohne Doppelte."""
+    raus: list[tuple[str, str]] = []
+    gesehen: set[str] = set()
+    for update in antwort.get("result") or []:
+        nachricht = (update.get("message") or update.get("edited_message")
+                     or update.get("my_chat_member") or {})
+        chat = nachricht.get("chat") or {}
+        if chat.get("type") not in ("group", "supergroup"):
+            continue
+        kennung = str(chat.get("id", ""))
+        if not kennung or kennung in gesehen:
+            continue
+        gesehen.add(kennung)
+        raus.append((kennung, chat.get("title") or kennung))
+    return raus
 
 
 # ---- Netz ----------------------------------------------------------------

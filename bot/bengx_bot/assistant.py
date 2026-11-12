@@ -53,6 +53,15 @@ SYSTEM = (
     "Broker-Meldungen — such im Netz und nenn die Quelle. Für Zahlen aus "
     "Bens eigenem Bot niemals suchen, dafür hast du die Werkzeuge.\n\n"
     "Schickt Ben ein Bild, sieh es dir an und antworte darauf.\n\n"
+    "GRUPPEN. Es gibt zwei Stufen. Der Inner Circle bekommt jedes Signal "
+    "sofort und mit Begründung, VIP dasselbe Signal später und knapper. "
+    "Gibt Ben ein Signal durch — etwa „long 4012, stop 4004, ziel 4029, "
+    "1h sweep und 1m bos“ —, dann ruf signal_entwurf, zeig ihm die Vorschau "
+    "und warte auf sein Ja. Erst dann signal_freigeben. Verschick nie ein "
+    "Signal ohne diese Zustimmung: in den Gruppen sitzen zahlende Leute, und "
+    "eine Nachricht dort ist nicht zurückzuholen. Fehlt eine Zahl, frag "
+    "danach, statt sie zu erfinden. Sagt er, ein Signal sei im Ziel oder "
+    "ausgestoppt → signal_ergebnis. Soll jemand rein → einladung_erstellen.\n\n"
     "Rede ihm nicht nach dem Mund. Sehen die Zahlen schlecht aus, sag es."
 )
 
@@ -62,10 +71,11 @@ class Werkzeuge:
     """Die Arbeit hinter den Werkzeugen — ohne SDK, damit sie prüfbar bleibt."""
 
     def __init__(self, config: Config, coder: Coder | None = None,
-                 melden: Any = None) -> None:
+                 melden: Any = None, verteiler: Any = None) -> None:
         self.cfg = config
         self.coder = coder
         self.melden = melden
+        self.verteiler = verteiler
         self.benutzt: list[str] = []
 
     def _merken(self, name: str) -> None:
@@ -133,6 +143,60 @@ class Werkzeuge:
             self.melden("Alles klar, ich fange an. Das dauert ein paar "
                         "Minuten — ich melde mich, wenn es steht.")
         return self.coder.run(auftrag)
+
+    # ---- Gruppen ----------------------------------------------------------
+    def _gruppen(self):
+        if self.verteiler is None:
+            raise RuntimeError("Die Gruppen sind auf dieser Maschine nicht "
+                               "eingerichtet.")
+        return self.verteiler
+
+    def signal_entwurf(self, seite: str, einstieg: float, stop: float,
+                       ziel: float, begruendung: str = "") -> str:
+        self._merken("signal_entwurf")
+        raus = self._gruppen().entwurf({
+            "side": seite, "entry": einstieg, "sl": stop, "tp": ziel,
+            "note": begruendung})
+        teile = ["So würde es rausgehen:", ""]
+        for name, text in raus["vorschau"].items():
+            teile += [f"--- {name} ---", text, ""]
+        teile.append("Soll ich das so verschicken?")
+        return "\n".join(teile)
+
+    def signal_freigeben(self) -> str:
+        self._merken("signal_freigeben")
+        raus = self._gruppen().freigeben()
+        zeilen = [f"Raus als {raus['id']}."]
+        if raus["sofort"]:
+            zeilen.append("Sofort: " + ", ".join(raus["sofort"]))
+        if raus["wartet"]:
+            zeilen.append("Folgt: " + ", ".join(raus["wartet"]))
+        return "\n".join(zeilen)
+
+    def signal_verwerfen(self) -> str:
+        self._merken("signal_verwerfen")
+        return self._gruppen().entwurf_verwerfen()
+
+    def signal_ergebnis(self, signal_id: str, ergebnis: str,
+                        pips: float | None = None) -> str:
+        self._merken("signal_ergebnis")
+        raus = self._gruppen().ergebnis_senden(signal_id, ergebnis, pips)
+        return (f"Ergebnis zu {raus['id']} steht in "
+                f"{', '.join(raus['gruppen'])}: {raus['pips']:+.0f} Pips.")
+
+    def einladung(self, gruppe: str, name: str = "", stunden: int = 24) -> str:
+        self._merken("einladung")
+        link = self._gruppen().einladung(gruppe, name, stunden)
+        return (f"Einladung für {gruppe}, gilt einmal und läuft nach "
+                f"{stunden} Stunden ab:\n{link}")
+
+    def mitglied_entfernen(self, gruppe: str, user_id: str) -> str:
+        self._merken("mitglied_entfernen")
+        return self._gruppen().entfernen(gruppe, user_id)
+
+    def gruppen_stand(self) -> str:
+        self._merken("gruppen_stand")
+        return self._gruppen().stand_text()
 
     def erlauben(self) -> str:
         self._merken("erlauben")
@@ -206,6 +270,81 @@ def werkzeug_funktionen(w: Werkzeuge) -> list[Callable[..., Any]]:
         stand_abfragen, signale_lesen, regelwerk, aufgabe_anlegen,
         aufgaben_lesen, handel_stoppen, handel_erlauben]
 
+    if w.verteiler is not None:
+        def signal_entwurf(seite: str, einstieg: float, stop: float,
+                           ziel: float, begruendung: str = "") -> str:
+            """Legt ein Signal als Entwurf an und zeigt, wie es in jeder
+            Gruppe aussehen wuerde. Verschickt wird dabei noch nichts.
+
+            Benutze das, sobald Ben ein Signal durchgibt. Zeig ihm die
+            Vorschau und warte auf sein Ja.
+
+            Args:
+                seite: long oder short.
+                einstieg: Einstiegskurs.
+                stop: Stopkurs. Bei long unter dem Einstieg, bei short darueber.
+                ziel: Zielkurs. Bei long ueber dem Einstieg, bei short darunter.
+                begruendung: Kurz, warum — Sweep, BOS, FVG. Nur der Inner
+                    Circle bekommt sie zu sehen.
+            """
+            return w.signal_entwurf(seite, einstieg, stop, ziel, begruendung)
+
+        def signal_freigeben() -> str:
+            """Verschickt den bereitliegenden Entwurf wirklich: Inner Circle
+            sofort, VIP mit Verzug. Erst aufrufen, wenn Ben ausdruecklich
+            zugestimmt hat.
+            """
+            return w.signal_freigeben()
+
+        def signal_verwerfen() -> str:
+            """Wirft den bereitliegenden Entwurf weg, ohne ihn zu verschicken."""
+            return w.signal_verwerfen()
+
+        def signal_ergebnis(signal_id: str, ergebnis: str,
+                            pips: float | None = None) -> str:
+            """Meldet den Ausgang eines Signals in die Gruppen. Haengt als
+            Antwort unter dem urspruenglichen Signal.
+
+            Args:
+                signal_id: Die Kennung, etwa sig-0003. gruppen_stand zeigt sie.
+                ergebnis: gewonnen, verloren oder be.
+                pips: Nur angeben, wenn weder am Ziel noch am Stop geschlossen
+                    wurde. Sonst weglassen, dann wird gerechnet.
+            """
+            return w.signal_ergebnis(signal_id, ergebnis, pips)
+
+        def einladung_erstellen(gruppe: str, name: str = "",
+                                stunden: int = 24) -> str:
+            """Erzeugt einen Einladungslink, der genau einmal benutzt werden
+            kann und danach ablaeuft.
+
+            Args:
+                gruppe: inner oder vip.
+                name: Fuer wen der Link ist, damit man ihn spaeter zuordnet.
+                stunden: Wie lange er gilt, hoechstens 720.
+            """
+            return w.einladung(gruppe, name, stunden)
+
+        def mitglied_entfernen(gruppe: str, user_id: str) -> str:
+            """Entfernt jemanden aus einer Gruppe, ohne ihn dauerhaft zu
+            sperren. Mit einem neuen Link darf die Person wieder rein.
+
+            Args:
+                gruppe: inner oder vip.
+                user_id: Die Zahlen-Kennung des Nutzers, kein @-Name.
+            """
+            return w.mitglied_entfernen(gruppe, user_id)
+
+        def gruppen_stand() -> str:
+            """Welche Gruppen eingerichtet sind, was noch auf Versand wartet,
+            und die zuletzt verschickten Signale mit ihren Kennungen.
+            """
+            return w.gruppen_stand()
+
+        funktionen += [signal_entwurf, signal_freigeben, signal_verwerfen,
+                       signal_ergebnis, einladung_erstellen,
+                       mitglied_entfernen, gruppen_stand]
+
     if w.coder is not None:
         def am_code_bauen(auftrag: str) -> str:
             """Laesst einen Coding-Agenten am Repository weiterbauen: Website
@@ -238,6 +377,7 @@ class Assistant:
     coder: Coder | None = None
     provider: Provider | None = None
     history: list[dict[str, str]] = field(default_factory=list)
+    verteiler: Any = None
 
     def __post_init__(self) -> None:
         if self.provider is None:
@@ -268,7 +408,7 @@ class Assistant:
         werkzeuge: list[Callable[..., Any]] = []
         if self.config is not None:
             werkzeuge = werkzeug_funktionen(
-                Werkzeuge(self.config, self.coder, melden))
+                Werkzeuge(self.config, self.coder, melden, self.verteiler))
 
         text = self.provider.frage(
             SYSTEM, self.history[-self.settings.history_turns:],

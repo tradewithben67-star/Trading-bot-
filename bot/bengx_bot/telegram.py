@@ -31,6 +31,7 @@ from .assistant import Assistant, AssistantSettings
 from .cli import rules_for
 from .coder import Coder, CoderSettings
 from .config import Config
+from .gruppen import GruppenSettings, Verteiler
 from .llm import LLMSettings
 
 API = "https://api.telegram.org"
@@ -111,6 +112,7 @@ class FakeTransport:
         self.files = files or {}
         self.sent: list[dict[str, Any]] = []
         self.calls: list[tuple[str, dict[str, Any]]] = []
+        self.links = 0
 
     def call(self, method, payload):
         self.calls.append((method, payload))
@@ -122,6 +124,12 @@ class FakeTransport:
             return {"ok": True, "result": {"message_id": len(self.sent)}}
         if method == "getFile":
             return {"ok": True, "result": {"file_path": "fotos/" + payload["file_id"]}}
+        if method == "createChatInviteLink":
+            self.links += 1
+            return {"ok": True, "result": {
+                "invite_link": f"https://t.me/+probe{self.links}"}}
+        if method in ("banChatMember", "unbanChatMember"):
+            return {"ok": True, "result": True}
         return {"ok": True, "result": {}}
 
     def download(self, file_path):
@@ -136,24 +144,29 @@ HILFE = """Schreib einfach normal, ich mache den Rest. Zum Beispiel:
 „zeig mir die letzten fünf trades“
 „was sind die regeln vom swing bot“
 „mach den bot aus“
-„merk dir: seit gestern kommen keine signale mehr“
+„long 4012, stop 4004, ziel 4029, 1h sweep und 1m bos“
+„lade den max in den inner circle“
+„das letzte signal ist im ziel“
 
 Bilder kannst du auch schicken — Chart oder Fehlermeldung, ich schau es mir an.
 
 Falls ich mal nicht antworte, gehen diese Befehle immer:
-/stand /signale /regeln /aufgabe /aufgaben /aus /an /neu"""
+/stand /signale /regeln /gruppen /einladung /aufgabe /aufgaben /aus /an /neu"""
 
 
 class TelegramBot:
     def __init__(self, config: Config, settings: TelegramSettings,
                  transport: Transport, assistant: Assistant | None = None,
-                 coder: Coder | None = None) -> None:
+                 coder: Coder | None = None,
+                 verteiler: Verteiler | None = None) -> None:
         self.cfg = config
         self.tg = settings
         self.net = transport
         self.coder = coder
+        self.verteiler = verteiler
         self.ai = assistant or Assistant(
-            AssistantSettings(LLMSettings()), config=config, coder=coder)
+            AssistantSettings(LLMSettings()), config=config, coder=coder,
+            verteiler=verteiler)
         self.offset = 0
 
     # ---- Zugang ---------------------------------------------------------
@@ -240,6 +253,23 @@ class TelegramBot:
                 return ["Not-Aus gelöst. Der Bot darf wieder handeln."]
             return ["Der Not-Aus war nicht gesetzt."]
 
+        if befehl == "/gruppen":
+            if self.verteiler is None:
+                return ["Die Gruppen sind hier nicht eingerichtet."]
+            return [self.verteiler.stand_text()]
+
+        if befehl == "/einladung":
+            if self.verteiler is None:
+                return ["Die Gruppen sind hier nicht eingerichtet."]
+            teile_r = rest.split()
+            if not teile_r:
+                return ["So: /einladung inner Max — oder /einladung vip"]
+            try:
+                return [self.verteiler.einladung(
+                    teile_r[0], " ".join(teile_r[1:]))]
+            except (ValueError, RuntimeError) as exc:
+                return [str(exc)]
+
         if befehl == "/neu":
             self.ai.reset()
             return ["Gesprächsfaden vergessen."]
@@ -282,6 +312,14 @@ class TelegramBot:
             })
 
     def poll_once(self) -> int:
+        # Der VIP-Verzug braucht keinen eigenen Faden: bei jedem Durchgang
+        # wird nachgesehen, was inzwischen dran ist.
+        if self.verteiler is not None:
+            try:
+                self.verteiler.faellige_senden()
+            except (ConnectionError, OSError) as exc:
+                print(f"Wartende Signale nicht verschickt: {exc}", flush=True)
+
         antwort = self.net.call("getUpdates", {
             "offset": self.offset, "timeout": self.tg.poll_timeout,
             "allowed_updates": ["message", "edited_message"],

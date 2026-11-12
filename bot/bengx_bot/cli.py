@@ -254,6 +254,7 @@ def cmd_telegram(args) -> int:
     from .assistant import Assistant, AssistantSettings
     from .coder import Coder, CoderSettings
     from .llm import LLMSettings
+    from .gruppen import GruppenSettings, Verteiler
     from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
                            load_env_file)
 
@@ -275,7 +276,11 @@ def cmd_telegram(args) -> int:
 
     llm = LLMSettings.from_env(umgebung)
     coder = Coder(CoderSettings.from_env(umgebung))
-    assistent = Assistant(AssistantSettings(llm), config=cfg, coder=coder)
+    netz = HttpTransport(tg.token)
+    verteiler = Verteiler(GruppenSettings.from_env(umgebung), netz,
+                          pip=cfg.market.pip)
+    assistent = Assistant(AssistantSettings(llm), config=cfg, coder=coder,
+                          verteiler=verteiler)
 
     if not tg.chat_id:
         print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
@@ -289,7 +294,14 @@ def cmd_telegram(args) -> int:
     print("Weiterbauen: " + (hindernis or
           f"an, Ordner {Path(coder.settings.repo).resolve()}"), file=sys.stderr)
 
-    bot = TelegramBot(cfg, tg, HttpTransport(tg.token), assistent, coder)
+    gruppen = verteiler.gruppen()
+    print("Gruppen: " + (", ".join(
+        f"{g.name} ({'sofort' if not g.verzug else str(g.verzug // 60) + ' min'})"
+        for g in gruppen) if gruppen else
+        "keine — TELEGRAM_INNER_CHAT_ID / TELEGRAM_VIP_CHAT_ID fehlen"),
+        file=sys.stderr)
+
+    bot = TelegramBot(cfg, tg, netz, assistent, coder, verteiler)
     if args.once:
         print(f"{bot.poll_once()} Nachricht(en) verarbeitet.")
         return 0

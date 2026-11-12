@@ -834,6 +834,14 @@ a{color:var(--fg)}
 @media (max-width:620px){
   .kurse{grid-template-columns:minmax(0,1fr)}
 }
+.kurs__gruppe{
+  margin:0;font-family:var(--f-data);font-size:10.5px;letter-spacing:.22em;
+  text-transform:uppercase;color:var(--gold);
+}
+.kurse--eng{grid-template-columns:repeat(auto-fit,minmax(228px,1fr))}
+.kurse--eng .kurs{padding:11px 11px 16px;gap:11px}
+.kurse--eng .kurs__name{font-size:clamp(16px,1.8vw,19px)}
+.kurse--eng .kurs__d{font-size:13.5px}
 </style>
 </head>
 <body>
@@ -916,6 +924,7 @@ a{color:var(--fg)}
         <p class="lead">Vom ersten Chart bis zum eigenen Regelwerk. Kein Hype, keine Abkürzung — der Weg, den ich selbst gegangen bin.</p>
       </header>
       <div class="rule"></div>
+      <p class="kurs__gruppe">Die Basis</p>
       <div class="kurse">
         <article class="kurs">
           <div class="kurs__film">
@@ -927,7 +936,7 @@ a{color:var(--fg)}
             <h3 class="kurs__name">Grundlagen</h3>
             <span class="kurs__dauer">0:27</span>
           </div>
-          <p class="kurs__d">Wie ein Markt funktioniert, was eine Kerze wirklich sagt, wie du einen Chart liest, ohne dich zu verlieren.</p>
+          <p class="kurs__d">Aus einer Kurslinie werden Kerzen. Was Eröffnung, Schluss, Hoch und Tief dir sagen.</p>
         </article>
         <article class="kurs">
           <div class="kurs__film">
@@ -939,7 +948,7 @@ a{color:var(--fg)}
             <h3 class="kurs__name">Risiko</h3>
             <span class="kurs__dauer">0:27</span>
           </div>
-          <p class="kurs__d">Positionsgröße, Stop und Tageslimit. Der Teil, den die meisten überspringen — und der entscheidet.</p>
+          <p class="kurs__d">Aus 1 % vom Konto wird die Positionsgröße. Und was fünf Verluste in Folge anrichten.</p>
         </article>
         <article class="kurs">
           <div class="kurs__film">
@@ -951,10 +960,98 @@ a{color:var(--fg)}
             <h3 class="kurs__name">Praxis</h3>
             <span class="kurs__dauer">0:27</span>
           </div>
-          <p class="kurs__d">Am Papierkonto üben, protokollieren, auswerten. Erst dann echtes Geld.</p>
+          <p class="kurs__d">Protokoll führen, auswerten, Kapitalkurve lesen. Erst dann echtes Geld.</p>
         </article>
       </div>
-      <p class="note">Drei kurze Filme, ohne Ton — zum Mitlesen. Weitere Inhalte folgen.</p>
+
+      <p class="kurs__gruppe">Markt lesen</p>
+      <div class="kurse kurse--eng">
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/04-liquiditaet.jpg" src="media/04-liquiditaet.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">04</span>
+            <h3 class="kurs__name">Liquidität</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Gleiche Hochs, darüber die Stopps — und der Griff danach.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/05-bos.jpg" src="media/05-bos.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">05</span>
+            <h3 class="kurs__name">BOS</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Break of Structure: das letzte Hoch fällt, der Trend bleibt.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/06-choch.jpg" src="media/06-choch.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">06</span>
+            <h3 class="kurs__name">CHoCH</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Change of Character: das höhere Tief fällt, die Richtung dreht.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/07-fvg.jpg" src="media/07-fvg.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">07</span>
+            <h3 class="kurs__name">FVG</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Fair Value Gap: die Lücke, die eine schnelle Kerze hinterlässt.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/08-ifvg.jpg" src="media/08-ifvg.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">08</span>
+            <h3 class="kurs__name">IFVG</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Wird die Lücke durchbrochen, wechselt sie die Seite.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/09-orderblock.jpg" src="media/09-orderblock.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">09</span>
+            <h3 class="kurs__name">Order Block</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Die letzte Gegenkerze vor der Bewegung — und was passiert, wenn der Kurs zurückkommt.</p>
+        </article>
+        <article class="kurs">
+          <div class="kurs__film">
+            <video controls playsinline preload="none"
+                   poster="media/10-angebot.jpg" src="media/10-angebot.mp4"></video>
+          </div>
+          <div class="kurs__kopf">
+            <span class="kurs__n">10</span>
+            <h3 class="kurs__name">Angebot & Nachfrage</h3>
+            <span class="kurs__dauer">0:21</span>
+          </div>
+          <p class="kurs__d">Zonen, aus denen der Kurs in einem Zug weggelaufen ist.</p>
+        </article>
+      </div>
+      <p class="note">Zehn kurze Filme, ohne Ton — zum Mitlesen. Sie erklären die Begriffe, mit denen ich arbeite; dieselben stehen im Regelwerk der Bots.</p>
     </section>
 
     <hr class="seam" aria-hidden="true">

@@ -11,7 +11,7 @@
 </style>
 </head>
 <body>
-<canvas id="bild" width="1280" height="720"></canvas>
+<canvas id="bild" width="1920" height="1080"></canvas>
 <script>
 /* Jede Zeichnung haengt nur an der Bildnummer, nie an der echten Uhr.
    Nur so kommt bei jedem Lauf dasselbe Bild heraus und die Aufnahme
@@ -19,7 +19,8 @@
 (function(){
 "use strict";
 var c = document.getElementById("bild"), g = c.getContext("2d");
-var W = c.width, H = c.height, FPS = 30;
+var MASS = 1.5;                       /* 1920x1080 aufnehmen, 1280x720 denken */
+var W = c.width / MASS, H = c.height / MASS, FPS = 30;
 
 var GOLD = "#EFC45E", GOLD_D = "#B08E36";
 var FG = "#DCE1E8", MID = "#A4ABB4", DIM = "#7D848D";
@@ -30,8 +31,18 @@ var DATEN = '{s}px "IBM Plex Mono", monospace';
 function f(v, s){ return v.replace("{s}", s); }
 
 /* ---- kleine Helfer ---- */
-function klar(){ g.fillStyle = "#000"; g.fillRect(0, 0, W, H); }
+function klar(){
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.fillStyle = "#000"; g.fillRect(0, 0, c.width, c.height);
+  g.scale(MASS, MASS);
+}
 function sanft(t){ return t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.pow(1 - t, 3); }
+function fenster(bild, von, bis, blende){
+  blende = blende || 26;
+  return Math.max(0, Math.min(
+    sanft(spanne(bild, von, von + blende)),
+    1 - sanft(spanne(bild, bis - blende, bis))));
+}
 function spanne(bild, von, bis){
   if (bild <= von) return 0;
   if (bild >= bis) return 1;
@@ -113,11 +124,127 @@ function kerze(x, b, o, h, l, s, skala, deckung){
   g.fillRect(x, y, b, hh);
   g.restore();
 }
+
+/* ---- Chart: Kerzen zeichnen, Zonen legen, beschriften ---- */
+function chart(kurse, o){
+  o = o || {};
+  var l = o.l || 110, r = o.r || (W - 110), ob = o.o || 150, u = o.u || (H - 150);
+  var alle = [];
+  for (var i = 0; i < kurse.length; i++){ alle.push(kurse[i][1], kurse[i][2]); }
+  var min = o.min != null ? o.min : Math.min.apply(null, alle);
+  var max = o.max != null ? o.max : Math.max.apply(null, alle);
+  var luft = (max - min) * 0.12;
+  min -= luft; max += luft;
+  var breite = (r - l) / kurse.length;
+  return {
+    kurse: kurse,
+    l: l, r: r, o: ob, u: u, breite: breite, min: min, max: max,
+    y: function(p){ return u - (p - min) / (max - min) * (u - ob); },
+    x: function(i){ return l + i * breite + breite / 2; },
+    links: function(i){ return l + i * breite + breite * 0.17; },
+    kerzenbreite: breite * 0.66,
+    /* Zeichnet bis Kerze n, die letzte waechst noch heran. */
+    bis: function(n, deckung){
+      var ganz = Math.floor(n);
+      for (var i = 0; i < Math.min(ganz, kurse.length); i++){
+        var k = kurse[i];
+        kerze(this.links(i), this.kerzenbreite, k[0], k[1], k[2], k[3], this.y,
+              deckung === undefined ? 1 : deckung);
+      }
+      if (ganz < kurse.length && n > ganz){
+        var t = n - ganz, k2 = kurse[ganz];
+        kerze(this.links(ganz), this.kerzenbreite, k2[0],
+              k2[0] + (k2[1] - k2[0]) * t, k2[0] + (k2[2] - k2[0]) * t,
+              k2[0] + (k2[3] - k2[0]) * t, this.y,
+              (deckung === undefined ? 1 : deckung));
+      }
+    }
+  };
+}
+/* Text mit dunkler Unterlage — sonst verschluckt ihn die Kerze dahinter. */
+function schildchen(text, x, y, stil, farbe, t){
+  if (t <= 0) return;
+  g.save();
+  g.font = stil;
+  var b = g.measureText(text).width;
+  g.globalAlpha = t * 0.92;
+  g.fillStyle = "#000";
+  if (g.roundRect){ g.beginPath(); g.roundRect(x - 5, y - 14, b + 10, 20, 4); g.fill(); }
+  else g.fillRect(x - 5, y - 14, b + 10, 20);
+  g.restore();
+  schrift(text, x, y, stil, farbe, "left", t);
+}
+
+/* Waagerechte Marke mit Beschriftung, zieht sich von links auf. */
+function pegel(ch, preis, text, farbe, t, gestrichelt){
+  if (t <= 0) return;
+  var y = ch.y(preis);
+  g.save();
+  g.globalAlpha = t; g.strokeStyle = farbe; g.lineWidth = 1.4;
+  if (gestrichelt) g.setLineDash([6, 5]);
+  g.beginPath(); g.moveTo(ch.l, y); g.lineTo(ch.l + (ch.r - ch.l) * t, y); g.stroke();
+  g.restore();
+  if (text) schildchen(text, ch.l + 4, y - 9, f(DATEN, 14), farbe, t);
+}
+/* Rechteckige Zone (FVG, Order Block, Supply/Demand). */
+function zone(ch, vonI, bisI, oben, unten, farbe, randfarbe, t, text){
+  if (t <= 0) return;
+  var x1 = ch.links(vonI), x2 = ch.links(bisI) + ch.kerzenbreite;
+  var y1 = ch.y(oben), y2 = ch.y(unten);
+  var b = (x2 - x1) * t;
+  g.save();
+  g.globalAlpha = t * 0.9;
+  g.fillStyle = farbe; g.fillRect(x1, y1, b, y2 - y1);
+  if (randfarbe){ g.strokeStyle = randfarbe; g.lineWidth = 1; g.strokeRect(x1, y1, b, y2 - y1); }
+  g.restore();
+  if (text && t > 0.6) schildchen(text, x1 + 8, y1 - 10, f(DATEN, 14), randfarbe || farbe, (t - 0.6) / 0.4);
+}
+/* Kurzer Pfeil mit Spitze. */
+function pfeil(x1, y1, x2, y2, farbe, t){
+  if (t <= 0) return;
+  var xx = x1 + (x2 - x1) * t, yy = y1 + (y2 - y1) * t;
+  g.save();
+  g.globalAlpha = t; g.strokeStyle = farbe; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(xx, yy); g.stroke();
+  var w = Math.atan2(yy - y1, xx - x1);
+  g.beginPath(); g.moveTo(xx, yy);
+  g.lineTo(xx - 10 * Math.cos(w - 0.4), yy - 10 * Math.sin(w - 0.4));
+  g.lineTo(xx - 10 * Math.cos(w + 0.4), yy - 10 * Math.sin(w + 0.4));
+  g.closePath(); g.fillStyle = farbe; g.fill();
+  g.restore();
+}
+/* Hebt eine Kerze hervor: zarter Schleier dahinter, Kerze darueber neu. */
+function leuchte(ch, i, farbe, t){
+  if (t <= 0) return;
+  var x = ch.links(i) - 7, b = ch.kerzenbreite + 14;
+  g.save();
+  g.globalAlpha = t * 0.15;
+  g.fillStyle = farbe;
+  g.fillRect(x, ch.o - 12, b, ch.u - ch.o + 24);
+  g.restore();
+  g.save();
+  g.globalAlpha = t * 0.5; g.strokeStyle = farbe; g.lineWidth = 1;
+  g.strokeRect(x, ch.o - 12, b, ch.u - ch.o + 24);
+  g.restore();
+  var k = ch.kurse && ch.kurse[i];
+  if (k) kerze(ch.links(i), ch.kerzenbreite, k[0], k[1], k[2], k[3], ch.y, 1);
+}
+
+/* Erklaerzeile unten, immer an derselben Stelle. */
+function satz(text, t, zweite){
+  if (t <= 0) return;
+  schrift(text, 110, H - 108 + (zweite ? 30 : 0),
+          f(TEXT, zweite ? 18 : 21), zweite ? MID : FG, "left", t);
+}
+
 window.__szenen = {};
-window.__kerzen = { KURSE: KURSE, kerze: kerze };
+window.__kerzen = { KURSE: KURSE, kerze: kerze, chart: chart, pegel: pegel, zone: zone, pfeil: pfeil, satz: satz,
+  leuchte: leuchte };
 window.__werkzeug = {
   klar: klar, sanft: sanft, spanne: spanne, schrift: schrift, linie: linie,
   kasten: kasten, rahmen: rahmen, titel: titel, abspann: abspann,
+  schildchen: schildchen,
+  fenster: fenster,
   f: f, ANZEIGE: ANZEIGE, TEXT: TEXT, DATEN: DATEN,
   GOLD: GOLD, GOLD_D: GOLD_D, FG: FG, MID: MID, DIM: DIM,
   GRUEN: GRUEN, ROT: ROT, LINIE: LINIE, W: W, H: H, FPS: FPS, g: g
@@ -130,5 +257,6 @@ window.zeichne = function(bild){
 })();
 </script>
 <script src="szenen.js"></script>
+<script src="szenen-markt.js"></script>
 </body>
 </html>

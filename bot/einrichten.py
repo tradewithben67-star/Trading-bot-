@@ -143,6 +143,32 @@ def alte_einstellungen(start: Path, tiefe: int = 3) -> list[Path]:
     return einmalig
 
 
+def gruppen_suchen(token: str, sekunden: int = 90) -> list[tuple[str, str]]:
+    """Wartet darauf, dass in den Gruppen etwas geschrieben wird."""
+    gefunden: list[tuple[str, str]] = []
+    gesehen: set[str] = set()
+    letzte = 0
+    ende = time.time() + sekunden
+    while time.time() < ende:
+        try:
+            antwort = telegram(token, "getUpdates",
+                               {"offset": letzte, "timeout": 20}, frist=35)
+        except (urllib.error.URLError, TimeoutError, OSError):
+            continue
+        for update in antwort.get("result") or []:
+            letzte = max(letzte, int(update.get("update_id", 0)) + 1)
+        for kennung, titel in gruppen_aus_updates(antwort):
+            if kennung in gesehen:
+                continue
+            gesehen.add(kennung)
+            gefunden.append((kennung, titel))
+            print(f"   Gefunden: {titel}  ({kennung})")
+        if len(gefunden) >= 2:
+            break
+        print("   … warte", flush=True)
+    return gefunden
+
+
 def chat_aus_updates(antwort: dict) -> tuple[str, str] | None:
     """Holt Chat-Kennung und Namen aus einer getUpdates-Antwort.
 
@@ -309,8 +335,43 @@ def main() -> int:
               "eintragen — der Bot nennt sie dir beim ersten Schreiben.")
     werte["TELEGRAM_CHAT_ID"] = kennung
 
-    # 3. Wer antwortet
-    print("\n3. Wer soll antworten?")
+    # 3. Die Gruppen
+    print("\n3. Deine Gruppen")
+    print("   Inner Circle bekommt jedes Signal sofort und mit Begründung,")
+    print("   VIP dasselbe Signal später und knapper.")
+    print()
+    if ja("   Hast du die Gruppen schon angelegt?", False):
+        print("   Gut. Füge den Bot in JEDE Gruppe ein, mach ihn zum")
+        print("   Administrator (Recht „Nutzer einladen“) und schreib dann in")
+        print("   jede Gruppe irgendetwas. Ich erkenne sie.")
+        gefunden = gruppen_suchen(token)
+        if gefunden:
+            for schluessel, beschriftung in (("TELEGRAM_INNER_CHAT_ID", "Inner Circle"),
+                                             ("TELEGRAM_VIP_CHAT_ID", "VIP")):
+                print()
+                for i, (kennung, titel) in enumerate(gefunden, 1):
+                    print(f"   [{i}] {titel}  ({kennung})")
+                print("   [0] keine davon")
+                wahl = frage(f"   Welche ist {beschriftung}?", "0")
+                try:
+                    nummer = int(wahl)
+                except ValueError:
+                    nummer = 0
+                if 1 <= nummer <= len(gefunden):
+                    werte[schluessel] = gefunden[nummer - 1][0]
+                    print(f"   {beschriftung}: {gefunden[nummer - 1][1]}")
+            verzug = frage("\n   Wie viele Minuten Vorsprung hat der Inner Circle?", "5")
+            werte["TELEGRAM_VIP_VERZUG"] = verzug if verzug.isdigit() else "5"
+        else:
+            print("   Nichts angekommen. Steht der Bot wirklich in den Gruppen")
+            print("   und hast du dort geschrieben? Du kannst die Kennungen")
+            print("   später in .env eintragen.")
+    else:
+        print("   Kein Problem — leg sie später an. Der Signal-Bot ruht so")
+        print("   lange, alles andere läuft.")
+
+    # 4. Wer antwortet
+    print("\n4. Wer soll antworten?")
     print("   [1] Gemini von Google — hat ein kostenloses Kontingent.")
     print("       Schlüssel unter aistudio.google.com, ohne Kreditkarte.")
     print("   [2] Claude von Anthropic — kostet Geld, antwortet gründlicher")
@@ -345,9 +406,9 @@ def main() -> int:
         print("   Übersprungen. Du kannst den Schlüssel später in .env "
               "nachtragen.")
 
-    # 4. Weiterbauen — geht nur mit Claude
+    # 5. Weiterbauen — geht nur mit Claude
     if wahl == "2" and schluessel:
-        print("\n4. Am Code weiterbauen")
+        print("\n5. Am Code weiterbauen")
         print("   Damit startet „baue an der Website weiter“ einen Coding-Agenten,")
         print("   der hier Dateien ändert, testet und committet. Er schiebt nichts")
         print("   nach außen und hört nach 40 Schritten oder 2 Dollar auf.")
@@ -357,7 +418,7 @@ def main() -> int:
         print("\n   (Am Code weiterbauen geht nur mit Claude. Mit Gemini")
         print("   notiert der Assistent stattdessen eine Aufgabe.)")
 
-    # 5. Schreiben
+    # 6. Schreiben
     vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
     ENV.write_text(zusammenfuehren(vorlage, werte), encoding="utf-8")
     try:

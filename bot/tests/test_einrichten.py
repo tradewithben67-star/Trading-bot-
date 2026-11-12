@@ -184,3 +184,39 @@ class TestAlteEinstellungenFinden(unittest.TestCase):
                 _os.utime(datei, (_time.time() - alter, _time.time() - alter))
             gefunden = einrichten.alte_einstellungen(neu)
             self.assertEqual(gefunden[0].parent.parent.name, "b")
+
+
+class TestGruppenErkennen(unittest.TestCase):
+    """Gruppen sollen sich selbst melden, statt dass Ben Kennungen sucht."""
+
+    def test_findet_gruppen_ohne_doppelte(self):
+        antwort = {"result": [
+            {"message": {"chat": {"id": -1001, "type": "supergroup", "title": "Inner Circle"}}},
+            {"message": {"chat": {"id": -1002, "type": "group", "title": "VIP"}}},
+            {"message": {"chat": {"id": -1001, "type": "supergroup", "title": "Inner Circle"}}},
+        ]}
+        self.assertEqual(einrichten.gruppen_aus_updates(antwort),
+                         [("-1001", "Inner Circle"), ("-1002", "VIP")])
+
+    def test_einzelchats_sind_keine_gruppen(self):
+        antwort = {"result": [
+            {"message": {"chat": {"id": 42, "type": "private", "first_name": "Ben"}}}]}
+        self.assertEqual(einrichten.gruppen_aus_updates(antwort), [])
+
+    def test_ohne_titel_steht_die_kennung_da(self):
+        antwort = {"result": [{"message": {"chat": {"id": -7, "type": "group"}}}]}
+        self.assertEqual(einrichten.gruppen_aus_updates(antwort), [("-7", "-7")])
+
+    def test_gruppe_wird_nicht_zur_persoenlichen_kennung(self):
+        # Haengt der Bot schon in einer Gruppe und diese schreibt zuerst,
+        # kam sonst deren Kennung als TELEGRAM_CHAT_ID heraus — danach haette
+        # der Bot nur noch die Gruppe bedient statt Ben.
+        antwort = {"result": [
+            {"message": {"chat": {"id": -1001, "type": "supergroup", "title": "VIP"}}},
+            {"message": {"chat": {"id": 42, "type": "private", "first_name": "Ben"}}},
+        ]}
+        self.assertEqual(einrichten.chat_aus_updates(antwort), ("42", "Ben"))
+
+    def test_leeres_ergebnis(self):
+        self.assertEqual(einrichten.gruppen_aus_updates({}), [])
+        self.assertEqual(einrichten.gruppen_aus_updates({"result": []}), [])

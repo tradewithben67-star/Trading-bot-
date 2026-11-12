@@ -1,10 +1,15 @@
 # BENGX Inner Circle — alles für die Telegram-Gruppe
 
-Die offene Gruppe. Jeder darf rein. Zwei Gratis-Signale am Tag, die aus
-VIP kommen — verzögert, knapp, mit dem Hinweis auf VIP darunter.
+Die offene Gruppe. Jeder darf rein. Zwei Gratis-Signale am Tag, direkt
+aus VIP — **zur selben Zeit**, damit sie mitgehandelt werden können,
+aber knapp und ohne Begründung, mit dem Hinweis auf VIP darunter.
 
-VIP ist das Gegenstück: bezahlt, nur auf deine Einladung, jedes Signal
-sofort und mit Begründung.
+VIP ist das Gegenstück: bezahlt, nur auf deine Einladung, **jedes**
+Signal mit Begründung und Chance-Risiko-Verhältnis.
+
+Der Unterschied ist die Menge, nicht die Zeit. Mit Vorsprung für VIP
+wäre der Einstieg weg, bevor der Inner Circle ihn sieht — dann könnte
+dort niemand mithandeln und auch niemand sehen, dass es funktioniert.
 
 ---
 
@@ -31,9 +36,10 @@ Danach die Gruppe öffnen → Name antippen → **Bearbeiten**:
 Telegram erlaubt 255 Zeichen. Diese hat 243:
 
 ```
-Gold, XAU/USD. Zwei Signale am Tag, kostenlos — Einstieg, Stop, Ziel.
-Jedes Ergebnis wird gepostet, auch die Verluste. Wer alle Signale sofort
-und mit Begründung will: VIP, nur auf Einladung. Keine Anlageberatung.
+Gold, XAU/USD. Zwei Signale am Tag, kostenlos und zum Mithandeln —
+Einstieg, Stop, Ziel. Jedes Ergebnis wird gepostet, auch die Verluste.
+Wer alle Signale mit Begründung will: VIP, nur auf Einladung. Keine
+Anlageberatung.
 ```
 
 ---
@@ -49,8 +55,10 @@ Hier läuft Gold. Nur Gold, XAU/USD — kein Krypto, keine Aktien, keine
 zehn Paare nebenher.
 
 WAS DU HIER BEKOMMST
-Zwei Signale am Tag, kostenlos. Einstieg, Stop, Ziel. Jedes Ergebnis
-wird gepostet — auch wenn es ein Verlust war. Besonders dann.
+Zwei Signale am Tag, kostenlos — zur selben Zeit, zu der sie auch in
+VIP stehen. Du kannst sie also wirklich mitnehmen. Einstieg, Stop,
+Ziel. Jedes Ergebnis wird gepostet, auch wenn es ein Verlust war.
+Besonders dann.
 
 WAS DU HIER NICHT BEKOMMST
 Keine Gewinnversprechen. Keine Kontoverdopplung. Keine Anlageberatung.
@@ -132,13 +140,14 @@ welche ist. Alternativ von Hand in `bot/.env`:
 
 ```
 TELEGRAM_INNER_CHAT_ID=-1001234567890
-TELEGRAM_INNER_VERZUG=20
+TELEGRAM_INNER_VERZUG=0
 TELEGRAM_INNER_PRO_TAG=2
 ```
 
-- `TELEGRAM_INNER_VERZUG` — Minuten Vorsprung für VIP, bevor dasselbe
-  Signal in den Inner Circle geht. 20 ist ein guter Wert: lang genug,
-  dass VIP etwas wert bleibt, kurz genug, dass das Signal noch gilt.
+- `TELEGRAM_INNER_VERZUG` — Minuten Vorsprung für VIP. **0**, also
+  gleichzeitig: nur so können die Leute im Inner Circle den Trade
+  wirklich mitnehmen. Falls du VIP später doch einen Vorsprung geben
+  willst, trag hier Minuten ein.
 - `TELEGRAM_INNER_PRO_TAG` — wie viele am Tag. 2, wie besprochen.
   0 schaltet den Inner Circle ab.
 
@@ -171,9 +180,9 @@ Sobald die Kennungen in `bot/.env` stehen und `starten.bat` läuft:
   „long 4012, stop 4004, ziel 4029, 1h sweep und 1m bos"
 - Er zeigt dir, wie es in **beiden** Gruppen aussehen würde, und wartet
   auf dein Ja.
-- Nach dem Ja geht es **sofort an VIP**, mit Begründung und CRV.
-- **20 Minuten später** geht dasselbe Signal in den Inner Circle —
-  knapp, ohne Begründung, mit dem VIP-Hinweis darunter.
+- Nach dem Ja geht es **an beide Gruppen gleichzeitig**: an VIP mit
+  Begründung und CRV, in den Inner Circle knapp und ohne Begründung,
+  mit dem VIP-Hinweis darunter.
 - Sind die zwei für heute schon raus, geht das Signal **nur an VIP**,
   und der Assistent sagt dir das.
 - Sagst du später „das Signal ist im Ziel", hängt das Ergebnis als
@@ -201,9 +210,13 @@ dauerhaft — mit einem neuen Link darf die Person wieder rein.
 ## 10. Woran du denken solltest
 
 **Der Inner Circle ist dein Schaufenster, nicht dein Produkt.** Zwei
-Signale am Tag sind genug, damit Leute sehen, dass es funktioniert, und
-wenig genug, dass VIP sich lohnt. Wenn du mehr durchlässt, kauft
-niemand.
+Signale am Tag sind genug, damit Leute mithandeln und sehen, dass es
+funktioniert — und wenig genug, dass VIP sich lohnt. Wenn du mehr
+durchlässt, kauft niemand.
+
+**Deshalb gehen die zwei ohne Verzug raus.** Ein Signal, das man nicht
+mehr mitnehmen kann, überzeugt niemanden. Der Unterschied zu VIP ist
+die Menge und die Begründung, nicht der Vorsprung.
 
 **Poste die Verluste.** Eine Gruppe, in der nur Gewinne stehen, glaubt
 dir keiner. Der Bot macht das automatisch — lass ihn.

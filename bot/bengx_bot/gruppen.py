@@ -2,14 +2,20 @@
 
 Zwei Stufen:
 
-    VIP            bezahlt. Bekommt jedes Signal sofort, mit Begründung
+    VIP            bezahlt. Bekommt jedes Signal, mit Begründung
                    (Sweep, BOS, FVG) und dem Chance-Risiko-Verhältnis.
-    Inner Circle   offen. Bekommt höchstens zwei Signale am Tag, mit
-                   Verzug, ohne Begründung, und darunter den Hinweis auf
-                   VIP. Das Schaufenster, nicht das Produkt.
+    Inner Circle   offen. Bekommt höchstens zwei Signale am Tag, ohne
+                   Begründung, und darunter den Hinweis auf VIP.
 
-Mehr als die zwei bekommt der Inner Circle nicht: sonst wäre VIP
-wertlos. Der Zähler läuft nach Berliner Datum und steht in derselben
+Die zwei gehen zur selben Zeit raus wie an VIP, nicht später. Wer sie
+nicht mithandeln kann, weil der Einstieg längst weg ist, sieht auch
+nicht, dass es funktioniert — und darum geht es im Inner Circle.
+
+Der Unterschied zu VIP ist nicht die Zeit, sondern die Menge: zwei
+statt aller, und ohne die Begründung. Ein Verzug lässt sich über
+TELEGRAM_INNER_VERZUG trotzdem einstellen.
+
+Der Zähler läuft nach dem Datum dieser Maschine und steht in derselben
 Datei wie der Rest.
 
 Verschickt wird über dieselbe Bot-API wie beim Assistenten. Der Verzug
@@ -40,8 +46,9 @@ from typing import Any, Callable, Iterable
 HINWEIS = "Keine Anlageberatung. Risiko selbst bestimmen."
 
 # Steht unter jedem Gratis-Signal im Inner Circle.
-WERBUNG = ("Zwei Signale am Tag gibt es hier. Alle anderen, sofort und "
-           "mit Begründung, laufen in VIP.")
+WERBUNG = ("Zwei Signale am Tag gibt es hier — handel sie mit und sieh "
+           "selbst. Alle anderen laufen in VIP, mit Begründung und "
+           "Chance-Risiko-Verhältnis.")
 
 STATUS_TEXT = {
     "gewonnen": "Ziel erreicht",
@@ -56,7 +63,7 @@ STATUS_TEXT = {
 class GruppenSettings:
     inner_chat_id: str = ""
     vip_chat_id: str = ""
-    inner_verzug_min: int = 20
+    inner_verzug_min: int = 0
     inner_pro_tag: int = 2
     state_file: str = "state/gruppen.json"
 
@@ -64,9 +71,9 @@ class GruppenSettings:
     def from_env(env: dict[str, str] | None = None) -> "GruppenSettings":
         e = env if env is not None else os.environ
         try:
-            verzug = int(e.get("TELEGRAM_INNER_VERZUG", "20") or 20)
+            verzug = int(e.get("TELEGRAM_INNER_VERZUG", "0") or 0)
         except (TypeError, ValueError):
-            verzug = 20
+            verzug = 0
         try:
             frei = int(e.get("TELEGRAM_INNER_PRO_TAG", "2") or 2)
         except (TypeError, ValueError):
@@ -289,7 +296,7 @@ class Verteiler:
         return int(kennung) if kennung else None
 
     def signal_senden(self, signal: dict[str, Any]) -> dict[str, Any]:
-        """Verteilt ein Signal: VIP sofort, Inner Circle nach Verzug.
+        """Verteilt ein Signal an beide Gruppen.
 
         Der Inner Circle bekommt höchstens `inner_pro_tag` Signale am Tag.
         Ist das Kontingent aufgebraucht, geht das Signal nur an VIP — und

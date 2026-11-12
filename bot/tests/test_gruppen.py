@@ -308,9 +308,14 @@ class TestEinstellungen(unittest.TestCase):
         self.assertEqual(s.inner_verzug_min, 15)
         self.assertEqual(s.inner_pro_tag, 3)
 
+    def test_ohne_angabe_kein_verzug(self):
+        # Die zwei Gratis-Signale sollen mithandelbar sein. Mit Vorsprung
+        # waere der Einstieg weg, bevor sie ihn sehen.
+        self.assertEqual(GruppenSettings.from_env({}).inner_verzug_min, 0)
+
     def test_unsinnige_werte_werden_gefangen(self):
         self.assertEqual(
-            GruppenSettings.from_env({"TELEGRAM_INNER_VERZUG": "abc"}).inner_verzug_min, 20)
+            GruppenSettings.from_env({"TELEGRAM_INNER_VERZUG": "abc"}).inner_verzug_min, 0)
         self.assertEqual(
             GruppenSettings.from_env({"TELEGRAM_INNER_VERZUG": "9999"}).inner_verzug_min, 240)
         self.assertEqual(
@@ -469,3 +474,38 @@ class TestGratisKontingent(unittest.TestCase):
             v, _, _ = bauen(ordner, frei=2)
             v.signal_senden(SIGNAL)
             self.assertIn("noch 1 von 2 heute frei", v.uebersicht())
+
+
+class TestOhneVerzug(unittest.TestCase):
+    """So, wie es ab jetzt vorgesehen ist: beide Gruppen gleichzeitig."""
+
+    def test_beide_bekommen_es_sofort(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, netz, _ = bauen(ordner, verzug=0)
+            raus = v.signal_senden(SIGNAL)
+            self.assertEqual(raus["sofort"], ["VIP", "Inner Circle"])
+            self.assertEqual(raus["wartet"], [])
+            self.assertEqual(sorted(n["chat_id"] for n in netz.sent), ["-100", "-200"])
+
+    def test_der_unterschied_ist_die_menge_nicht_die_zeit(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, netz, _ = bauen(ordner, verzug=0, frei=2)
+            for _ in range(3):
+                v.signal_senden(SIGNAL)
+            vip = [n for n in netz.sent if n["chat_id"] == "-200"]
+            inner = [n for n in netz.sent if n["chat_id"] == "-100"]
+            self.assertEqual(len(vip), 3)
+            self.assertEqual(len(inner), 2)
+            self.assertIn("CRV", vip[0]["text"])
+            self.assertNotIn("CRV", inner[0]["text"])
+            self.assertIn("handel sie mit", inner[0]["text"])
+
+    def test_ergebnis_haengt_in_beiden_unter_dem_signal(self):
+        with tempfile.TemporaryDirectory() as ordner:
+            v, netz, _ = bauen(ordner, verzug=0)
+            kennung = v.signal_senden(SIGNAL)["id"]
+            netz.sent.clear()
+            v.ergebnis_senden(kennung, "gewonnen")
+            self.assertEqual(len(netz.sent), 2)
+            for n in netz.sent:
+                self.assertTrue(n.get("reply_to_message_id"))

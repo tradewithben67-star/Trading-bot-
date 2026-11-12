@@ -604,6 +604,91 @@ a{color:var(--fg)}
 @media (max-width:620px){
   .bot__spec{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
+/* ================= Glas =================
+   Auf reinem Schwarz bringt backdrop-filter nichts: es gibt nichts zu
+   verwischen, nur Rechenzeit zu verbrennen. Das Glas entsteht deshalb aus
+   drei Dingen — einem sehr hellen Schleier, einer feinen Kante und einem
+   Glanzlicht an der Oberkante. Der Weichzeichner bleibt nur in der
+   Kopfleiste, wo der Inhalt wirklich darunter durchlaeuft.
+
+   Eine Regel dabei: Glas liegt nie in Glas. Datentafeln innerhalb einer
+   Karte bleiben flach, sonst wird es milchig. */
+:root{
+  --r-karte:16px;
+  --r-knopf:10px;
+  --glas:linear-gradient(180deg,rgba(255,255,255,.058) 0%,rgba(255,255,255,.022) 44%,rgba(255,255,255,.012) 100%);
+  --glas-kante:rgba(255,255,255,.095);
+  --glas-glanz:inset 0 1px 0 rgba(255,255,255,.11);
+  --glas-schatten:0 18px 44px -28px rgba(0,0,0,.95);
+}
+
+.glas,
+.facts li,.rules li,.bot,.goal,.sig,.video__frame,.chat__empty{
+  background:var(--glas);
+  border:1px solid var(--glas-kante);
+  border-radius:var(--r-karte);
+  box-shadow:var(--glas-glanz),var(--glas-schatten);
+}
+
+/* Kacheln stehen jetzt einzeln nebeneinander statt in einem Raster mit
+   geteilten Linien. */
+.facts{gap:10px;background:none;border:0}
+.facts li{padding:18px 20px}
+/* Der goldene Strich lag auf der Kante der Kachel. Auf einer gerundeten
+   Karte sieht das aus, als schwebe er darueber — also steht er jetzt
+   innen, als Marke ueber der Zahl. */
+.facts li::before{display:none}
+.facts--kpi li{padding:20px 22px 19px}
+.facts--kpi li::before{
+  display:block;position:static;
+  width:26px;height:2px;margin:0 0 13px;border-radius:2px;
+  background:var(--gold);
+}
+
+.rules{gap:10px;background:none;border-block:0}
+.rules li{padding:19px 22px}
+
+/* Die Bots sind wieder Karten — aber glaesern, nicht umrandet. */
+.bots{gap:12px;grid-template-columns:minmax(0,1fr)}
+.bot{padding:clamp(20px,2.6vw,28px);border-top:1px solid var(--glas-kante)}
+.bots>.bot:first-child{border-top:1px solid var(--glas-kante);padding-top:clamp(20px,2.6vw,28px)}
+.bot[data-on="true"]{
+  border-color:rgba(239,196,94,.42);
+  background:linear-gradient(180deg,rgba(239,196,94,.085) 0%,rgba(255,255,255,.02) 46%,rgba(255,255,255,.012) 100%);
+}
+.bot:hover{border-color:rgba(255,255,255,.17)}
+.bot[data-on="true"]:hover{border-color:rgba(239,196,94,.6)}
+
+.goal{padding:clamp(22px,3vw,32px)}
+.sig{padding:clamp(20px,2.6vw,28px)}
+
+/* Datentafeln in den Karten bleiben flach: Glas in Glas wird milchig. */
+.bot__spec,.sig__levels{
+  background:rgba(255,255,255,.055);
+  border:0;border-radius:11px;overflow:hidden;gap:1px;
+}
+.bot__spec>div,.sig__levels>div{background:rgba(8,9,11,.92)}
+
+/* Bedienelemente: dieselbe Rundung, dieselbe Kante. */
+.btn,.tab,.chat__bar textarea,.chat__bar input,input[type="text"],input[type="number"]{
+  border-radius:var(--r-knopf);
+}
+.btn--plain,.tab{
+  background:var(--glas);
+  border-color:var(--glas-kante);
+  box-shadow:var(--glas-glanz);
+}
+.btn--plain:hover,.tab:hover{border-color:rgba(255,255,255,.22)}
+
+.video__frame{overflow:hidden}
+.chat__empty{border-style:dashed;border-color:rgba(255,255,255,.14)}
+
+/* Hinweise ohne Rahmen: ein Strich reicht, und er bleibt der einzige. */
+.note{border-left-width:2px;border-left-color:rgba(239,196,94,.3)}
+
+@media (prefers-reduced-motion:reduce){
+  .bot,.facts li,.rules li{transition:none}
+}
 </style>
 </head>
 <body>

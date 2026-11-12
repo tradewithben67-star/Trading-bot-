@@ -68,23 +68,23 @@ a{color:var(--fg)}
    der zweite legt ein weiches dunkles Band dorthin, wo der Text steht.
    So bleibt das Gestein an den Raendern hell wie auf der Vorlage, und die
    Schrift steht trotzdem auf fast Schwarz. */
-.bg__shade{inset:0;background:linear-gradient(180deg,rgba(5,6,8,0.46) 0%,rgba(5,6,8,0.52) 46%,rgba(5,6,8,0.62) 100%)}
+.bg__shade{inset:0;background:linear-gradient(180deg,rgba(5,6,8,0.62) 0%,rgba(5,6,8,0.68) 46%,rgba(5,6,8,0.77) 100%)}
 .bg__band{
   inset:0;
   background:linear-gradient(90deg,
     transparent 0%,
-    rgba(4,5,7,0.60) 10%,
-    rgba(4,5,7,0.80) 23%,
-    rgba(4,5,7,0.80) 77%,
-    rgba(4,5,7,0.60) 90%,
+    rgba(4,5,7,0.72) 10%,
+    rgba(4,5,7,0.88) 23%,
+    rgba(4,5,7,0.88) 77%,
+    rgba(4,5,7,0.72) 90%,
     transparent 100%);
 }
 /* Schmal steht der Text ueber die ganze Breite — dann darf das Band keine
    hellen Raender mehr haben, sonst liegt Schrift auf hellem Gestein. */
 @media (max-width:900px){
-  .bg__band{background:rgba(4,5,7,.82)}
+  .bg__band{background:rgba(4,5,7,.9)}
 }
-.bg__vig{inset:0;background:radial-gradient(150% 118% at 50% 38%,transparent 30%,rgba(0,0,0,.36) 62%,rgba(0,0,0,.72) 100%)}
+.bg__vig{inset:0;background:radial-gradient(150% 118% at 50% 38%,transparent 26%,rgba(0,0,0,.46) 60%,rgba(0,0,0,.82) 100%)}
 
 /* ---------- Gerüst ---------- */
 .shell{

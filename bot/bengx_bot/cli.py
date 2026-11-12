@@ -286,8 +286,12 @@ def cmd_telegram(args) -> int:
         print("TELEGRAM_CHAT_ID ist leer — der Bot nennt dir beim ersten "
               "Schreiben deine Kennung und antwortet sonst nichts.", file=sys.stderr)
     hindernis_ai = assistent.hindernis()
-    print("Assistent: " + (hindernis_ai or f"{assistent.anbieter} "
-          f"({llm.gemini_model if assistent.anbieter == 'Gemini' else llm.claude_model})"),
+    # Bei Gemini steht das Modell erst nach der ersten Verbindung fest —
+    # es wird beim Schluessel erfragt, nicht geraten. Vorher stand hier
+    # ein leeres Klammerpaar, das wie ein Fehler aussah.
+    modell = (llm.gemini_model if assistent.anbieter == "Gemini"
+              else llm.claude_model) or "Modell wird beim ersten Mal gewählt"
+    print("Assistent: " + (hindernis_ai or f"{assistent.anbieter} ({modell})"),
           file=sys.stderr)
 
     hindernis = coder.status()

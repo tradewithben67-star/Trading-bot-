@@ -674,3 +674,42 @@ class TestGruppenumzug(unittest.TestCase):
         self.assertIn("-1001234567890", str(f))
         self.assertIn("bot/.env", str(f))
         self.assertIsInstance(f, ConnectionError)
+
+
+class TestSchweigenInGruppen(Base):
+    """In VIP und im Inner Circle sitzt der Bot still."""
+
+    def gruppennachricht(self, typ="supergroup", chat="-1001234567890"):
+        return {"update_id": 7, "message": {
+            "message_id": 7, "chat": {"id": int(chat), "type": typ,
+                                      "title": "BENGX VIP"},
+            "text": "test"}}
+
+    def test_keine_antwort_in_die_gruppe(self):
+        self.assertEqual(self.bot.handle(self.gruppennachricht()), [])
+        self.assertEqual(self.bot.handle(self.gruppennachricht("group")), [])
+
+    def test_auch_ohne_hinterlegte_kennung_still(self):
+        # Sonst stuende Bens Chat-Kennung in der Gruppe.
+        bot = TelegramBot(self.cfg, TelegramSettings(token="t", chat_id=""),
+                          self.net, self.ai)
+        self.assertEqual(bot.handle(self.gruppennachricht()), [])
+
+    def test_im_einzelchat_antwortet_er_weiter(self):
+        fremd = {"update_id": 8, "message": {
+            "message_id": 8, "chat": {"id": 999, "type": "private"},
+            "text": "hallo"}}
+        self.assertEqual(self.bot.handle(fremd), ["Dieser Chat ist nicht freigegeben."])
+
+    def test_ein_kaputter_versand_reisst_die_schleife_nicht(self):
+        class Bockig(FakeTransport):
+            def call(self, method, payload):
+                if method == "sendMessage":
+                    raise ConnectionError("Chat weg")
+                return super().call(method, payload)
+
+        netz = Bockig(updates=[{"update_id": 9, "message": {
+            "message_id": 9, "chat": {"id": 999, "type": "private"},
+            "text": "hallo"}}])
+        bot = TelegramBot(self.cfg, self.tg, netz, self.ai)
+        self.assertEqual(bot.poll_once(), 1)      # kein Absturz

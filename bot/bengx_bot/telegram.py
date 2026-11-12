@@ -198,11 +198,18 @@ class TelegramBot:
     # ---- Eine Nachricht --------------------------------------------------
     def handle(self, update: dict[str, Any]) -> list[str]:
         message = update.get("message") or update.get("edited_message") or {}
-        chat_id = str((message.get("chat") or {}).get("id", ""))
+        chat = message.get("chat") or {}
+        chat_id = str(chat.get("id", ""))
         if not chat_id:
             return []
 
         if not self.allowed(chat_id):
+            # In einer Gruppe schweigt er. Der Bot sitzt in VIP und im
+            # Inner Circle; dort auf jede fremde Nachricht "nicht
+            # freigegeben" zu antworten, waere Laerm vor zahlenden Leuten
+            # und verraet ausserdem, dass er mithoert.
+            if chat.get("type") in ("group", "supergroup", "channel"):
+                return []
             if not self.tg.chat_id:
                 return ["Noch keine Chat-Kennung hinterlegt.\n\n"
                         f"Deine lautet: {chat_id}\n\n"
@@ -357,7 +364,15 @@ class TelegramBot:
                 for text in self.handle(update):
                     self.send(chat_id, text)
             except Exception as exc:                      # nie an einer Nachricht sterben
-                self.send(chat_id, f"Da ist etwas schiefgegangen: {exc}")
+                # Auch die Entschuldigung kann scheitern — etwa wenn der
+                # Chat gar nicht mehr erreichbar ist. Dann bleibt es bei
+                # einer Zeile im Fenster, statt die Schleife zu reissen.
+                print(f"Nachricht aus {chat_id} nicht verarbeitet: {exc}",
+                      flush=True)
+                try:
+                    self.send(chat_id, f"Da ist etwas schiefgegangen: {exc}")
+                except Exception:
+                    pass
         return len(updates)
 
     def run(self) -> None:

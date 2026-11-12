@@ -582,6 +582,39 @@ a{color:var(--fg)}
 
 /* Über eigenen Scrollflächen soll das Rad die Fläche bewegen, nicht die Seite. */
 [data-eigen-scroll]{overscroll-behavior:contain}
+/* ================= Aufgeräumt =================
+   Schrift und Farben bleiben, wie sie waren. Weggenommen wurde nur, was
+   nichts sagt, und die Schachtelung der Flächen. */
+
+/* --- Überfahren: der Gold-Schein und das Anheben waren zu viel --- */
+.rules li:hover,.facts li:hover{transform:none;box-shadow:none;background:rgba(255,255,255,.028)}
+.bot:hover{transform:none;box-shadow:none;border-color:rgba(255,255,255,.2)}
+.btn:hover,.tab:hover,.pick:hover{transform:none;box-shadow:none}
+
+/* --- Das Ziel-Feld hing in einer halben Spalte und wirkte unfertig --- */
+.goal{max-width:78ch;padding:clamp(22px,3vw,32px)}
+
+/* --- Bot-Karten: Kasten im Kasten. Der äußere fällt weg, die Bots
+       trennt eine Haarlinie. Innen bleibt die Datentafel. --- */
+.bots{gap:0;grid-template-columns:minmax(0,1fr)}
+.bot{
+  border:0;border-top:1px solid var(--line-soft);
+  background:none;
+  padding:clamp(26px,3.4vw,38px) 0;
+}
+.bots>.bot:first-child{border-top:0;padding-top:clamp(6px,1vw,12px)}
+.bot[data-on="true"]{background:none;border-top-color:rgba(239,196,94,.42)}
+.bot:hover{border-top-color:var(--line);background:none}
+.bot__d,.bot__spec{max-width:78ch}
+
+/* --- Eine Spaltenbreite für alles, statt 1200 px neben 60 Zeichen --- */
+.shell{max-width:1120px}
+.panel{gap:clamp(20px,2.6vw,30px)}
+
+/* --- Schmal: vier Datenspalten passen nicht auf ein Telefon --- */
+@media (max-width:620px){
+  .bot__spec{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 </style>
 </head>
 <body>
@@ -620,7 +653,6 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-ben" data-panel="ben">
       <header class="phead">
-        <div class="phead__top"><p class="kick">B — Ben</p></div>
         <h1 class="chrome">Ben</h1>
         <p class="lead">18, aus Deutschland, seit einem Jahr am Markt — und das ausschließlich auf Gold.</p>
       </header>
@@ -666,7 +698,6 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-entdecken" data-panel="entdecken">
       <header class="phead">
-        <div class="phead__top"><p class="kick">E — Entdecken</p></div>
         <h2 class="chrome">Lernen, Schritt für Schritt</h2>
         <p class="lead">Vom ersten Chart bis zum eigenen Regelwerk. Kein Hype, keine Abkürzung — der Weg, den ich selbst gegangen bin.</p>
       </header>
@@ -683,7 +714,6 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-mitglieder" data-panel="mitglieder">
       <header class="phead">
-        <div class="phead__top"><p class="kick">N — Neue Mitglieder</p></div>
         <h2 class="chrome">Neu dabei</h2>
         <p class="lead">Konto bei Tradequo, Bot verbinden, laufen lassen. Danach brauchst du nichts weiter als Empfang.</p>
       </header>
@@ -711,7 +741,6 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-gold" data-panel="gold">
       <header class="phead">
-        <div class="phead__top"><p class="kick">G — Signale</p></div>
         <h2 class="gilt">Signale</h2>
         <p class="lead">Oben steht immer nur das neueste Signal auf XAU/USD, dazu die Winrate und die Pips von heute. Alles Ältere liegt in der Historie.</p>
       </header>
@@ -741,23 +770,17 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-xaubot" data-panel="xaubot">
       <header class="phead">
-        <div class="phead__top"><p class="kick">X — Bots</p></div>
         <h2 class="gilt">Bots</h2>
         <p class="lead">Drei Bots, drei Arbeitsweisen. Nimm einen — oder lass mehrere gleichzeitig laufen.</p>
       </header>
       <div class="rule"></div>
 
-      <div class="selbar">
-        <span>Deine Auswahl: <b id="selcount">0 von 3</b></span>
-        <span id="selhint">Du kannst einen Bot nehmen oder mehrere gleichzeitig.</span>
-      </div>
 
       <div class="bots">
         <article class="bot" data-bot="copy" data-on="false">
           <div class="bot__top">
             <span class="bot__n">01</span>
             <h3 class="bot__name">Signal-Kopierer</h3>
-            <span class="bot__tag">folgt Ben</span>
           </div>
           <p class="bot__d">Kopiert jedes Signal aus dem Bereich <b>G</b> in dein Konto — gleiche Richtung, gleicher Stop, gleiches Ziel. Schließe ich, schließt er mit. Du musst nichts entscheiden und nichts mitlesen.</p>
           <p class="bot__d">Zwei Dinge übernimmt er bewusst nicht. Die <b>Positionsgröße</b> rechnet er aus deinem Konto, nicht aus meinem. Und ist der Kurs weggelaufen, steigt er <b>nicht hinterher</b>, sondern lässt das Signal aus — was weg ist, ist weg.</p>
@@ -769,7 +792,6 @@ a{color:var(--fg)}
           </div>
           <div class="bot__foot">
             <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-            <span class="k">Eigenes Risiko &middot; eigener Not-Aus</span>
           </div>
         </article>
 
@@ -777,7 +799,6 @@ a{color:var(--fg)}
           <div class="bot__top">
             <span class="bot__n">02</span>
             <h3 class="bot__name">Dauerläufer</h3>
-            <span class="bot__tag">Regelwerk steht</span>
           </div>
           <p class="bot__d">Prüft jede geschlossene Stundenkerze und steigt nur ein, wenn fünf Dinge zugleich stimmen: der Trend zeigt in eine Richtung, der Markt ist klar gerichtet, die Schwankung liegt im Korridor, die Handelszeit passt — und der Kurs bricht über das Hoch der letzten 20 Kerzen aus. Fehlt eins davon, passiert nichts.</p>
           <p class="bot__d">Danach übernimmt das Risiko. Stop bei 2 × ATR, bei 1,5 R geht die Hälfte raus und der Stop wandert auf Einstand: ab da kann der Trade nicht mehr ins Minus drehen. Der Rest läuft mit einem Stop, der nur enger wird, nie wieder weiter. Freitagabend ist alles glatt — über das Wochenende reißen Kurslücken jeden Stop.</p>
@@ -789,7 +810,6 @@ a{color:var(--fg)}
           </div>
           <div class="bot__foot">
             <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-            <span class="k">Tageslimit &middot; Drawdown-Bremse &middot; Not-Aus</span>
           </div>
         </article>
 
@@ -797,7 +817,6 @@ a{color:var(--fg)}
           <div class="bot__top">
             <span class="bot__n">03</span>
             <h3 class="bot__name">Swing</h3>
-            <span class="bot__tag">Sweep-Modell</span>
           </div>
           <p class="bot__d">Wartet, bis der Markt auf der Stunde Liquidität abholt: ein Stich unter das letzte Tief, Schluss wieder darüber. Dann muss eine 5-Minuten-Kerze die Richtung bestätigen, und auf der Minute muss die Struktur brechen oder eine Lücke reißen.</p>
           <p class="bot__d">Eingestiegen wird im Rücklauf in diese Lücke — oder wenn der Kurs durch eine gegenläufige Lücke schließt und sie dadurch dreht. Jede Stufe hat eine Frist: läuft sie ab oder kommt ein neuer Sweep, beginnt alles von vorn.</p>
@@ -809,7 +828,6 @@ a{color:var(--fg)}
           </div>
           <div class="bot__foot">
             <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
-            <span class="k">Teilziel &middot; Trailing &middot; Not-Aus</span>
           </div>
         </article>
       </div>
@@ -819,7 +837,6 @@ a{color:var(--fg)}
 
     <section class="panel" id="p-assistent" data-panel="assistent" hidden>
       <header class="phead">
-        <div class="phead__top"><p class="kick">A — Assistent</p></div>
         <h2 class="chrome">Assistent</h2>
         <p class="lead">Schreib normal. Er liest deine Signale, rechnet nach, schaut sich Bilder an und notiert, was repariert werden muss.</p>
       </header>

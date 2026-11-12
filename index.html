@@ -842,6 +842,38 @@ a{color:var(--fg)}
 .kurse--eng .kurs{padding:11px 11px 16px;gap:11px}
 .kurse--eng .kurs__name{font-size:clamp(16px,1.8vw,19px)}
 .kurse--eng .kurs__d{font-size:13.5px}
+/* ================= Interesse melden =================
+   Erscheint nur, wenn eine Meldestelle eingetragen ist. Ohne sie wird
+   gar nicht erst nach Kontaktdaten gefragt — Daten einzusammeln, die
+   nirgends ankommen, waere schlimmer als nichts. */
+.lead{
+  display:grid;gap:14px;
+  padding:clamp(20px,2.6vw,28px);
+  border:1px solid rgba(239,196,94,.32);
+  border-radius:var(--r-karte);
+  background:rgba(239,196,94,.05);
+  max-width:72ch;
+}
+.lead__h{margin:0;font-family:var(--f-display);font-weight:700;font-size:19px;color:var(--fg)}
+.lead__s{margin:0;color:var(--fg-mid);font-size:14.5px}
+.lead__felder{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.feld{display:grid;gap:6px;min-width:0}
+.feld span{
+  font-family:var(--f-data);font-size:10px;letter-spacing:.18em;
+  text-transform:uppercase;color:var(--fg-dim);
+}
+.feld input{
+  font-family:var(--f-body);font-size:15px;
+  padding:11px 13px;border-radius:var(--r-knopf);
+  border:1px solid var(--line);background:rgba(0,0,0,.5);color:var(--fg);
+  min-width:0;
+}
+.feld input:focus-visible{outline:1px solid var(--gold);outline-offset:2px}
+.lead__fuss{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center}
+.lead__state{margin:0;font-family:var(--f-data);font-size:12px;color:var(--fg-dim);min-height:1.2em}
+.lead__state.gut{color:#55D6A6}
+.lead__state.schlecht{color:#FF8E7E}
+.lead[data-fertig="true"] .lead__felder,.lead[data-fertig="true"] .lead__fuss .btn{display:none}
 </style>
 </head>
 <body>
@@ -1183,6 +1215,21 @@ a{color:var(--fg)}
 
           <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
         </article>
+      </div>
+
+      <div class="lead" id="lead" hidden>
+        <p class="lead__h">Damit Ben sich melden kann</p>
+        <p class="lead__s">Zwei Felder, dann weiß er, wer sich für welchen Bot interessiert.</p>
+        <div class="lead__felder">
+          <label class="feld"><span>Name</span>
+            <input id="lead-name" type="text" autocomplete="name" maxlength="60" placeholder="Wie heißt du?"></label>
+          <label class="feld"><span>Telegram-Name</span>
+            <input id="lead-tg" type="text" autocomplete="username" maxlength="40" placeholder="@deinname"></label>
+        </div>
+        <div class="lead__fuss">
+          <button class="btn" type="button" id="lead-ab">Absenden</button>
+          <p class="lead__state" id="lead-state" role="status"></p>
+        </div>
       </div>
 
       <p class="note">Alle drei Bots sind gebaut und getestet und laufen auf dem Papierkonto. Echtes Geld fassen sie erst an, wenn das Regelwerk über echte Golddaten nachgerechnet und ein Broker angebunden ist — beides erzwingen die Bots selbst. Keine Anlageberatung; der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
@@ -1999,10 +2046,90 @@ a{color:var(--fg)}
     save();
   }
 
+  /* ---- Interesse an Ben melden ----
+     Die Adresse der Meldestelle steht hier und sonst nirgends. Leer
+     heisst: ausgeschaltet — dann erscheint kein Formular und es wird
+     nichts erhoben. Der Telegram-Token gehoert NIEMALS hierher; er
+     liegt allein in der Meldestelle. Steht er in der Seite, kann ihn
+     jeder Besucher auslesen und den Bot uebernehmen. */
+  var MELDESTELLE="";
+
+  var NAMEN={copy:"Signal-Kopierer",auto:"Dauerläufer",swing:"Swing"};
+  var GEMELDET="bengx.gemeldet";
+  var kasten=document.getElementById("lead");
+  var stand=document.getElementById("lead-state");
+
+  function schonGemeldet(){
+    try{return window.localStorage.getItem(GEMELDET)==="1";}catch(e){return false;}
+  }
+  function merkeGemeldet(){
+    try{window.localStorage.setItem(GEMELDET,"1");}catch(e){}
+  }
+  function sage(text,art){
+    if(!stand){return;}
+    stand.textContent=text;
+    stand.className="lead__state"+(art?" "+art:"");
+  }
+
+  function formularPruefen(){
+    if(!kasten){return;}
+    var zeigen=!!MELDESTELLE&&sel.length>0&&!schonGemeldet();
+    kasten.hidden=!zeigen;
+  }
+
+  function absenden(){
+    var name=(document.getElementById("lead-name")||{}).value||"";
+    var tg=(document.getElementById("lead-tg")||{}).value||"";
+    name=name.trim(); tg=tg.trim();
+    if(name.length<2){sage("Trag bitte deinen Namen ein.","schlecht");return;}
+    if(tg.length<3){sage("Und deinen Telegram-Namen, damit Ben dich erreicht.","schlecht");return;}
+    if(tg.charAt(0)!=="@"){tg="@"+tg;}
+
+    var knopf=document.getElementById("lead-ab");
+    if(knopf){knopf.disabled=true;}
+    sage("Wird gesendet …");
+
+    var abbruch=null;
+    try{abbruch=new AbortController();}catch(e){abbruch=null;}
+    var uhr=setTimeout(function(){if(abbruch){abbruch.abort();}},12000);
+
+    fetch(MELDESTELLE,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        name:name.slice(0,60),
+        telegram:tg.slice(0,40),
+        bots:sel.map(function(k){return NAMEN[k]||k;}),
+        seite:location.hostname
+      }),
+      signal:abbruch?abbruch.signal:undefined
+    }).then(function(r){
+      clearTimeout(uhr);
+      if(!r.ok){throw new Error("Status "+r.status);}
+      merkeGemeldet();
+      if(kasten){kasten.setAttribute("data-fertig","true");}
+      sage("Angekommen. Ben meldet sich bei dir.","gut");
+    })["catch"](function(){
+      clearTimeout(uhr);
+      if(knopf){knopf.disabled=false;}
+      sage("Hat nicht geklappt. Versuch es gleich noch einmal.","schlecht");
+    });
+  }
+
+  var abKnopf=document.getElementById("lead-ab");
+  if(abKnopf){abKnopf.addEventListener("click",absenden);}
+  Array.prototype.forEach.call(document.querySelectorAll("#lead input"),function(i){
+    i.addEventListener("keydown",function(e){if(e.key==="Enter"){e.preventDefault();absenden();}});
+  });
+
   cards().forEach(function(c){
     var b=c.querySelector(".pick");
-    if(b){b.addEventListener("click",function(){toggle(c.getAttribute("data-bot"));});}
+    if(b){b.addEventListener("click",function(){
+      toggle(c.getAttribute("data-bot"));
+      formularPruefen();
+    });}
   });
+  formularPruefen();
 
   sel=fromStore();
   paint();

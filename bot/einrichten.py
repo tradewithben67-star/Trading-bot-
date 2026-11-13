@@ -268,7 +268,85 @@ def ja(text: str, standard: bool = False) -> bool:
     return antwort in ("j", "ja", "y", "yes")
 
 
+def frage_mt5(werte: dict[str, str]) -> None:
+    """Soll der Bot Trades aus MetaTrader melden?"""
+    print("\nTrades aus MetaTrader melden")
+    print("   Wenn das an ist, erkennt der Bot jeden Trade, den du in")
+    print("   MetaTrader 5 stellst, und macht daraus ein fertiges Signal —")
+    print("   in jedem Markt, nicht nur Gold.")
+    print("   MetaTrader muss dafür offen und angemeldet sein.")
+    print()
+    if ja("   Einschalten?", werte.get("MT5") == "1"):
+        werte["MT5"] = "1"
+        print("\n   Soll er die Signale ohne Rückfrage verschicken?")
+        print("   Nein heißt: er legt sie dir vor, du sagst ja. Sicherer —")
+        print("   ein Trade, den du gleich wieder schließt, wäre sonst")
+        print("   schon bei deinen zahlenden Leuten.")
+        werte["MT5_OHNE_RUECKFRAGE"] = (
+            "1" if ja("   Ohne Rückfrage?", False) else "0")
+    else:
+        werte["MT5"] = "0"
+
+
+def schreiben(werte: dict[str, str]) -> None:
+    vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
+    ENV.write_text(zusammenfuehren(vorlage, werte), encoding="utf-8")
+    try:
+        os.chmod(ENV, 0o600)
+    except OSError:
+        pass
+    print(f"\nGeschrieben: {ENV}")
+    print("Diese Datei steht in .gitignore und bleibt auf deinem Rechner.")
+
+
+def pakete_nachziehen(werte: dict[str, str]) -> None:
+    """Installiert, was die gewählten Einstellungen brauchen."""
+    gebraucht = []
+    if werte.get("MT5") == "1":
+        gebraucht.append(("MetaTrader5", "MetaTrader5",
+                          "Trades aus MetaTrader lesen"))
+    fehlt = []
+    for modul, paket, zweck in gebraucht:
+        try:
+            __import__(modul)
+        except ImportError:
+            fehlt.append((paket, zweck))
+    if not fehlt:
+        return
+    print("\nEs fehlen noch Pakete:")
+    for paket, zweck in fehlt:
+        print(f"   {paket}  —  {zweck}")
+    if ja("\nSoll ich die jetzt installieren?", True):
+        for paket, _ in fehlt:
+            print(f"\n   Installiere {paket} ...")
+            ergebnis = subprocess.run(
+                [sys.executable, "-m", "pip", "install", "--quiet", paket])
+            if ergebnis.returncode == 0:
+                print(f"   {paket} ist da.")
+            else:
+                print(f"   Hat nicht geklappt. Von Hand: pip install {paket}")
+    else:
+        print("\n   Später von Hand:")
+        for paket, _ in fehlt:
+            print(f"   pip install {paket}")
+
+
 def main() -> int:
+    # --nur-neues: fragt nur nach dem, was in der .env noch gar nicht
+    # steht. So bekommt auch jemand, der laengst eingerichtet hat, neue
+    # Einstellungen mit, ohne alles noch einmal durchzugehen.
+    if "--nur-neues" in sys.argv and ENV.exists():
+        werte = lesen(ENV)
+        if "MT5" in werte:
+            return 0                      # nichts Neues, still weiter
+        print("\nBENGX — eine neue Einstellung")
+        print("=" * 38)
+        frage_mt5(werte)
+        schreiben(werte)
+        pakete_nachziehen(werte)
+        print("\nFertig.")
+        return 0
+
     print("\nBENGX — Telegram-Assistent einrichten")
     print("=" * 38)
 
@@ -419,49 +497,13 @@ def main() -> int:
     zeit = frage("   Um wie viel Uhr? (leer = aus)", "23:15")
     werte["TELEGRAM_RUECKBLICK"] = zeit
 
-    # 5. Schreiben
-    vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
-    ENV.write_text(zusammenfuehren(vorlage, werte), encoding="utf-8")
-    try:
-        os.chmod(ENV, 0o600)
-    except OSError:
-        pass
-    print(f"\nGeschrieben: {ENV}")
-    print("Diese Datei steht in .gitignore und bleibt auf deinem Rechner.")
+    # 5. MetaTrader
+    print("\n5. ", end="")
+    frage_mt5(werte)
 
-    # 6. Fehlende Pakete
-    fehlt = []
-    gebraucht = []
-    if werte.get("GOOGLE_API_KEY"):
-        gebraucht.append(("google.genai", "google-genai", "Antworten über Gemini"))
-    if werte.get("ANTHROPIC_API_KEY"):
-        gebraucht.append(("anthropic", "anthropic", "Antworten über Claude"))
-    if werte.get("BENGX_CODER") == "1":
-        gebraucht.append(("claude_agent_sdk", "claude-agent-sdk",
-                          "am Code weiterbauen"))
-    for modul, paket, zweck in gebraucht:
-        try:
-            __import__(modul)
-        except ImportError:
-            fehlt.append((paket, zweck))
-    if fehlt:
-        print("\nEs fehlen noch Pakete:")
-        for paket, zweck in fehlt:
-            print(f"   {paket}  —  {zweck}")
-        if ja("\nSoll ich die jetzt installieren?", True):
-            for paket, _ in fehlt:
-                print(f"\n   Installiere {paket} ...")
-                ergebnis = subprocess.run(
-                    [sys.executable, "-m", "pip", "install", "--quiet", paket])
-                if ergebnis.returncode == 0:
-                    print(f"   {paket} ist da.")
-                else:
-                    print(f"   Hat nicht geklappt. Von Hand: "
-                          f"pip install {paket}")
-        else:
-            print("\n   Später von Hand:")
-            for paket, _ in fehlt:
-                print(f"   pip install {paket}")
+    # 6. Schreiben und nachinstallieren
+    schreiben(werte)
+    pakete_nachziehen(werte)
 
     print("\nFertig.")
     print(_weiter_so())

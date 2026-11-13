@@ -9,7 +9,12 @@ echo "  ====="
 echo "  Einrichten, pruefen, und erst dann starten."
 echo
 
-[ -f .env ] || $PY einrichten.py || { read -r _; exit 1; }
+if [ -f .env ]; then
+  # Schon eingerichtet: nur fragen, was es seit dem letzten Mal Neues gibt.
+  $PY einrichten.py --nur-neues
+else
+  $PY einrichten.py || { read -r _; exit 1; }
+fi
 
 echo
 echo "  ------------------------------------------------"

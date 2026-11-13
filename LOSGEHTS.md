@@ -97,12 +97,21 @@ Sie führt dich durch fünf Schritte:
    ist. Beim Vorsprung für VIP: **0** eingeben.
 4. **Tagesrückblick** — um wie viel Uhr er die Zusammenfassung in beide
    Gruppen schickt. Enter nimmt 23:15.
+5. **Trades aus MetaTrader melden** — sag **Ja**. Dann erkennt der Bot
+   jeden Trade, den du in MT5 stellst, und macht daraus ein Signal. Das
+   nötige Paket installiert er selbst.
+   Die Folgefrage „Ohne Rückfrage?" beantworte mit **Nein**, solange du
+   dich nicht hundertprozentig darauf verlässt.
 
 Danach prüft sie von selbst. Fehlt etwas, **startet sie den Bot nicht**
 und sagt dir genau, was. Mach davon ein Foto und schick es mir.
 
 Ist alles da, läuft der Bot sofort los. Das Fenster **offen lassen** —
 schließt du es, ist er aus.
+
+Hast du schon eingerichtet, überspringt sie die Fragen und stellt nur
+die, die es seit dem letzten Mal neu gibt. Ein Doppelklick genügt also
+auch nach jedem Update.
 
 Die einzelnen Dateien gibt es weiterhin, falls du nur einen Schritt
 willst: `einrichten.bat`, `pruefen.bat`, `starten.bat`.
@@ -124,6 +133,11 @@ Es führt dich durch fünf Schritte:
    ist. Beim Vorsprung für VIP: **0** eingeben.
 4. **Tagesrückblick** — um wie viel Uhr er die Zusammenfassung in beide
    Gruppen schickt. Enter nimmt 23:15.
+5. **Trades aus MetaTrader melden** — sag **Ja**. Dann erkennt der Bot
+   jeden Trade, den du in MT5 stellst, und macht daraus ein Signal. Das
+   nötige Paket installiert er selbst.
+   Die Folgefrage „Ohne Rückfrage?" beantworte mit **Nein**, solange du
+   dich nicht hundertprozentig darauf verlässt.
 
 ### `pruefen.bat` doppelklicken
 

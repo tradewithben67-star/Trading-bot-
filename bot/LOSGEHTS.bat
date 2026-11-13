@@ -1,12 +1,12 @@
 @echo off
 chcp 65001 >nul
 cd /d "%~dp0"
-title BENGX - einrichten, pruefen, starten
+title BENGX
 
 echo.
 echo   BENGX
 echo   =====
-echo   Dieses Fenster macht alles der Reihe nach:
+echo   Diese Datei macht alles der Reihe nach:
 echo   einrichten, pruefen, und erst dann starten.
 echo.
 
@@ -39,14 +39,19 @@ echo        "Add python.exe to PATH" setzen
 echo     5. "Install Now", danach diese Datei noch einmal doppelklicken
 goto :ende
 
-rem --- 1. Einrichten, falls noch nichts da ist ---
+rem --- 1. Einrichten ---
 :einrichten
-if exist ".env" goto :pruefen
+if exist ".env" goto :nachtrag
 echo   Noch nicht eingerichtet - ich fuehre dich jetzt durch.
 echo.
 %PY% einrichten.py
 if errorlevel 1 goto :ende
-echo.
+goto :pruefen
+
+rem Schon eingerichtet: nur fragen, was es seit dem letzten Mal
+rem Neues gibt. Ohne das wuerde eine neue Einstellung nie gesetzt.
+:nachtrag
+%PY% einrichten.py --nur-neues
 
 rem --- 2. Pruefen, und nur bei gruen weiter ---
 :pruefen

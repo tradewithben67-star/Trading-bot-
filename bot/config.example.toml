@@ -1,67 +1,14 @@
-# BENGX Dauerläufer — Beispielkonfiguration
+# BENGX — Beispielkonfiguration
 #
-# Kopieren als config.toml und anpassen. Jede Änderung an [bot]
-# "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
-# "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
-# "kopierer" spiegelt fremde Signale aus einer signals.json.
-name = "dauerlaeufer"
-
-[market], [costs],
-# [strategy] oder [swing]
-# Nur für bot.name = "swing". Der Bot braucht Minutenkerzen in data.csv;
-# die 5-Minuten- und Stundenkerzen rechnet er selbst daraus.
-atr_period = 14
-swing_lookback_h1 = 2            # Fraktalgröße für die Stunden-Swings
-swing_lookback_m1 = 2            # Fraktalgröße für die Minuten-Struktur
-continuation_window_minutes = 120  # Sweep → Fortsetzungskerze
-trigger_window_minutes = 60        # Fortsetzung → BOS oder FVG
-entry_window_minutes = 60          # scharf → Einstieg
-min_continuation_body = 0.5      # Körperanteil der 5m-Kerze
-min_gap_pips = 3.0               # kleinere Lücken zählen nicht
-entry_fill = 0.5                 # 0 = nahe Kante der Gap, 1 = ferne Kante
-allow_pullback = true            # Einstieg im Pullback in die FVG
-allow_ifvg = true                # Einstieg bei Entstehung einer invertierten FVG
-stop_source = "structure"        # structure | sweep | fvg
-stop_buffer_pips = 5.0
-min_stop_pips = 15.0             # engere Stops sind Rauschen
-max_stop_pips = 250.0            # weitere Stops kosten zu viel
-target_mode = "r"                # r | liquidity
-target_r = 3.0
-partial_r = 1.5
-partial_fraction = 0.5
-trail_atr = 2.0
-max_hold_minutes = 480
-session_start_hour = 7
-session_end_hour = 20
-friday_cutoff_hour = 19
-
-[copy]
-# Nur für bot.name = "kopierer".
-source = "file"                  # file = Datei auf der Platte, http = Adresse im Netz
-path = "../signals.json"         # bei source = "file"
-url = ""                         # bei source = "http", z. B. die Seite auf GitHub Pages
-timeout_seconds = 10.0
-entry_mode = "limit"             # limit = nur nahe an Bens Kurs, market = sofort
-max_slippage_pips = 30.0         # wie weit der Kurs von Bens Einstieg weg sein darf
-max_age_minutes = 30.0           # älteren Signalen wird nicht hinterhergelaufen
-follow_stop = true               # Bens Stop übernehmen
-follow_target = true             # Bens Ziel übernehmen
-fallback_stop_atr = 2.0          # falls kein Stop mitkommt
-min_stop_pips = 10.0
-max_stop_pips = 400.0
-close_with_source = true         # mitschließen, sobald Ben schließt
-partial_fraction = 0.0           # 0 = kein Teilverkauf, reine Kopie
-trail_atr = 2.0
-max_hold_bars = 480
-friday_cutoff_hour = 19
-atr_period = 14
-
-[risk] ändert den Fingerabdruck des Regelwerks — danach
-# verlangt der Live-Betrieb einen neuen Backtest.
+# Kopieren als config.toml und anpassen. Jede Änderung an [bot], [market],
+# [costs], [strategy], [swing], [einzelschuss], [copy] oder [risk] ändert den
+# Fingerabdruck des Regelwerks — danach verlangt der Live-Betrieb einen neuen
+# Backtest.
 
 [bot]
 # "dauerlaeufer" handelt Stundenkerzen nach Trend und Ausbruch.
 # "swing" handelt Minutenkerzen nach 1h-Sweep, 5m-Fortsetzung und 1m-Einstieg.
+# "einzelschuss" legt zwei Order um einen Nachrichtentermin; eine wird gehandelt.
 # "kopierer" spiegelt fremde Signale aus einer signals.json.
 name = "dauerlaeufer"
 
@@ -123,6 +70,49 @@ partial_r = 1.5
 partial_fraction = 0.5
 trail_atr = 2.0
 max_hold_minutes = 480
+session_start_hour = 7
+session_end_hour = 20
+friday_cutoff_hour = 19
+
+[einzelschuss]
+# Nur für bot.name = "einzelschuss". Der Bot braucht Minutenkerzen in data.csv.
+#
+# Zwei Order um eine Nachricht: eine über, eine unter dem Kurs. Die erste, die
+# berührt wird, wird gehandelt — die andere verfällt. Pro Termin ein Trade,
+# auch wenn er sofort in den Stop läuft. Kein Nachkaufen, kein Netz.
+trigger = "kalender"             # kalender = Termine aus einer Datei
+                                 # ausbruch = ohne Kalender; die Ausbruchskerze
+                                 #            ist selbst das Ereignis
+calendar = "news.json"           # bei trigger = "kalender";
+                                 # news.example.json zeigt das Format
+impacts = ["hoch", "high"]       # welche Wichtigkeit gehandelt wird
+arm_seconds_before = 60          # so lange vor dem Termin steht die Referenz fest
+offset_pips = 15.0               # Abstand der Order vom Referenzkurs
+window_minutes = 5               # danach verfallen beide Order
+prerange_minutes = 15            # Fenster für die Ruhe vor der Nachricht
+max_prerange_pips = 60.0         # breiter: nicht handeln, die Bewegung läuft schon
+stop_pips = 25.0                 # Stop, gemessen an der Orderstufe
+target_pips = 50.0               # Ziel, gemessen an der Orderstufe
+news_slippage_pips = 3.0         # Aufschlag auf den Fill: bei einer Nachricht
+                                 # füllt keine Stop-Order zum Wunschkurs.
+                                 # Lieber zu hoch ansetzen als zu niedrig.
+partial_r = 1.0                  # Teilziel in R
+partial_fraction = 0.5           # dort die Hälfte raus, Rest auf Einstand.
+                                 # 0 = reiner Einzeltrade — dann aber auch
+                                 # kein Stop auf Einstand
+trail_atr = 2.0                  # Trailing nach dem Teilziel, nur enger
+max_hold_minutes = 60            # eine Nachricht ist nach einer Stunde erledigt
+max_events_per_day = 2
+min_minutes_between = 30         # Abstand zwischen zwei Trades
+tie_break = "pessimistic"        # beide Seiten in derselben Minute berührt:
+                                 # pessimistic = die Seite gegen die Kerze,
+                                 #               also die, die in den Stop läuft
+                                 # skip = Termin auslassen. Sieht hübscher aus,
+                                 #        als es ist.
+burst_atr = 3.0                  # nur bei trigger = "ausbruch":
+                                 # Spanne als Vielfaches des ATR
+min_burst_pips = 30.0            # und mindestens so viele Pips
+atr_period = 14
 session_start_hour = 7
 session_end_hour = 20
 friday_cutoff_hour = 19

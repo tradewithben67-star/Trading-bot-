@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Any
 
 
+# Die Bots, die es gibt. `bots.BOTS` muss dazu passen; ein Test prüft das.
+BOT_NAMES = ("dauerlaeufer", "swing", "einzelschuss", "kopierer")
+
+
 @dataclass
 class MarketConfig:
     symbol: str = "XAU/USD"
@@ -54,7 +58,7 @@ class StrategyConfig:
 
 @dataclass
 class BotConfig:
-    name: str = "dauerlaeufer"        # "dauerlaeufer" oder "swing"
+    name: str = "dauerlaeufer"        # dauerlaeufer | swing | einzelschuss | kopierer
 
 
 @dataclass
@@ -82,6 +86,36 @@ class SwingConfig:
     partial_fraction: float = 0.5
     trail_atr: float = 2.0
     max_hold_minutes: int = 480
+    session_start_hour: int = 7
+    session_end_hour: int = 20
+    friday_cutoff_hour: int = 19
+
+
+@dataclass
+class EinzelschussConfig:
+    """Der Einzelschuss: zwei Order um eine Nachricht, eine wird gehandelt."""
+
+    trigger: str = "kalender"         # kalender | ausbruch
+    calendar: str = "news.json"       # bei trigger = "kalender"
+    impacts: list[str] = field(default_factory=lambda: ["hoch", "high"])
+    arm_seconds_before: int = 60      # so lange vor dem Termin steht der Kurs fest
+    offset_pips: float = 15.0         # Abstand der Order vom Referenzkurs
+    window_minutes: int = 5           # danach verfallen beide Order
+    prerange_minutes: int = 15        # Fenster für die Ruhe davor
+    max_prerange_pips: float = 60.0   # breiter: nicht handeln
+    stop_pips: float = 25.0
+    target_pips: float = 50.0
+    news_slippage_pips: float = 3.0   # Aufschlag auf den Fill bei der Nachricht
+    partial_r: float = 1.0
+    partial_fraction: float = 0.5
+    trail_atr: float = 2.0
+    max_hold_minutes: int = 60
+    max_events_per_day: int = 2
+    min_minutes_between: int = 30
+    tie_break: str = "pessimistic"    # pessimistic | skip
+    burst_atr: float = 3.0            # bei trigger = "ausbruch"
+    min_burst_pips: float = 30.0
+    atr_period: int = 14
     session_start_hour: int = 7
     session_end_hour: int = 20
     friday_cutoff_hour: int = 19
@@ -146,6 +180,7 @@ class Config:
     costs: CostConfig = field(default_factory=CostConfig)
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     swing: SwingConfig = field(default_factory=SwingConfig)
+    einzelschuss: EinzelschussConfig = field(default_factory=EinzelschussConfig)
     copy: CopyConfig = field(default_factory=CopyConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     data: DataConfig = field(default_factory=DataConfig)
@@ -178,6 +213,7 @@ class Config:
             costs=build(CostConfig, "costs"),
             strategy=build(StrategyConfig, "strategy"),
             swing=build(SwingConfig, "swing"),
+            einzelschuss=build(EinzelschussConfig, "einzelschuss"),
             copy=build(CopyConfig, "copy"),
             risk=build(RiskConfig, "risk"),
             data=build(DataConfig, "data"),
@@ -188,10 +224,11 @@ class Config:
 
     def validate(self) -> None:
         s, r, m = self.strategy, self.risk, self.market
-        if self.bot.name not in ("dauerlaeufer", "swing", "kopierer"):
+        if self.bot.name not in BOT_NAMES:
             raise ValueError(f"unbekannter Bot: {self.bot.name!r} "
-                             "(erlaubt: dauerlaeufer, swing, kopierer)")
+                             f"(erlaubt: {', '.join(BOT_NAMES)})")
         self._validate_swing()
+        self._validate_einzelschuss()
         self._validate_copy()
         if m.pip <= 0:
             raise ValueError("market.pip muss größer als 0 sein")
@@ -235,6 +272,42 @@ class Config:
         if not 0 <= w.session_start_hour < w.session_end_hour <= 24:
             raise ValueError("swing: die Handelszeit muss innerhalb eines Tages liegen")
 
+    def _validate_einzelschuss(self) -> None:
+        e = self.einzelschuss
+        if e.trigger not in ("kalender", "ausbruch"):
+            raise ValueError("einzelschuss.trigger muss kalender oder ausbruch sein")
+        if e.tie_break not in ("pessimistic", "skip"):
+            raise ValueError("einzelschuss.tie_break muss pessimistic oder skip sein")
+        if e.offset_pips <= 0:
+            raise ValueError("einzelschuss.offset_pips muss größer als 0 sein")
+        if e.stop_pips <= 0 or e.target_pips <= 0:
+            raise ValueError("einzelschuss: Stop und Ziel müssen größer als 0 sein")
+        if e.news_slippage_pips < 0:
+            raise ValueError("einzelschuss.news_slippage_pips darf nicht negativ sein")
+        if e.arm_seconds_before < 0:
+            raise ValueError("einzelschuss.arm_seconds_before darf nicht negativ sein")
+        if e.max_prerange_pips <= 0:
+            raise ValueError("einzelschuss.max_prerange_pips muss größer als 0 sein")
+        if e.burst_atr <= 0:
+            raise ValueError("einzelschuss.burst_atr muss größer als 0 sein")
+        if not 0 <= e.partial_fraction < 1:
+            raise ValueError("einzelschuss.partial_fraction muss zwischen 0 und 1 liegen")
+        if e.partial_r <= 0:
+            raise ValueError("einzelschuss.partial_r muss größer als 0 sein")
+        if e.max_events_per_day < 1:
+            raise ValueError("einzelschuss.max_events_per_day muss mindestens 1 sein")
+        if e.min_minutes_between < 0:
+            raise ValueError("einzelschuss.min_minutes_between darf nicht negativ sein")
+        for name in ("window_minutes", "prerange_minutes", "max_hold_minutes",
+                     "atr_period"):
+            if getattr(e, name) < 1:
+                raise ValueError(f"einzelschuss.{name} muss mindestens 1 sein")
+        if not 0 <= e.session_start_hour < e.session_end_hour <= 24:
+            raise ValueError("einzelschuss: die Handelszeit muss innerhalb eines Tages liegen")
+        if self.bot.name == "einzelschuss" and e.trigger == "kalender" and not e.calendar:
+            raise ValueError('einzelschuss.trigger ist "kalender", '
+                             "aber einzelschuss.calendar ist leer")
+
     def _validate_copy(self) -> None:
         c = self.copy
         if c.source not in ("file", "http"):
@@ -267,6 +340,7 @@ class Config:
             "costs": asdict(self.costs),
             "strategy": asdict(self.strategy),
             "swing": asdict(self.swing),
+            "einzelschuss": asdict(self.einzelschuss),
             "copy": asdict(self.copy),
             "risk": asdict(self.risk),
         }

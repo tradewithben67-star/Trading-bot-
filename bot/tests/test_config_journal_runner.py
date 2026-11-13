@@ -70,6 +70,48 @@ class TestConfig(unittest.TestCase):
             Config.load("gibt-es-nicht.toml")
 
 
+class TestBeispielkonfiguration(unittest.TestCase):
+    """Die Beispieldatei ist der erste Schritt im Schnellstart. Wenn sie sich
+    nicht lesen lässt, scheitert jeder Einstieg an Zeile eins."""
+
+    datei = Path(__file__).resolve().parents[1] / "config.example.toml"
+
+    def test_the_example_config_can_be_read(self):
+        cfg = Config.load(self.datei)
+        self.assertEqual(cfg.bot.name, "dauerlaeufer")
+
+    def test_it_holds_a_section_for_every_bot(self):
+        import tomllib
+
+        with self.datei.open("rb") as fh:
+            roh = tomllib.load(fh)
+        for abschnitt in ("bot", "market", "costs", "strategy", "swing",
+                          "einzelschuss", "copy", "risk", "data", "live"):
+            self.assertIn(abschnitt, roh)
+
+    def test_every_bot_validates_against_it(self):
+        from bengx_bot.config import BOT_NAMES
+
+        for name in BOT_NAMES:
+            with self.subTest(bot=name):
+                cfg = Config.load(self.datei)
+                cfg.bot.name = name
+                cfg.validate()
+
+    def test_the_values_match_the_defaults_in_the_code(self):
+        """Sonst erklärt die Beispieldatei etwas anderes als der Bot tut."""
+        import tomllib
+        from dataclasses import asdict
+
+        with self.datei.open("rb") as fh:
+            roh = tomllib.load(fh)
+        standard = asdict(Config())
+        for abschnitt, werte in roh.items():
+            for schluessel, wert in werte.items():
+                with self.subTest(wo=f"{abschnitt}.{schluessel}"):
+                    self.assertEqual(standard[abschnitt][schluessel], wert)
+
+
 class TestJournal(unittest.TestCase):
     def test_roundtrip(self):
         with tempfile.TemporaryDirectory() as d:

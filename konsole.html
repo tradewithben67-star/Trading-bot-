@@ -208,6 +208,14 @@ pre b{color:var(--fg);font-weight:500}
       max_stop_pips: 250, target_mode: "r", target_r: 3, partial_r: 1.5,
       partial_fraction: 0.5, trail_atr: 2, max_hold_minutes: 480,
       session_start_hour: 7, session_end_hour: 20, friday_cutoff_hour: 19},
+    einzelschuss: {trigger: "kalender", calendar: "news.json",
+      impacts: ["hoch", "high"], arm_seconds_before: 60, offset_pips: 15,
+      window_minutes: 5, prerange_minutes: 15, max_prerange_pips: 60,
+      stop_pips: 25, target_pips: 50, news_slippage_pips: 3, partial_r: 1,
+      partial_fraction: 0.5, trail_atr: 2, max_hold_minutes: 60,
+      max_events_per_day: 2, min_minutes_between: 30, tie_break: "pessimistic",
+      burst_atr: 3, min_burst_pips: 30, atr_period: 14,
+      session_start_hour: 7, session_end_hour: 20, friday_cutoff_hour: 19},
     copy: {source: "file", path: "../signals.json", url: "", timeout_seconds: 10,
       entry_mode: "limit", max_slippage_pips: 30, max_age_minutes: 30,
       follow_stop: true, follow_target: true, fallback_stop_atr: 2,
@@ -229,7 +237,10 @@ pre b{color:var(--fg);font-weight:500}
     {id: "swing", n: "02", t: "Swing",
      d: "1h-Sweep, 5m-Fortsetzung, 1m-Einstieg", section: "swing",
      tf: "Minutenkerzen", csv: "data/xauusd_m1.csv"},
-    {id: "kopierer", n: "03", t: "Signal-Kopierer",
+    {id: "einzelschuss", n: "03", t: "Einzelschuss",
+     d: "zwei Order um eine Nachricht, eine wird gehandelt", section: "einzelschuss",
+     tf: "Minutenkerzen", csv: "data/xauusd_m1.csv"},
+    {id: "kopierer", n: "04", t: "Signal-Kopierer",
      d: "spiegelt Bens Signale", section: "copy",
      tf: "beliebig", csv: "data/xauusd_h1.csv"}
   ];
@@ -250,6 +261,10 @@ pre b{color:var(--fg);font-weight:500}
   }
   function flag(key, label, help){
     return {key: key, label: label, help: help, type: "bool"};
+  }
+  function list(key, label, help){
+    // Eine Liste von Wörtern, mit Komma getrennt eingegeben.
+    return {key: key, label: label, help: help, type: "text", list: true, wide: true};
   }
 
   var GROUPS = {
@@ -359,6 +374,52 @@ pre b{color:var(--fg);font-weight:500}
         num("friday_cutoff_hour", "Freitags bis", "Danach wird glattgestellt.", {min: 0, max: 24, unit: "Uhr"})
        ]}
     ],
+    einzelschuss: [
+      {t: "Woher der Termin kommt", tag: "Auslöser",
+       note: "Mit Kalender werden Termine aus einer Datei gehandelt. Ohne Kalender gilt eine Kerze, die aus der Ruhe ausbricht, selbst als Ereignis.",
+       f: [
+        pick("trigger", "Auslöser", "Kalender braucht eine gepflegte Datei, Ausbruch nicht.", [
+          ["kalender", "Kalender — Termine aus einer Datei"],
+          ["ausbruch", "Ausbruch — die Kerze ist selbst das Ereignis"]]),
+        txt("calendar", "Kalenderdatei", "JSON mit den Terminen, neben dem Bot. news.example.json zeigt das Format."),
+        list("impacts", "Wichtigkeit", "Nur Termine mit dieser Wichtigkeit werden gehandelt. Mit Komma trennen, z. B. hoch, high."),
+        num("arm_seconds_before", "Scharf ab", "So lange vor dem Termin steht der Referenzkurs fest.", {min: 0, max: 3600, unit: "Sekunden"}),
+        num("burst_atr", "Ausbruch ab", "Nur ohne Kalender: Spanne der Kerze als Vielfaches des ATR.", {min: 0.1, max: 50, step: 0.1, unit: "× ATR"}),
+        num("min_burst_pips", "und mindestens", "Nur ohne Kalender: darunter zählt die Kerze nicht als Ereignis.", {min: 0, max: 10000, unit: "Pips"}),
+        num("atr_period", "ATR-Länge", "Fenster für die Volatilitätsmessung.", {min: 2, max: 200})
+       ]},
+      {t: "Die zwei Order", tag: "Straddle",
+       note: "Eine Order über dem Kurs, eine darunter. Die erste, die berührt wird, wird gehandelt — die andere verfällt im selben Augenblick.",
+       f: [
+        num("offset_pips", "Abstand", "Wie weit die Order vom Referenzkurs weg liegen. Enger = öfter ausgelöst, auch vom Rauschen.", {min: 0.1, max: 10000, step: 0.5, unit: "Pips"}),
+        num("window_minutes", "Frist", "Wird in dieser Zeit keine Seite berührt, verfallen beide Order.", {min: 1, max: 2000, unit: "Minuten"}),
+        num("prerange_minutes", "Ruhe prüfen über", "Fenster vor dem Termin, in dem der Markt ruhig sein muss.", {min: 1, max: 2000, unit: "Minuten"}),
+        num("max_prerange_pips", "Spanne höchstens", "Hat sich der Kurs vorher schon bewegt, wird nicht gehandelt.", {min: 0.1, max: 100000, unit: "Pips"}),
+        pick("tie_break", "Beide in einer Minute", "Aus Kerzendaten ist nicht zu erkennen, welche Seite zuerst kam.", [
+          ["pessimistic", "Ungünstig annehmen — die Seite gegen die Kerze"],
+          ["skip", "Termin auslassen"]])
+       ]},
+      {t: "Nach dem Einstieg", tag: "Ausstieg",
+       note: "Stop und Ziel stehen in Pips, nicht in ATR: bei einer Nachricht geht es um die ersten Minuten, nicht um die Tagesvolatilität.",
+       f: [
+        num("stop_pips", "Stop", "Abstand von der Orderstufe.", {min: 0.1, max: 100000, unit: "Pips"}),
+        num("target_pips", "Ziel", "Abstand von der Orderstufe.", {min: 0.1, max: 100000, unit: "Pips"}),
+        num("news_slippage_pips", "Aufschlag beim Fill", "Bei einer Nachricht füllt keine Stop-Order zum Wunschkurs. Lieber zu hoch ansetzen als zu niedrig.", {min: 0, max: 10000, step: 0.5, unit: "Pips"}),
+        num("partial_r", "Teilziel bei", "Dort geht ein Teil raus und der Stop wandert auf Einstand.", {min: 0.1, max: 20, step: 0.1, unit: "R"}),
+        num("partial_fraction", "Davon raus", "0 % ist der reine Einzeltrade — dann wandert der Stop aber auch nicht auf Einstand.", {min: 0, max: 99, unit: "%", pct: true}),
+        num("trail_atr", "Trailing", "Greift erst nach dem Teilziel.", {min: 0.1, max: 20, step: 0.1, unit: "× ATR"}),
+        num("max_hold_minutes", "Haltedauer", "Eine Nachricht ist nach einer Stunde erledigt.", {min: 1, max: 100000, unit: "Minuten"})
+       ]},
+      {t: "Grenzen und Handelszeit", tag: "Fenster",
+       note: "Alle Zeiten in UTC. Deutsche Winterzeit ist UTC+1, Sommerzeit UTC+2.",
+       f: [
+        num("max_events_per_day", "Termine am Tag", "Mehr Termine werden übergangen.", {min: 1, max: 50}),
+        num("min_minutes_between", "Abstand", "Mindestabstand zwischen zwei Trades.", {min: 0, max: 10000, unit: "Minuten"}),
+        num("session_start_hour", "Von", "Londoner Eröffnung liegt bei 07:00 UTC.", {min: 0, max: 23, unit: "Uhr"}),
+        num("session_end_hour", "Bis", "New Yorker Nachmittag endet gegen 20:00 UTC.", {min: 1, max: 24, unit: "Uhr"}),
+        num("friday_cutoff_hour", "Freitags bis", "Danach wird glattgestellt.", {min: 0, max: 24, unit: "Uhr"})
+       ]}
+    ],
     risk: [
       {t: "Risiko und Konto", tag: "Steht über allem",
        note: "Diese Grenzen kann keine Strategie umgehen. Sie gelten für jeden Bot.",
@@ -421,7 +482,13 @@ pre b{color:var(--fg);font-weight:500}
 
   function clone(o){ return JSON.parse(JSON.stringify(o)); }
   function get(sec, key){ return values[sec][key]; }
-  function isDefault(sec, key){ return values[sec][key] === DEFAULTS[sec][key]; }
+  function isDefault(sec, key){
+    var a = values[sec][key], b = DEFAULTS[sec][key];
+    // Zwei Listen mit gleichem Inhalt sind nie dasselbe Objekt — sonst stünde
+    // bei jeder Liste „geändert“, auch wenn niemand sie angefasst hat.
+    if (Array.isArray(a) || Array.isArray(b)) return JSON.stringify(a) === JSON.stringify(b);
+    return a === b;
+  }
   function current(){ return BOTS.filter(function(b){ return b.id === values.bot.name; })[0]; }
 
   function de(n, digits){
@@ -429,6 +496,7 @@ pre b{color:var(--fg);font-weight:500}
     return n.toLocaleString("de-DE", {maximumFractionDigits: digits === undefined ? 4 : digits});
   }
   function toml(n){
+    if (Array.isArray(n)) return "[" + n.map(toml).join(", ") + "]";
     if (typeof n === "boolean") return n ? "true" : "false";
     if (typeof n === "number") return Number.isInteger(n) ? String(n) : String(n);
     return '"' + String(n).replace(/"/g, '\\"') + '"';
@@ -437,7 +505,8 @@ pre b{color:var(--fg);font-weight:500}
   /* ---------------- Prüfung, wie im Bot ---------------- */
   function validate(){
     var e = {}, m = values.market, r = values.risk, s = values.strategy,
-        w = values.swing, c = values.copy, bot = values.bot.name;
+        w = values.swing, c = values.copy, x = values.einzelschuss,
+        bot = values.bot.name;
 
     function bad(sec, key, text){ e[sec + "." + key] = text; }
 
@@ -478,6 +547,36 @@ pre b{color:var(--fg);font-weight:500}
       bad("swing", "session_end_hour", "„Bis“ muss nach „Von“ liegen");
     if (!(w.partial_fraction >= 0 && w.partial_fraction < 1))
       bad("swing", "partial_fraction", "muss unter 100 % liegen");
+
+    if (["kalender", "ausbruch"].indexOf(x.trigger) < 0)
+      bad("einzelschuss", "trigger", "unbekannt");
+    if (["pessimistic", "skip"].indexOf(x.tie_break) < 0)
+      bad("einzelschuss", "tie_break", "unbekannt");
+    if (!(x.offset_pips > 0)) bad("einzelschuss", "offset_pips", "muss größer als 0 sein");
+    if (!(x.stop_pips > 0)) bad("einzelschuss", "stop_pips", "muss größer als 0 sein");
+    if (!(x.target_pips > 0)) bad("einzelschuss", "target_pips", "muss größer als 0 sein");
+    if (x.news_slippage_pips < 0)
+      bad("einzelschuss", "news_slippage_pips", "darf nicht negativ sein");
+    if (x.arm_seconds_before < 0)
+      bad("einzelschuss", "arm_seconds_before", "darf nicht negativ sein");
+    if (!(x.max_prerange_pips > 0))
+      bad("einzelschuss", "max_prerange_pips", "muss größer als 0 sein");
+    if (!(x.burst_atr > 0)) bad("einzelschuss", "burst_atr", "muss größer als 0 sein");
+    if (!(x.partial_fraction >= 0 && x.partial_fraction < 1))
+      bad("einzelschuss", "partial_fraction", "muss unter 100 % liegen");
+    if (!(x.partial_r > 0)) bad("einzelschuss", "partial_r", "muss größer als 0 sein");
+    if (x.max_events_per_day < 1) bad("einzelschuss", "max_events_per_day", "mindestens 1");
+    if (x.min_minutes_between < 0)
+      bad("einzelschuss", "min_minutes_between", "darf nicht negativ sein");
+    if (x.window_minutes < 1) bad("einzelschuss", "window_minutes", "mindestens 1");
+    if (x.prerange_minutes < 1) bad("einzelschuss", "prerange_minutes", "mindestens 1");
+    if (x.max_hold_minutes < 1) bad("einzelschuss", "max_hold_minutes", "mindestens 1");
+    if (x.atr_period < 1) bad("einzelschuss", "atr_period", "mindestens 1");
+    if (!(x.session_start_hour >= 0 && x.session_start_hour < x.session_end_hour
+          && x.session_end_hour <= 24))
+      bad("einzelschuss", "session_end_hour", "„Bis“ muss nach „Von“ liegen");
+    if (bot === "einzelschuss" && x.trigger === "kalender" && !String(x.calendar).trim())
+      bad("einzelschuss", "calendar", "wird bei Auslöser „Kalender“ gebraucht");
 
     if (["file", "http"].indexOf(c.source) < 0) bad("copy", "source", "unbekannt");
     if (["limit", "market"].indexOf(c.entry_mode) < 0) bad("copy", "entry_mode", "unbekannt");
@@ -580,6 +679,51 @@ pre b{color:var(--fg);font-weight:500}
       "  Haltedauer    höchstens " + w.max_hold_minutes + " Minuten\n" +
       "  Handelszeit   " + pad(w.session_start_hour) + ":00 bis " + pad(w.session_end_hour) + ":00 UTC, freitags bis " + pad(w.friday_cutoff_hour) + ":00\n" +
       "\nBraucht Minutenkerzen. 5m und 1h rechnet er selbst daraus.\n" + risk;
+    }
+    if (b.id === "einzelschuss"){
+      var x = values.einzelschuss;
+      var termin = x.trigger === "ausbruch"
+        ? "  Termin        ohne Kalender: eine Minutenkerze, deren Spanne\n" +
+          "                " + de(x.burst_atr) + " × ATR(" + x.atr_period + ") erreicht und mindestens\n" +
+          "                " + de(x.min_burst_pips) + " Pips misst\n" +
+          "  Stufen        über dem Hoch und unter dem Tief dieser Kerze,\n" +
+          "                je " + de(x.offset_pips) + " Pips Abstand\n"
+        : "  Termin        aus " + (x.calendar || "— noch keine Datei eingetragen —") + "\n" +
+          "  Referenz      Schluss der letzten Kerze, die " + x.arm_seconds_before + " s vor dem\n" +
+          "                Termin fertig ist\n" +
+          "  Stufen        " + de(x.offset_pips) + " Pips über und unter der Referenz\n" +
+          "  Ruhe davor    Spanne der letzten " + x.prerange_minutes + " Minuten\n" +
+          "                höchstens " + de(x.max_prerange_pips) + " Pips\n";
+      return head +
+      "Zwei Order um eine Nachricht. Eine wird gehandelt, die andere gestrichen.\n\n" +
+      termin +
+      "  Einzelschuss  die erste Seite, die berührt wird, wird gehandelt;\n" +
+      "                die andere Order verfällt im selben Augenblick\n" +
+      "  Frist         " + x.window_minutes + " Minuten; wird keine Seite berührt,\n" +
+      "                verfallen beide\n" +
+      "  Mehrdeutig    beide Seiten in einer Minute:\n" +
+      "                " + (x.tie_break === "pessimistic"
+          ? "die Seite gegen die Kerze — die in den Stop läuft"
+          : "Termin auslassen") + "\n" +
+      "\nNach dem Einstieg:\n" +
+      "  Fill          Orderstufe plus " + de(x.news_slippage_pips) + " Pips Aufschlag\n" +
+      "  Stop          " + de(x.stop_pips) + " Pips von der Orderstufe\n" +
+      "  Ziel          " + de(x.target_pips) + " Pips von der Orderstufe\n" +
+      (x.partial_fraction > 0
+        ? "  Teilziel      " + de(x.partial_r) + " R, dort " + pct(x.partial_fraction, 0) + " raus, Rest auf Einstand\n"
+        : "  Teilziel      keins — kein Teilverkauf, damit auch kein Einstand-Stop\n") +
+      "  Trailing      " + de(x.trail_atr) + " × ATR, nur enger\n" +
+      "  Haltedauer    höchstens " + x.max_hold_minutes + " Minuten\n" +
+      "  Handelszeit   " + pad(x.session_start_hour) + ":00 bis " + pad(x.session_end_hour) + ":00 UTC,\n" +
+      "                freitags bis " + pad(x.friday_cutoff_hour) + ":00\n" +
+      "\nWas dieser Bot nicht tut:\n" +
+      "  Kein Nachkaufen, kein Netz, keine Verdopplung nach einem Verlust.\n" +
+      "  Pro Termin ein Trade, auch wenn er sofort in den Stop läuft.\n" +
+      "  Es gibt kein zweites Mal — daher der Name.\n" +
+      "\nGrenzen:\n" +
+      "  Termine       höchstens " + x.max_events_per_day + " am Tag\n" +
+      "  Abstand       mindestens " + x.min_minutes_between + " Minuten zwischen Trades\n" +
+      "\nBraucht Minutenkerzen.\n" + risk;
     }
     var c = values.copy;
     return head +
@@ -718,13 +862,18 @@ pre b{color:var(--fg);font-weight:500}
         input.value = f.pct ? round(v * 100, 4) : v;
       } else {
         input.type = "text";
-        input.value = get(sec, f.key);
+        var t = get(sec, f.key);
+        input.value = f.list && Array.isArray(t) ? t.join(", ") : t;
       }
       input.addEventListener("input", function(){
         if (f.type === "number"){
           var n = parseFloat(input.value.replace(",", "."));
           if (!isFinite(n)) return;
           values[sec][f.key] = f.pct ? round(n / 100, 8) : n;
+        } else if (f.list){
+          values[sec][f.key] = input.value.split(",")
+            .map(function(w){ return w.trim(); })
+            .filter(function(w){ return w.length > 0; });
         } else {
           values[sec][f.key] = input.value;
         }

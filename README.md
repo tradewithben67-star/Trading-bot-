@@ -14,7 +14,7 @@ per Klick oder indem man den Buchstaben auf der Tastatur drückt:
 | **E** | Entdecken | Lernen: Grundlagen, Risiko, Praxis |
 | **N** | Neue Mitglieder | Einstieg in drei Schritten, Konto bei Tradequo |
 | **G** | Signale | Das neueste Signal, Winrate und Pips von heute, dahinter die Historie |
-| **X** | Bots | Drei Bots zur Auswahl, einzeln oder mehrere zugleich |
+| **X** | Bots | Vier Bots zur Auswahl, einzeln oder mehrere zugleich |
 
 Dazu kommt ein sechster, **nicht öffentlicher** Abschnitt: der **Assistent**
 (Taste `a` oder der Eintrag im Fuß). Er erscheint nur, wenn die Seite erkennt,
@@ -30,9 +30,10 @@ unten rechts führt eine Weiter-Zeile zum nächsten.
 | Datei | Zweck |
 | --- | --- |
 | `index.html` | Die komplette Seite: Markup, CSS und JavaScript inline |
-| `konsole.html` | Bot-Konsole: Einstellungen für die drei Bots, erzeugt die `config.toml` |
+| `konsole.html` | Bot-Konsole: Einstellungen für die vier Bots, erzeugt die `config.toml` |
 | `media/` | Mediendateien, u. a. das Vorstellungsvideo |
 | `signals.json` | Die Signale für die Fassung auf dem eigenen Server |
+| `bot/news.example.json` | Die Termine für den Einzelschuss — kopieren als `news.json` |
 | `bot/` | Der Dauerläufer: der Handelsbot als lauffähiges Python-Programm |
 
 ## Signale (G)
@@ -94,21 +95,22 @@ die Seite öffentlich geteilt wird.
 
 ## Bots (X)
 
-Drei Bots stehen zur Auswahl:
+Vier Bots stehen zur Auswahl:
 
 | Bot | Arbeitsweise |
 | --- | --- |
 | Signal-Kopierer | Spiegelt jedes Signal aus **G**, mit eigener Positionsgröße — **gebaut, liegt unter `bot/`** |
 | Dauerläufer | Trendfolge auf Stundenkerzen — **gebaut, liegt unter `bot/`** |
 | Swing | 1h-Liquiditäts-Sweep, 5m-Fortsetzung, Einstieg in die 1m-Lücke — **gebaut, liegt unter `bot/`** |
+| Einzelschuss | Zwei Order um einen Nachrichtentermin, eine davon wird gehandelt — **gebaut, liegt unter `bot/`** |
 
 Wer die Seite besucht, kann einen nehmen oder mehrere. Die Auswahl merkt sich die Seite: angemeldet
 im eigenen, privaten Bereich des Datenspeichers (den sonst niemand sieht, auch der
 Inhaber nicht), sonst im Browser des Besuchers.
 
-Alle drei Bots sind fertig gebaut und liegen als Python-Programm unter
-[`bot/`](bot/README.md): drei Regelwerke auf gemeinsamer Maschine, dazu
-Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 237 Tests.
+Alle vier Bots sind fertig gebaut und liegen als Python-Programm unter
+[`bot/`](bot/README.md): vier Regelwerke auf gemeinsamer Maschine, dazu
+Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 368 Tests.
 
 Dort liegt auch der **Telegram-Assistent**: ein Bot, dem man normal schreibt —
 keine Befehle. Er liest die echten Zahlen aus dem Protokoll, sieht sich Bilder
@@ -139,7 +141,7 @@ Für eine eigene Domain eine Datei `CNAME` mit der Domain ins Wurzelverzeichnis 
 
 ## Bot-Konsole
 
-`konsole.html` ist eine eigene Seite, auf der sich die drei Bots einstellen
+`konsole.html` ist eine eigene Seite, auf der sich die vier Bots einstellen
 lassen: jeder Wert mit Erklärung, Einheit und Standardwert, dieselben Grenzen
 wie im Bot selbst, und daneben zwei Ansichten, die live mitlaufen — das
 Regelwerk in Klartext und die fertige `config.toml` zum Kopieren.

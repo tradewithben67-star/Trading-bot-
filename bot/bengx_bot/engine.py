@@ -26,9 +26,13 @@ class TradeEngine:
         self.rejections: dict[str, int] = {}
 
     # ---- Ausstiege -----------------------------------------------------
-    def _trail_for(self, pos: Position, atr: float) -> float:
-        """Nachgezogener Stop im Abstand von `trail_atr` ATR vom Extrem."""
-        d = self.cfg.strategy.trail_atr * atr
+    def _trail_for(self, pos: Position, atr: float, trail_atr: float) -> float:
+        """Nachgezogener Stop im Abstand von `trail_atr` ATR vom Extrem.
+
+        Der Abstand kommt aus den Ausstiegsregeln des Bots, der gerade läuft —
+        jeder Bot hat seinen eigenen.
+        """
+        d = trail_atr * atr
         if pos.side is Side.LONG:
             return pos.high_water - d
         return pos.low_water + d
@@ -40,7 +44,8 @@ class TradeEngine:
         p = self.strategy.exit_rules()
 
         for pos in list(self.broker.positions):
-            if pos.opened_bar >= i:          # in dieser Kerze erst eröffnet
+            frisch = pos.opened_bar >= i     # in dieser Kerze erst eröffnet
+            if frisch and not (p.stop_on_entry_bar and pos.opened_bar == i):
                 continue
             pos.mark(candle.high, candle.low)
             long = pos.side is Side.LONG
@@ -53,6 +58,12 @@ class TradeEngine:
                 reason = ExitReason.TRAIL if pos.partial_done else ExitReason.STOP
                 trade = self.broker.close(pos, pos.stop, candle.ts, reason)
                 closed.append(trade)
+                continue
+
+            # In der Eröffnungskerze endet die Prüfung hier: ob Ziel oder
+            # Trailing vor oder nach dem Einstieg lagen, ist aus einer Kerze
+            # nicht zu lesen. Der Stop wird angenommen, der Gewinn nicht.
+            if frisch:
                 continue
 
             # 2. Teilziel: die Hälfte raus, Rest auf Einstand absichern.
@@ -84,7 +95,7 @@ class TradeEngine:
 
             # 5. Stop nachziehen, sobald das Teilziel gelaufen ist.
             if pos.partial_done and atr:
-                trail = self._trail_for(pos, float(atr))
+                trail = self._trail_for(pos, float(atr), p.trail_atr)
                 pos.stop = max(pos.stop, trail) if long else min(pos.stop, trail)
 
             # 6. Zeitstop: was sich nach N Kerzen nicht bewegt hat, blockiert nur Kapital.

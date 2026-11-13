@@ -1141,7 +1141,7 @@ a{color:var(--fg)}
     <section class="panel" id="p-xaubot" data-panel="xaubot">
       <header class="phead">
         <h2 class="gilt">Bots</h2>
-        <p class="lead">Drei Bots, drei Arbeitsweisen. Nimm einen — oder lass mehrere gleichzeitig laufen.</p>
+        <p class="lead">Vier Bots, vier Arbeitsweisen. Nimm einen — oder lass mehrere gleichzeitig laufen.</p>
       </header>
       <div class="rule"></div>
 
@@ -1215,6 +1215,30 @@ a{color:var(--fg)}
 
           <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
         </article>
+
+        <article class="bot" data-bot="einzel" data-on="false">
+          <div class="bot__kopf">
+            <span class="bot__n">04</span>
+            <h3 class="bot__name">Einzelschuss</h3>
+          </div>
+          <p class="bot__satz">Legt vor einer Nachricht zwei Order, über und unter den Kurs. Die erste, die ausgelöst wird, ist der Trade — die andere verfällt.</p>
+
+          <div class="bot__spec">
+              <div><p class="k">Auslöser</p><p class="v">Termin aus dem Kalender</p></div>
+              <div><p class="k">Abstand</p><p class="v">15 Pips</p></div>
+              <div><p class="k">Stop / Ziel</p><p class="v">25 / 50 Pips</p></div>
+              <div><p class="k">Frist</p><p class="v">5 Minuten</p></div>
+          </div>
+
+          <details class="bot__regeln">
+            <summary>Regelwerk</summary>
+            <p>Eine Minute vor dem Termin steht der Referenzkurs fest. Darüber und darunter liegt je eine Order, 15 Pips entfernt. Kommt die Zahl und der Kurs springt, wird die erste berührte Seite gehandelt und die andere im selben Augenblick gestrichen. Berührt der Kurs in fünf Minuten keine der beiden, verfallen beide und der Termin ist vorbei.</p>
+            <p>War der Markt schon vor der Nachricht in Bewegung, wird gar nicht erst gehandelt: eine laufende Bewegung sägt die beiden Order auseinander, bevor die Zahl da ist.</p>
+            <p>Das Wichtigste ist, was er <b>nicht</b> tut. Kein Nachkaufen, kein Netz, keine Verdopplung nach einem Verlust. Pro Termin gibt es einen Trade, auch wenn er sofort in den Stop läuft. Es gibt kein zweites Mal — daher der Name.</p>
+          </details>
+
+          <button class="btn btn--plain pick" type="button" aria-pressed="false">Auswählen</button>
+        </article>
       </div>
 
       <div class="lead" id="lead" hidden>
@@ -1232,7 +1256,7 @@ a{color:var(--fg)}
         </div>
       </div>
 
-      <p class="note">Alle drei Bots sind gebaut und getestet und laufen auf dem Papierkonto. Echtes Geld fassen sie erst an, wenn das Regelwerk über echte Golddaten nachgerechnet und ein Broker angebunden ist — beides erzwingen die Bots selbst. Keine Anlageberatung; der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
+      <p class="note">Alle vier Bots sind gebaut und getestet und laufen auf dem Papierkonto. Echtes Geld fassen sie erst an, wenn das Regelwerk über echte Golddaten nachgerechnet und ein Broker angebunden ist — beides erzwingen die Bots selbst. Keine Anlageberatung; der Handel mit Gold und Hebelprodukten kann zum Totalverlust führen.</p>
     </section>
 
     <section class="panel" id="p-assistent" data-panel="assistent" hidden>
@@ -2054,7 +2078,7 @@ a{color:var(--fg)}
      jeder Besucher auslesen und den Bot uebernehmen. */
   var MELDESTELLE="";
 
-  var NAMEN={copy:"Signal-Kopierer",auto:"Dauerläufer",swing:"Swing"};
+  var NAMEN={copy:"Signal-Kopierer",auto:"Dauerläufer",swing:"Swing",einzel:"Einzelschuss"};
   var GEMELDET="bengx.gemeldet";
   var kasten=document.getElementById("lead");
   var stand=document.getElementById("lead-state");
@@ -2511,7 +2535,7 @@ a{color:var(--fg)}
     "Ausrufezeichen. Kurz, wenn die Frage kurz ist.\n\n" +
     "Zu dieser Seite gehören: B Ben, E Entdecken (Lernen), N Neue Mitglieder, " +
     "G Signale (das neueste Signal, Zahlen von heute, Historie) und X Bots " +
-    "(Signal-Kopierer, Dauerläufer, Swing). Die Bots liegen als Python-Programm im " +
+    "(Signal-Kopierer, Dauerläufer, Swing, Einzelschuss). Die Bots liegen als Python-Programm im " +
     "Repository und handeln bisher nur auf dem Papierkonto.\n\n" +
     "WERKZEUGE: Für jede Frage nach Zahlen, Signalen, Stand oder Aufgaben benutzt du " +
     "die Werkzeuge. Erfinde niemals eine Zahl und schätze nicht. Hast du keine Daten, " +

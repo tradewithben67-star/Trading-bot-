@@ -1,0 +1,19 @@
+{
+  "_hinweis": [
+    "Die Termine für den Einzelschuss-Bot. Kopieren als news.json.",
+    "Zeiten in UTC, ISO-8601. Ein Z am Ende ist erlaubt, eine Zeit ohne",
+    "Zeitzone wird als UTC gelesen.",
+    "impact: 'hoch' oder 'high' wird gehandelt, alles andere übergangen —",
+    "welche Werte zählen, steht in der Konfiguration unter impacts.",
+    "name ist frei und taucht im Protokoll und in der Begründung auf.",
+    "Die üblichen Termine für Gold: CPI, PPI, NFP, FOMC, Jobless Claims.",
+    "Bei trigger = 'ausbruch' braucht der Bot diese Datei nicht."
+  ],
+  "events": [
+    { "time": "2026-11-13T13:30:00Z", "name": "CPI", "impact": "hoch" },
+    { "time": "2026-11-18T13:30:00Z", "name": "PPI", "impact": "hoch" },
+    { "time": "2026-11-20T13:30:00Z", "name": "Jobless Claims", "impact": "mittel" },
+    { "time": "2026-12-04T13:30:00Z", "name": "NFP", "impact": "hoch" },
+    { "time": "2026-12-09T19:00:00Z", "name": "FOMC", "impact": "hoch" }
+  ]
+}

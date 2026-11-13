@@ -11,12 +11,14 @@
     python -m bengx_bot pruefen                   prüft Token, Schlüssel und Modelle
     python -m bengx_bot rules                     das Regelwerk im Klartext
     python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
+    python -m bengx_bot --bot einzelschuss rules  das Regelwerk des Einzelschuss
     python -m bengx_bot --bot kopierer rules      das Regelwerk des Kopierers
 
 Welcher Bot läuft, steht in der Konfiguration unter [bot] name und lässt sich
 mit --bot überschreiben. Der Dauerläufer arbeitet auf Stundenkerzen, der
-Swing-Bot auf Minutenkerzen, aus denen er 5m und 1h selbst rechnet, und der
-Kopierer spiegelt fremde Signale aus einer signals.json.
+Swing-Bot auf Minutenkerzen, aus denen er 5m und 1h selbst rechnet, der
+Einzelschuss legt Minutenkerzen um einen Nachrichtentermin, und der Kopierer
+spiegelt fremde Signale aus einer signals.json.
 """
 
 from __future__ import annotations
@@ -28,7 +30,7 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .backtest import run_backtest
-from .config import Config
+from .config import BOT_NAMES, Config
 from .data import load_csv, synthetic
 from .journal import Journal, signals_payload, stats, write_signals
 from .runner import LiveGateError, Runner, backtest_path
@@ -166,6 +168,67 @@ Risiko (steht über der Strategie):
 Der Swing-Bot braucht Minutenkerzen: 5m und 1h rechnet er selbst daraus.""")
 
 
+def _rules_einzelschuss(cfg: Config) -> str:
+    e, r = cfg.einzelschuss, cfg.risk
+    if e.trigger == "ausbruch":
+        termin = (f"""  Termin       ohne Kalender: eine Minutenkerze, deren Spanne
+               {e.burst_atr:g} × ATR({e.atr_period}) erreicht und mindestens
+               {e.min_burst_pips:g} Pips misst, ist selbst das Ereignis
+  Stufen       über dem Hoch und unter dem Tief dieser Kerze,
+               je {e.offset_pips:g} Pips Abstand""")
+    else:
+        termin = (f"""  Termin       aus {e.calendar}, Wichtigkeit: {", ".join(e.impacts) or "alle"}
+  Referenz     Schluss der letzten Kerze, die {e.arm_seconds_before} s vor dem
+               Termin fertig ist
+  Stufen       {e.offset_pips:g} Pips über und unter der Referenz
+  Ruhe davor   Spanne der letzten {e.prerange_minutes} Minuten höchstens
+               {e.max_prerange_pips:g} Pips — sonst wird nicht gehandelt""")
+
+    return (f"""Einzelschuss — Regelwerk {cfg.fingerprint()}
+
+Zwei Order um eine Nachricht. Eine wird gehandelt, die andere gestrichen.
+
+{termin}
+
+  Einzelschuss die erste Seite, die berührt wird, wird gehandelt; die andere
+               Order verfällt im selben Augenblick
+  Frist        {e.window_minutes} Minuten nach dem Termin; wird keine Seite
+               berührt, verfallen beide
+  Mehrdeutig   beide Seiten in einer Minute: {"ungünstige Annahme — gehandelt wird die Seite gegen die Kerze" if e.tie_break == "pessimistic" else "Termin wird ausgelassen"}
+
+Nach dem Einstieg:
+  Fill         Orderstufe plus {e.news_slippage_pips:g} Pips Aufschlag — bei einer
+               Nachricht füllt keine Stop-Order zum Wunschkurs
+  Stop         {e.stop_pips:g} Pips von der Orderstufe
+  Ziel         {e.target_pips:g} Pips von der Orderstufe
+  {"Teilziel     " + format(e.partial_r, "g") + " R, dort " + format(e.partial_fraction, ".0%") + " raus, Rest auf Einstand" if e.partial_fraction > 0 else "Teilziel     keins — kein Teilverkauf, damit auch kein Einstand-Stop"}
+  Trailing     {e.trail_atr:g} × ATR, nur enger
+  Haltedauer   höchstens {e.max_hold_minutes} Minuten
+  Handelszeit  {e.session_start_hour:02d}:00 bis {e.session_end_hour:02d}:00 UTC,
+               freitags bis {e.friday_cutoff_hour:02d}:00, nie am Wochenende
+
+Was dieser Bot nicht tut:
+  Kein Nachkaufen, kein Netz, keine Verdopplung nach einem Verlust. Pro
+  Termin gibt es einen Trade, auch wenn er sofort in den Stop läuft. Es gibt
+  kein zweites Mal — daher der Name.
+
+Grenzen:
+  Termine      höchstens {e.max_events_per_day} am Tag
+  Abstand      mindestens {e.min_minutes_between} Minuten zwischen zwei Trades
+
+Risiko (steht über der Strategie):
+  je Trade     {r.risk_per_trade:.2%} des Kontos
+  Positionen   höchstens {r.max_positions} gleichzeitig
+  Tagesverlust Schluss ab {r.daily_loss_limit:.1%}
+  Drawdown     ab {r.drawdown_halve:.1%} halbe Größe, ab {r.drawdown_stop:.1%} kein Einstieg
+  Not-Aus      Datei {cfg.live.killswitch_file} anlegen
+
+Der Einzelschuss braucht Minutenkerzen. Der Stop wird schon in der Minute
+geprüft, in der eingestiegen wurde: bei einer Nachricht fallen Einstieg und
+Stop oft in dieselbe Minute, und wer das übergeht, schönt den Backtest genau
+an der Stelle, auf die es ankommt.""")
+
+
 def _rules_copy(cfg: Config) -> str:
     c, r = cfg.copy, cfg.risk
     quelle = c.url if c.source == "http" else c.path
@@ -236,10 +299,12 @@ def rules_for(config: Config, name: str | None = None) -> str:
         return _rules_copy(config)
     if gewaehlt == "swing":
         return _rules_swing(config)
+    if gewaehlt == "einzelschuss":
+        return _rules_einzelschuss(config)
     if gewaehlt == "dauerlaeufer":
         return _rules_main(config)
     raise ValueError(f"Unbekannter Bot: {name!r} "
-                     "(dauerlaeufer, swing oder kopierer)")
+                     f"(erlaubt: {', '.join(BOT_NAMES)})")
 
 
 def cmd_rules(args) -> int:
@@ -394,6 +459,30 @@ def cmd_selftest(args) -> int:
         if first is None:
             first = result
 
+    # Der Einzelschuss braucht Ruhe vor dem Termin; die Reihe aus synthetic()
+    # schwankt je Minute so stark, dass der Filter zu Recht alles ablehnt.
+    from .data import news_synthetic
+    from .news import Einzelschuss, NewsEvent
+
+    candles, termine = news_synthetic(days=12, seed=11)
+    cfg = Config()
+    cfg.bot.name = "einzelschuss"
+    cfg.data.warmup_bars = 60
+    cfg.validate()
+    bot = Einzelschuss(cfg, events=[NewsEvent(ts=t, name="Termin") for t in termine])
+    ctx = bot.prepare(candles)
+    schuss = run_backtest(cfg, candles, strategy=bot)
+    print(schuss.report())
+    print()
+    print(f"Termine: {len(ctx.straddles)}, davon gehandelt: {len(ctx.signals)}")
+    for grund, anzahl in sorted(ctx.skipped.items()):
+        print(f"  {anzahl:>5}  {grund}")
+    # Je Termin höchstens ein Trade — das ist der ganze Witz des Bots.
+    einzeln = len(schuss.trades) <= len(ctx.straddles)
+    print("Ein Schuss je Termin:", "ja" if einzeln else "NEIN")
+    ok = ok and einzeln and len(ctx.signals) > 0
+    print()
+
     # Der Kopierer bekommt die Signale des ersten Laufs zu sehen.
     candles = synthetic(3000, seed=3, minutes=1)
     with tempfile.TemporaryDirectory() as d:
@@ -422,7 +511,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="BENGX Dauerläufer — regelbasierter Bot für XAU/USD",
     )
     p.add_argument("--config", help="Pfad zur TOML-Konfiguration")
-    p.add_argument("--bot", choices=("dauerlaeufer", "swing", "kopierer"),
+    p.add_argument("--bot", choices=BOT_NAMES,
                    help="welcher Bot (überschreibt bot.name)")
     sub = p.add_subparsers(dest="command", required=True)
 

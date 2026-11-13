@@ -1,14 +1,15 @@
 # Die Bots
 
-Die drei Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
+Die vier Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
 
 | `[bot] name` | Bot | Zeitrahmen | Idee |
 | --- | --- | --- | --- |
 | `dauerlaeufer` | **Dauerläufer** | 1h | Trendfolge: Ausbruch im gerichteten Markt |
 | `swing` | **Swing** | 1m (+5m, 1h) | Liquiditäts-Sweep, Fortsetzung, Einstieg in die Lücke |
+| `einzelschuss` | **Einzelschuss** | 1m | zwei Order um eine Nachricht, eine wird gehandelt |
 | `kopierer` | **Signal-Kopierer** | beliebig | spiegelt Bens Signale aus einer `signals.json` |
 
-Beide erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
+Alle erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
 Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11. Für den Handel selbst gibt es keine
 Abhängigkeiten; nur das freie Schreiben in Telegram braucht `anthropic`.
 
@@ -19,9 +20,10 @@ cd bot
 
 python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
+python3 -m bengx_bot --bot einzelschuss rules
 python3 -m bengx_bot --bot kopierer rules
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 278 Tests
+python3 -m unittest discover -s tests -t .   # 368 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -114,6 +116,68 @@ er ausgelassen hat.
 
 Schließt Ben, schließt der Kopierer mit (`close_with_source`). Der eigene Stop
 hat trotzdem Vorrang: wird er in derselben Kerze getroffen, gilt er.
+
+## Einzelschuss
+
+Das Vorbild läuft als MetaTrader-EA auf XAU/USD: zwei Order um eine Nachricht,
+**eine** davon wird ausgeführt, die andere gestrichen. Kein Nachkaufen, kein
+Netz, keine Verdopplung — daher der Name.
+
+| Schritt | Was passiert |
+| --- | --- |
+| 1 | **Scharfmachen** — 60 s vor dem Termin steht der Referenzkurs fest: der Schluss der letzten Kerze, die davor fertig ist. Darüber und darunter liegt je eine Stop-Order, 15 Pips entfernt |
+| 2 | **Ruhe davor** — war die Spanne der letzten 15 Minuten größer als 60 Pips, wird nicht gehandelt. Eine laufende Bewegung sägt die Straddle auf, bevor die Nachricht da ist |
+| 3 | **Einzelschuss** — die erste Seite, die berührt wird, wird gehandelt; die andere Order verfällt im selben Augenblick |
+| 4 | **Frist** — wird in 5 Minuten keine Seite berührt, verfallen beide. Der Termin ist dann vorbei |
+
+Stop und Ziel stehen in **Pips**, nicht in ATR: bei einer Nachricht geht es um
+die ersten Minuten, nicht um die Tagesvolatilität. Beide messen sich an der
+Orderstufe, nicht am Fill — dort, wo sie in der Plattform eingetragen würden.
+
+### Woher die Termine kommen
+
+```toml
+trigger = "kalender"     # Termine aus news.json
+trigger = "ausbruch"     # ohne Kalender
+```
+
+Mit **Kalender** liest der Bot `news.json`; `news.example.json` zeigt das
+Format. Gehandelt wird nur, was in `impacts` steht — üblich sind CPI, PPI, NFP
+und FOMC. Ein unlesbarer Zeitstempel in der Datei bricht den Lauf ab, statt
+stillschweigend einen Termin zu verschlucken, an dem der Bot dann nicht handelt.
+
+Mit **Ausbruch** braucht er keine Datei: eine Minutenkerze, deren Spanne 3 × ATR
+erreicht und mindestens 30 Pips misst, gilt selbst als Ereignis. Die Order
+liegen dann über ihrem Hoch und unter ihrem Tief. Das ist der Weg, wenn niemand
+den Kalender pflegt.
+
+### Zwei Dinge, die den Backtest ehrlich halten
+
+**Beide Seiten in einer Minute.** Werden Kauf- und Verkaufsstufe in derselben
+Minutenkerze berührt, ist aus Kerzendaten nicht zu erkennen, welche zuerst kam.
+Dann gilt die ungünstige Annahme (`tie_break = "pessimistic"`): gehandelt wird
+die Seite *gegen* die Richtung der Kerze — also die, die anschließend in den
+Stop läuft. `"skip"` lässt solche Termine stattdessen aus; das sieht hübscher
+aus, als es ist, weil es gerade die Fehlausbrüche entfernt.
+
+**Der Stop in der Eröffnungsminute.** Bei allen anderen Bots wird der Stop erst
+ab der Kerze nach dem Einstieg geprüft — bei Stundenkerzen wäre alles andere
+geraten. Der Einzelschuss schaltet das ab (`stop_on_entry_bar`): bei einer
+Nachricht fallen Einstieg und Stop oft in dieselbe Minute, und wer das übergeht,
+schönt den Backtest genau an der Stelle, auf die es ankommt.
+
+Dazu kommt `news_slippage_pips`: ein Aufschlag auf den Fill, weil im
+Nachrichtenmoment keine Stop-Order zum Wunschkurs füllt. Er geht gegen die
+eigene Richtung, vergrößert damit das gerechnete Risiko und schlägt so auch auf
+die Positionsgröße durch. Lieber zu hoch ansetzen als zu niedrig.
+
+### Grenzen
+
+Höchstens 2 Termine am Tag, mindestens 30 Minuten zwischen zwei Trades, und pro
+Termin genau ein Trade — auch wenn er sofort in den Stop läuft. Es gibt kein
+zweites Mal.
+
+Der Bot braucht **Minutenkerzen** in `data.csv`.
 
 ## Assistent in Telegram
 
@@ -328,6 +392,7 @@ nachrechnen, was die breiteren Spreads kosten.
 | `config.py` | TOML laden, prüfen, Fingerabdruck bilden |
 | `strategy.py` | Regelwerk des Dauerläufers |
 | `swing.py` | Regelwerk des Swing-Bots |
+| `news.py` | Regelwerk des Einzelschuss samt Kalender |
 | `copier.py` | Signal-Kopierer samt Datei- und HTTP-Quelle |
 | `timeframes.py` | 5m und 1h aus Minutenkerzen, Swing-Punkte, Sweeps, FVGs |
 | `bots.py` | welcher Bot läuft |
@@ -355,7 +420,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-278 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+368 Tests. Sie decken die Indikatoren, jede einzelne Regel aller vier Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

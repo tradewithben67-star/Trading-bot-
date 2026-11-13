@@ -39,6 +39,10 @@ class ExitRules:
     trail_atr: float
     time_stop_bars: int
     friday_cutoff_hour: int
+    # Darf der Stop schon in der Kerze greifen, in der eröffnet wurde? Normal
+    # nicht: bei Stundenkerzen wäre das geraten. Der Einzelschuss schaltet es
+    # ein, weil bei einer Nachricht Einstieg und Stop in dieselbe Minute fallen.
+    stop_on_entry_bar: bool = False
 
 
 @dataclass(frozen=True, slots=True)

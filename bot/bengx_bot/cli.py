@@ -363,6 +363,16 @@ def cmd_konto(args) -> int:
     if datei.exists():
         env.update(load_env_file(datei))
 
+    # Welche Dateien hier wirklich gelesen werden. Wer zwei Entpackungen im
+    # Downloads-Ordner liegen hat, bearbeitet sonst die eine und startet die
+    # andere — und wundert sich, warum die Änderung nichts tut.
+    konfig = Path(getattr(args, "config", None) or "config.toml")
+    print(f"Konfiguration  {konfig.resolve()}")
+    print(f"Zugangsdaten   {datei.resolve()}"
+          f"{'' if datei.exists() else '   (gibt es nicht!)'}")
+    print(f"Symbol laut Konfiguration: {cfg.mt5.symbol!r}")
+    print()
+
     try:
         terminal, konto = verbinden(cfg, env=env)
     except MT5Error as exc:

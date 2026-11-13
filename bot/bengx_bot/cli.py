@@ -370,6 +370,12 @@ def cmd_konto(args) -> int:
         return 1
 
     try:
+        if getattr(args, "symbole", False):
+            namen = terminal.alle_symbole()
+            print(f"{len(namen)} Symbole bei {konto.server}:\n")
+            for n in sorted(namen):
+                print(f"  {n}")
+            return 0
         info = terminal.symbol(cfg.mt5.symbol)
         print(f"Konto      {konto.login} bei {konto.server}")
         print(f"Art        {konto.art}")
@@ -418,6 +424,11 @@ def cmd_konto(args) -> int:
             print("ACHTUNG: Das ist kein Übungskonto. Der Bot verlangt hier "
                   "einen Backtest,")
             print("bevor er handelt — und das lässt sich nicht abschalten.")
+    except MT5Error as exc:
+        # Als Satz, nicht als Traceback. Vor einem Stapel Python-Zeilen
+        # liest niemand mehr die Ursache.
+        print(f"\n{exc}", file=sys.stderr)
+        return 1
     finally:
         terminal.schliessen()
     return 0
@@ -686,6 +697,8 @@ def build_parser() -> argparse.ArgumentParser:
 
     ko = sub.add_parser("konto", help="Verbindung zu MetaTrader 5 prüfen")
     ko.add_argument("--env", help="Datei mit den Zugangsdaten (Standard: .env)")
+    ko.add_argument("--symbole", action="store_true",
+                    help="alle Symbole des Brokers auflisten")
     ko.set_defaults(func=cmd_konto)
 
     le = sub.add_parser("lernen", help="was die bisherigen Trades sagen")

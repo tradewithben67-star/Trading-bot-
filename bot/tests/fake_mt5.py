@@ -151,6 +151,9 @@ class FakeMT5:
         self.slippage: float = 0.0          # wie weit der Fill danebenliegt
         self.kein_symbol = False
         self.kein_tick = False
+        # Wie ein Broker seine Liste fuehrt: Gold heisst ueberall anders.
+        self.symbole = [Symbol(name="EURUSD"), Symbol(name="XAUUSD.r"),
+                        Symbol(name="GOLD"), Symbol(name="US500")]
 
     # ---- Leben ---------------------------------------------------------
     def initialize(self, **kwargs) -> bool:
@@ -209,6 +212,10 @@ class FakeMT5:
                 self.stop_ausloesen(ticket, pos.tp, f"[tp {pos.tp:.2f}]")
                 ausgeloest.append(ticket)
         return ausgeloest
+
+    def symbols_get(self, group: str | None = None):
+        """Alle Symbole des Brokers — auch ausgeblendete."""
+        return tuple(self.symbole)
 
     def symbol_select(self, name: str, an: bool) -> bool:
         self.symbol_obj.visible = an

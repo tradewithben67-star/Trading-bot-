@@ -40,10 +40,9 @@ schwarzen Fenster `py -3 --version` tippen. Kommt eine Versionsnummer ab
 4. **Algo-Handel erlauben:** *Extras → Optionen → Expert Advisors* →
    Häkchen bei **„Algorithmischen Handel erlauben"**. Ohne das lehnt MT5
    jede Order des Bots ab.
-5. **Gold-Symbol nachsehen:** Fenster *Marktübersicht* (Strg+M). Dort steht,
-   wie dein Broker Gold nennt — `XAUUSD`, `XAUUSD.r`, `GOLD`, `GOLD.m`.
-   **Den Namen aufschreiben.** Wenn Gold nicht in der Liste steht: rechte
-   Maustaste → *Symbole* → suchen → hinzufügen.
+5. **Gold-Symbol:** Musst du nicht suchen — `konto.bat` in Teil 5 sagt dir,
+   wie dein Broker Gold nennt, und listet die Namen zum Abschreiben auf.
+   Wer trotzdem nachsehen will: Fenster *Marktübersicht* (Strg+M).
 6. **Chart öffnen:** Gold doppelklicken, Zeitrahmen **M1**. Dadurch lädt MT5
    die Kursgeschichte, die der Bot braucht.
 
@@ -215,7 +214,7 @@ Wenn du den Nachrichtenhandel willst statt der Ausbrüche:
 | `Das Paket MetaTrader5 ist nicht da` | Du bist nicht auf Windows. Dort geht es nicht. |
 | `MetaTrader 5 lässt sich nicht öffnen` | MT5 läuft nicht, ist nicht angemeldet, oder Login/Passwort/Server in `.env` stimmen nicht. **Handels-**, nicht Investorpasswort. |
 | `Das Konto … darf nicht handeln` | *Extras → Optionen → Expert Advisors* → Algo-Handel erlauben. |
-| `Das Symbol 'XAUUSD' kennt dein Broker nicht` | In der Marktübersicht den richtigen Namen ablesen und unter `[mt5] symbol` eintragen. |
+| `Das Symbol 'XAUUSD' kennt dein Broker nicht` | Die Meldung **listet die Gold-Symbole deines Brokers gleich mit auf** — eine davon in `config.toml` unter `[mt5] symbol` eintragen, im Zweifel die oberste. Alle Symbole sehen: `py -3 -m bengx_bot --config config.toml konto --symbole` |
 | `Keine Kerzen für …` | In MT5 den M1-Chart für Gold öffnen, damit die Historie lädt. |
 | `Der letzte Tick … ist X Stunden entfernt` | Markt ist zu (Wochenende). Warten — oder in `config.toml` `server_utc_offset_hours = 2` eintragen. |
 | `Die Position wäre 0.0050 Lots groß` | Das Konto ist zu klein für das eingestellte Risiko. Ab ~500 € geht es bei 25 Pips Stop; darunter braucht es ein **Cent-Konto**. |

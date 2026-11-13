@@ -111,12 +111,46 @@ class TestVerbindung(unittest.TestCase):
             with self.subTest(modus=modus):
                 self.assertEqual(konto.demo, demo)
 
-    def test_an_unknown_symbol_names_the_usual_alternatives(self):
-        fake = FakeMT5()
-        fake.kein_symbol = True
+    def test_an_unknown_symbol_names_what_the_broker_actually_has(self):
+        """Raten hilft nicht — jeder Broker schreibt Gold anders. Also wird
+        gefragt, was er führt."""
+        fake = FakeMT5(symbol=Symbol(name="XAUUSD.r"))
         with self.assertRaises(MT5Error) as ctx:
             terminal(fake).symbol("XAUUSD")
-        self.assertIn("GOLD", str(ctx.exception))
+        text = str(ctx.exception)
+        self.assertIn('symbol = "XAUUSD.r"', text)
+        self.assertIn('symbol = "GOLD"', text)
+
+    def test_a_broker_without_gold_is_told_apart_from_a_typo(self):
+        fake = FakeMT5(symbol=Symbol(name="EURUSD"))
+        fake.symbole = [Symbol(name="EURUSD"), Symbol(name="US500")]
+        with self.assertRaises(MT5Error) as ctx:
+            terminal(fake).symbol("XAUUSD")
+        text = str(ctx.exception)
+        self.assertIn("keines, das nach Gold aussieht", text)
+        self.assertIn("Strg+M", text)
+
+    def test_the_candidates_are_sorted_shortest_first(self):
+        from tests.fake_mt5 import Symbol as S
+        fake = FakeMT5()
+        fake.symbole = [S(name="XAUUSD-ECN"), S(name="XAUUSD"),
+                        S(name="XAUUSD.raw"), S(name="EURUSD")]
+        self.assertEqual(terminal(fake).gold_kandidaten()[0], "XAUUSD")
+
+    def test_listing_all_symbols_works(self):
+        fake = FakeMT5()
+        namen = terminal(fake).alle_symbole()
+        self.assertIn("EURUSD", namen)
+        self.assertIn("GOLD", namen)
+
+    def test_a_terminal_that_cannot_list_does_not_crash(self):
+        """Ein Broker, dessen Liste nicht abfragbar ist, darf die Meldung
+        nicht in einen zweiten Fehler verwandeln."""
+        fake = FakeMT5(symbol=Symbol(name="EURUSD"))
+        fake.symbols_get = lambda *a, **k: (_ for _ in ()).throw(RuntimeError("weg"))
+        with self.assertRaises(MT5Error) as ctx:
+            terminal(fake).symbol("XAUUSD")
+        self.assertIn("Strg+M", str(ctx.exception))
 
 
 class TestZugang(unittest.TestCase):

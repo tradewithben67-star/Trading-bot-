@@ -201,13 +201,46 @@ class MT5Terminal:
             trade_allowed=bool(getattr(info, "trade_allowed", True)),
         )
 
+    def alle_symbole(self) -> list[str]:
+        """Jeder Name, den der Broker führt — auch die, die in der
+        Marktübersicht ausgeblendet sind."""
+        try:
+            roh = self.m.symbols_get()
+        except Exception:                                  # noqa: BLE001
+            return []
+        return [str(getattr(x, "name", "")) for x in (roh or [])]
+
+    def gold_kandidaten(self) -> list[str]:
+        """Was bei diesem Broker nach Gold aussieht.
+
+        Jeder Broker schreibt es anders: XAUUSD, XAUUSD.r, GOLD, GOLD.m,
+        XAUUSD_i, #XAUUSD. Raten hilft nicht — fragen schon.
+        """
+        treffer = [n for n in self.alle_symbole()
+                   if "XAU" in n.upper() or "GOLD" in n.upper()]
+        # Kurze Namen zuerst: XAUUSD vor XAUUSD.raw vor XAUUSD-ECN.
+        treffer.sort(key=lambda n: (len(n), n))
+        return treffer
+
     def symbol(self, name: str) -> SymbolInfo:
         info = self.m.symbol_info(name)
         if info is None:
+            kandidaten = self.gold_kandidaten()
+            if kandidaten:
+                liste = "\n".join(f"    symbol = \"{n}\"" for n in kandidaten[:12])
+                raise MT5Error(
+                    f"Das Symbol {name!r} kennt dein Broker nicht.\n\n"
+                    "Nach Gold sieht bei ihm das hier aus — eine dieser Zeilen "
+                    "in config.toml unter [mt5] eintragen:\n\n"
+                    f"{liste}\n\n"
+                    "Im Zweifel die oberste nehmen."
+                )
             raise MT5Error(
-                f"Das Symbol {name!r} kennt dein Broker nicht. Bei Gold heißt "
-                "es je nach Haus XAUUSD, XAUUSD.r, GOLD oder GOLD.m — im "
-                "Marktübersicht-Fenster nachsehen und mt5.symbol eintragen."
+                f"Das Symbol {name!r} kennt dein Broker nicht, und unter "
+                "seinen Symbolen ist keines, das nach Gold aussieht.\n"
+                "Im Terminal Strg+M drücken (Marktübersicht), dort Rechtsklick "
+                "→ Symbole → nach Gold suchen und hinzufügen. Danach hier "
+                "noch einmal."
             )
         if not getattr(info, "visible", True):
             # Unsichtbare Symbole liefern keine Kurse. Einmal anstupsen.

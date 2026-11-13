@@ -146,6 +146,21 @@ class CopyConfig:
 
 
 @dataclass
+class MT5Config:
+    """Der Anschluss an MetaTrader 5. Zugangsdaten stehen hier NICHT —
+    die kommen aus bot/.env und gehören niemals ins Repository."""
+
+    symbol: str = "XAUUSD"            # beim Broker nachsehen: XAUUSD, GOLD, XAUUSD.r ...
+    magic: int = 770315               # Kennung der eigenen Order im Terminal
+    deviation_points: int = 20        # erlaubte Abweichung beim Fill, in Points
+    filling: str = "auto"             # auto | fok | ioc | return
+    candles: int = 1500               # so viele Kerzen je Durchlauf holen
+    timeframe_minutes: int = 1
+    server_utc_offset_hours: float | None = None   # None = am Terminal messen
+    sync_stops: bool = True           # nachgezogene Stops ins Terminal schreiben
+
+
+@dataclass
 class RiskConfig:
     risk_per_trade: float = 0.005     # 0,5 % des Kontos je Position
     max_positions: int = 2
@@ -171,6 +186,10 @@ class LiveConfig:
     state_dir: str = "state"
     journal: str = "state/trades.jsonl"
     signals_out: str = "../signals.json"
+    # Auf einem Demokonto darf ohne Backtest gehandelt werden — dort liegt
+    # kein Geld. Für ein Echtgeldkonto gilt die Pflicht weiter, und MT5 muss
+    # selbst bestätigen, dass es ein Übungskonto ist.
+    allow_demo_without_backtest: bool = True
 
 
 @dataclass
@@ -182,6 +201,7 @@ class Config:
     swing: SwingConfig = field(default_factory=SwingConfig)
     einzelschuss: EinzelschussConfig = field(default_factory=EinzelschussConfig)
     copy: CopyConfig = field(default_factory=CopyConfig)
+    mt5: MT5Config = field(default_factory=MT5Config)
     risk: RiskConfig = field(default_factory=RiskConfig)
     data: DataConfig = field(default_factory=DataConfig)
     live: LiveConfig = field(default_factory=LiveConfig)
@@ -215,6 +235,7 @@ class Config:
             swing=build(SwingConfig, "swing"),
             einzelschuss=build(EinzelschussConfig, "einzelschuss"),
             copy=build(CopyConfig, "copy"),
+            mt5=build(MT5Config, "mt5"),
             risk=build(RiskConfig, "risk"),
             data=build(DataConfig, "data"),
             live=build(LiveConfig, "live"),
@@ -230,6 +251,7 @@ class Config:
         self._validate_swing()
         self._validate_einzelschuss()
         self._validate_copy()
+        self._validate_mt5()
         if m.pip <= 0:
             raise ValueError("market.pip muss größer als 0 sein")
         if s.breakout < 2:
@@ -307,6 +329,24 @@ class Config:
         if self.bot.name == "einzelschuss" and e.trigger == "kalender" and not e.calendar:
             raise ValueError('einzelschuss.trigger ist "kalender", '
                              "aber einzelschuss.calendar ist leer")
+
+    def _validate_mt5(self) -> None:
+        m = self.mt5
+        if not str(m.symbol).strip():
+            raise ValueError("mt5.symbol darf nicht leer sein")
+        if m.filling not in ("auto", "fok", "ioc", "return"):
+            raise ValueError("mt5.filling muss auto, fok, ioc oder return sein")
+        if m.deviation_points < 0:
+            raise ValueError("mt5.deviation_points darf nicht negativ sein")
+        if m.candles < 50:
+            raise ValueError("mt5.candles muss mindestens 50 sein")
+        if m.timeframe_minutes not in (1, 5, 15, 30, 60, 240, 1440):
+            raise ValueError("mt5.timeframe_minutes muss 1, 5, 15, 30, 60, "
+                             "240 oder 1440 sein")
+        if (m.server_utc_offset_hours is not None
+                and not -12 <= m.server_utc_offset_hours <= 14):
+            raise ValueError("mt5.server_utc_offset_hours muss zwischen "
+                             "-12 und 14 liegen")
 
     def _validate_copy(self) -> None:
         c = self.copy

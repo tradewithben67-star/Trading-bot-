@@ -110,7 +110,13 @@ Inhaber nicht), sonst im Browser des Besuchers.
 
 Alle vier Bots sind fertig gebaut und liegen als Python-Programm unter
 [`bot/`](bot/README.md): vier Regelwerke auf gemeinsamer Maschine, dazu
-Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 368 Tests.
+Risikogrenzen, Backtest, Papierkonto, Protokoll und Not-Aus — 438 Tests.
+
+Dazu kommt der **Anschluss an MetaTrader 5** (und damit an Tradequo): der Bot
+handelt an einem echten Konto, führt Buch über Slippage und Spread und wertet
+hinterher aus, woran es lag. An einem **Demokonto** darf er ohne Backtest
+laufen; an einem **Echtgeldkonto** verlangt er einen, und das ist keine
+Einstellung. Der Anschluss braucht Windows.
 
 Dort liegt auch der **Telegram-Assistent**: ein Bot, dem man normal schreibt —
 keine Befehle. Er liest die echten Zahlen aus dem Protokoll, sieht sich Bilder

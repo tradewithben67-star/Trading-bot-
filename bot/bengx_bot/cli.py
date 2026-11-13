@@ -9,7 +9,7 @@
     python -m bengx_bot export                    signals.json neu schreiben
     python -m bengx_bot telegram                  den Assistenten in Telegram betreiben
     python -m bengx_bot pruefen                   prüft Token, Schlüssel und Modelle
-    python -m bengx_bot rules                     das Regelwerk im Klartext
+    python -m bengx_bot konto                     Verbindung zu MetaTrader 5 prüfen\n    python -m bengx_bot lernen                    was die bisherigen Trades sagen\n    python -m bengx_bot rules                     das Regelwerk im Klartext
     python -m bengx_bot --bot swing rules         das Regelwerk des Swing-Bots
     python -m bengx_bot --bot einzelschuss rules  das Regelwerk des Einzelschuss
     python -m bengx_bot --bot kopierer rules      das Regelwerk des Kopierers
@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import asdict
 from pathlib import Path
@@ -86,12 +87,34 @@ def cmd_paper(args) -> int:
 
 
 def cmd_live(args) -> int:
+    """Handel am echten Konto. Die Sperren stehen im Runner."""
     cfg = _load(args)
     try:
-        Runner(cfg, live=True)
+        runner = Runner(cfg, live=True)
     except LiveGateError as exc:
         print(f"Live-Betrieb gesperrt.\n\n{exc}", file=sys.stderr)
         return 3
+
+    konto = runner.konto
+    if konto is not None:
+        print(f"Konto {konto.login} bei {konto.server} — {konto.art}")
+        if not konto.demo:
+            print("Das ist ECHTES GELD. Beenden mit Strg+C.")
+        print(f"Symbol {cfg.mt5.symbol}, Takt {cfg.live.poll_seconds} s. "
+              f"Not-Aus: Datei {cfg.live.killswitch_file} anlegen.\n")
+
+    try:
+        if args.loop:
+            runner.loop(args.interval)
+        else:
+            print(runner.tick())
+    except KeyboardInterrupt:
+        print("\nAbgebrochen. Offene Positionen bleiben offen — im Terminal "
+              "nachsehen.", file=sys.stderr)
+        return 130
+    finally:
+        if runner.terminal is not None:
+            runner.terminal.schliessen()
     return 0
 
 
@@ -305,6 +328,88 @@ def rules_for(config: Config, name: str | None = None) -> str:
         return _rules_main(config)
     raise ValueError(f"Unbekannter Bot: {name!r} "
                      f"(erlaubt: {', '.join(BOT_NAMES)})")
+
+
+def cmd_konto(args) -> int:
+    """Nachsehen, ob die Verbindung zum Terminal steht — bevor etwas gehandelt wird."""
+    from .mt5 import MT5Broker, MT5Error, lots, verbinden
+    from .risk import RiskManager
+    from .telegram import load_env_file
+
+    cfg = _load(args)
+    env = dict(os.environ)
+    datei = Path(getattr(args, "env", None) or (Path(__file__).resolve().parents[1] / ".env"))
+    if datei.exists():
+        env.update(load_env_file(datei))
+
+    try:
+        terminal, konto = verbinden(cfg, env=env)
+    except MT5Error as exc:
+        print(f"Keine Verbindung.\n\n{exc}", file=sys.stderr)
+        return 1
+
+    try:
+        info = terminal.symbol(cfg.mt5.symbol)
+        print(f"Konto      {konto.login} bei {konto.server}")
+        print(f"Art        {konto.art}")
+        print(f"Inhaber    {konto.name}")
+        print(f"Kapital    {konto.equity:.2f} {konto.currency} "
+              f"(Hebel 1:{konto.leverage})")
+        print(f"Handel     {'erlaubt' if konto.trade_allowed else 'GESPERRT'}")
+        print()
+        print(f"Symbol     {info.name}")
+        print(f"Ein Lot    {info.contract_size:g} Unzen")
+        print(f"Menge      {info.volume_min:g} bis {info.volume_max:g} Lots, "
+              f"Schritt {info.volume_step:g}")
+        print(f"Spread     {info.spread_preis / cfg.market.pip:.1f} Pips "
+              f"({info.bid:.{info.digits}f} / {info.ask:.{info.digits}f})")
+        if info.stops_level:
+            print(f"Mindestabstand für Stop und Ziel: "
+                  f"{info.stops_level * info.point / cfg.market.pip:.0f} Pips")
+
+        try:
+            versatz = terminal.zeitversatz(cfg.mt5.symbol)
+            stunden = versatz.total_seconds() / 3600
+            print(f"Serverzeit UTC{stunden:+.1f} Stunden")
+        except MT5Error as exc:
+            print(f"Serverzeit unbekannt: {str(exc).splitlines()[0]}")
+
+        # Was die aktuelle Risikoeinstellung an diesem Konto wirklich ergibt.
+        print()
+        risk = RiskManager(cfg)
+        risk.equity = konto.equity
+        stop_pips = (cfg.einzelschuss.stop_pips if cfg.bot.name == "einzelschuss"
+                     else 25.0)
+        je_unze = stop_pips * cfg.market.pip
+        groesse = risk._round_size(
+            konto.equity * cfg.risk.risk_per_trade / je_unze)
+        print(f"Bei {cfg.risk.risk_per_trade:.2%} Risiko und {stop_pips:g} Pips Stop:")
+        try:
+            menge = lots(groesse, info)
+            print(f"  {groesse:.2f} Unzen = {menge:g} Lots je Trade")
+        except MT5Error as exc:
+            print(f"  {groesse:.2f} Unzen — {str(exc).splitlines()[0]}")
+            print("  Der Bot würde an diesem Konto nichts handeln.")
+            return 1
+
+        if not konto.demo:
+            print()
+            print("ACHTUNG: Das ist kein Übungskonto. Der Bot verlangt hier "
+                  "einen Backtest,")
+            print("bevor er handelt — und das lässt sich nicht abschalten.")
+    finally:
+        terminal.schliessen()
+    return 0
+
+
+def cmd_lernen(args) -> int:
+    """Was die bisherigen Trades sagen."""
+    from .lernen import auswerten
+
+    cfg = _load(args)
+    trades = Journal(cfg.live.journal).load()
+    print(auswerten(trades, cfg).bericht())
+    return 0
 
 
 def cmd_rules(args) -> int:
@@ -532,8 +637,12 @@ def build_parser() -> argparse.ArgumentParser:
     pa.add_argument("--interval", type=int, help="Sekunden zwischen den Durchläufen")
     pa.set_defaults(func=cmd_paper)
 
-    li = sub.add_parser("live", help="echtes Geld (gesperrt, solange etwas fehlt)")
+    li = sub.add_parser("live", help="am echten Konto handeln (MetaTrader 5)")
     li.add_argument("--csv")
+    li.add_argument("--once", action="store_true",
+                    help="einmal durchlaufen (Standard)")
+    li.add_argument("--loop", action="store_true", help="durchgängig laufen")
+    li.add_argument("--interval", type=int, help="Sekunden zwischen den Durchläufen")
     li.set_defaults(func=cmd_live)
 
     sub.add_parser("report", help="Zahlen aus dem Protokoll").set_defaults(func=cmd_report)
@@ -553,6 +662,13 @@ def build_parser() -> argparse.ArgumentParser:
     pr.add_argument("--schnell", action="store_true",
                     help="die Modelle nicht einzeln anfragen")
     pr.set_defaults(func=cmd_pruefen)
+
+    ko = sub.add_parser("konto", help="Verbindung zu MetaTrader 5 prüfen")
+    ko.add_argument("--env", help="Datei mit den Zugangsdaten (Standard: .env)")
+    ko.set_defaults(func=cmd_konto)
+
+    le = sub.add_parser("lernen", help="was die bisherigen Trades sagen")
+    le.set_defaults(func=cmd_lernen)
 
     sub.add_parser("rules", help="Regelwerk im Klartext").set_defaults(func=cmd_rules)
     sub.add_parser("selftest", help="Mechanik auf erfundenen Daten prüfen").set_defaults(

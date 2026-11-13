@@ -257,12 +257,36 @@ class TestRunner(unittest.TestCase):
                 Runner(cfg, live=True)
             self.assertIn("live.enabled", str(cm.exception))
 
-    def test_live_needs_a_backtest(self):
+    def test_repeated_ticks_do_not_duplicate_open_positions(self):
+        """`loop()` benutzt denselben Runner immer wieder. Wer bei jedem
+        Durchlauf den Zustand dazulädt, statt ihn zu ersetzen, verdoppelt
+        seine Positionen — und zwar bei jedem Takt."""
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self._setup(d)
+            runner = Runner(cfg)
+            runner.tick()
+            offen = len(runner.broker.positions)
+            for _ in range(5):
+                runner.tick()
+            self.assertEqual(len(runner.broker.positions), offen)
+            gespeichert = json.loads(
+                (Path(cfg.live.state_dir) / "state.json").read_text())
+            self.assertEqual(len(gespeichert["positions"]), offen)
+
+    def test_live_needs_a_backtest_for_real_money(self):
+        """Die Pflicht hängt am Konto, nicht an der Konfiguration: MT5 muss
+        selbst sagen, dass es ein Übungskonto ist. Sagt es Echtgeld, wird
+        nachgerechnet — daran ändert keine Einstellung etwas."""
+        from tests.fake_mt5 import FakeMT5, Konto, TRADE_MODE_REAL
         with tempfile.TemporaryDirectory() as d:
             cfg = self._setup(d)
             cfg.live.enabled = True
+            cfg.live.broker = "mt5"
+            cfg.live.allow_demo_without_backtest = True
+            cfg.mt5.server_utc_offset_hours = 2.0
+            echt = FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL))
             with self.assertRaises(LiveGateError) as cm:
-                Runner(cfg, live=True)
+                Runner(cfg, live=True, mt5_modul=echt)
             self.assertIn("Backtest", str(cm.exception))
 
     def test_live_still_refuses_with_the_paper_broker(self):
@@ -277,15 +301,23 @@ class TestRunner(unittest.TestCase):
             self.assertIn("paper", str(cm.exception))
 
     def test_changing_a_rule_invalidates_the_release(self):
+        from tests.fake_mt5 import FakeMT5, Konto, TRADE_MODE_REAL
         with tempfile.TemporaryDirectory() as d:
             cfg = self._setup(d)
             cfg.live.enabled = True
+            cfg.live.broker = "mt5"
+            cfg.mt5.server_utc_offset_hours = 2.0
             p = backtest_path(cfg)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("{}", encoding="utf-8")
-            cfg.strategy.stop_atr = 3.0          # Regel geändert
+            echt = FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL))
+            # Mit dem Backtest zum aktuellen Regelwerk darf er laufen ...
+            Runner(cfg, live=True, mt5_modul=echt)
+            # ... und sobald eine Regel wandert, gilt er nicht mehr.
+            cfg.strategy.stop_atr = 3.0
             with self.assertRaises(LiveGateError) as cm:
-                Runner(cfg, live=True)
+                Runner(cfg, live=True,
+                       mt5_modul=FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL)))
             self.assertIn("Backtest", str(cm.exception))
 
 

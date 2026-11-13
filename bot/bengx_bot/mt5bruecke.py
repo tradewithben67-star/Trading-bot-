@@ -181,6 +181,9 @@ class Bruecke:
     uhr: Callable[[], float] = None  # type: ignore[assignment]
     _bekannt: set[int] = field(default_factory=set)
     _konto: int | None = None
+    # True, sobald "ohne Rueckfrage" ueber /auto gesetzt wurde. Dann gilt
+    # diese Entscheidung und nicht mehr der Wert aus der .env.
+    _auto_gesetzt: bool = False
     # Wird gesetzt, wenn im Terminal ein anderes Konto angemeldet wurde.
     # Der Aufrufer liest es aus und sagt Ben Bescheid.
     gewechselt: tuple[int | None, int] | None = None
@@ -204,6 +207,9 @@ class Bruecke:
             self._bekannt = {int(t) for t in daten.get("bekannt", [])}
             nummer = daten.get("konto")
             self._konto = int(nummer) if nummer else None
+            if "auto" in daten:
+                self.settings.ohne_rueckfrage = bool(daten["auto"])
+                self._auto_gesetzt = True
         except (ValueError, OSError, TypeError):
             self._bekannt = set()
             self._konto = None
@@ -214,10 +220,27 @@ class Bruecke:
         # Nicht ewig wachsen lassen: die jüngsten 500 reichen.
         behalten = sorted(self._bekannt)[-500:]
         self._bekannt = set(behalten)
+        daten: dict[str, Any] = {"bekannt": behalten, "konto": self._konto}
+        if self._auto_gesetzt:
+            daten["auto"] = self.settings.ohne_rueckfrage
         tmp = p.with_suffix(p.suffix + ".neu")
-        tmp.write_text(json.dumps({"bekannt": behalten, "konto": self._konto}),
-                       encoding="utf-8")
+        tmp.write_text(json.dumps(daten), encoding="utf-8")
         tmp.replace(p)
+
+    # ---- Schalter ---------------------------------------------------------
+    def auto_setzen(self, an: bool) -> None:
+        """Signale ohne Rueckfrage verschicken — oder eben doch fragen.
+
+        Ueber /auto vom Telefon aus, damit Ben dafuer nicht an eine Datei
+        muss. Die Entscheidung ueberlebt den Neustart.
+        """
+        self.settings.ohne_rueckfrage = bool(an)
+        self._auto_gesetzt = True
+        self._sichern()
+
+    @property
+    def auto(self) -> bool:
+        return bool(self.settings.ohne_rueckfrage)
 
     # ---- Konto ------------------------------------------------------------
     def konto(self) -> Konto | None:

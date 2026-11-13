@@ -202,6 +202,13 @@ Befehle:
 /einladung vip Max     Einladungslink, gilt einmal
 /regeln      das Regelwerk eines Bots
 /aus /an     Not-Aus für den Handelsbot
+
+Aus MetaTrader heraus:
+
+/konto       welches Konto ich gerade lese
+/auto an     deine Trades gehen ohne Rückfrage raus
+/auto aus    ich lege sie dir erst vor
+
 /hilfe       diese Liste"""
 
 
@@ -363,6 +370,38 @@ class TelegramBot:
                 return [rules_for(self.cfg, name)]
             except ValueError as exc:
                 return [str(exc)]
+
+        if befehl == "/konto":
+            if self.bruecke is None:
+                return ["MetaTrader ist aus. In bot/.env steht MT5=1, "
+                        "dann liest der Bot deine Trades mit."]
+            konto = self.bruecke.konto()
+            if konto is None:
+                return ["MetaTrader ist an, aber das Konto kann ich nicht "
+                        "lesen. Ist das Terminal offen und angemeldet?"]
+            offen = len(self.bruecke.quelle.positionen())
+            return [f"Ich lese: {konto}\n"
+                    f"{offen} offene Position(en)\n"
+                    + ("Neue Trades gehen OHNE Rückfrage raus."
+                       if self.bruecke.auto else
+                       "Neue Trades lege ich dir vor.")]
+
+        if befehl == "/auto":
+            if self.bruecke is None:
+                return ["MetaTrader ist aus. In bot/.env steht MT5=1, "
+                        "dann liest der Bot deine Trades mit."]
+            wunsch = rest.lower()
+            if wunsch in ("an", "ein", "ja", "1"):
+                self.bruecke.auto_setzen(True)
+                return ["Ab jetzt ohne Rückfrage: jeder Trade mit Stop und "
+                        "Ziel geht sofort als Signal raus. Zurück mit "
+                        "/auto aus."]
+            if wunsch in ("aus", "nein", "0"):
+                self.bruecke.auto_setzen(False)
+                return ["Ab jetzt lege ich dir jeden Trade erst vor."]
+            return ["Gerade: " + ("ohne Rückfrage" if self.bruecke.auto
+                                  else "mit Rückfrage")
+                    + "\nUmstellen mit  /auto an  oder  /auto aus"]
 
         if befehl == "/aus":
             p = Path(self.cfg.live.killswitch_file)

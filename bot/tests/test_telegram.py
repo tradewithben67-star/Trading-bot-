@@ -303,3 +303,53 @@ class TestAusMetaTrader(Base):
         self.net.sent.clear()
         self.bot.neue_trades()
         self.assertEqual(self.net.sent, [])
+
+
+class TestAutoSchalter(TestAusMetaTrader):
+    """Ben soll vom Telefon aus umstellen koennen, ob Trades ohne
+    Rueckfrage rausgehen — dafuer soll er nicht an eine Datei muessen."""
+
+    def test_auto_an_schickt_den_naechsten_trade_direkt(self):
+        self.assertIn("ohne Rückfrage", self.sag("/auto an"))
+        self.net.sent.clear()
+
+        self.trade()
+        self.bot.neue_trades()
+        an_gruppen = [n for n in self.net.sent if n["chat_id"] in ("-100", "-200")]
+        self.assertEqual(len(an_gruppen), 2)
+        self.assertIn("BEN GOLD BUY", an_gruppen[0]["text"])
+
+    def test_auto_aus_legt_wieder_vor(self):
+        self.bruecke.auto_setzen(True)
+        self.sag("/auto aus")
+        self.net.sent.clear()
+        self.trade()
+        self.bot.neue_trades()
+        self.assertIn("Schicken?", self.an_ben())
+        self.assertEqual([n for n in self.net.sent if n["chat_id"] != "42"], [])
+
+    def test_auto_ohne_zusatz_sagt_den_stand(self):
+        self.assertIn("mit Rückfrage", self.sag("/auto"))
+
+    def test_entscheidung_ueberlebt_den_neustart(self):
+        self.sag("/auto an")
+        from bengx_bot.mt5bruecke import Bruecke, BrueckeSettings
+        nach_neustart = Bruecke(self.mt5, BrueckeSettings(
+            ohne_rueckfrage=False,              # .env sagt weiter "fragen"
+            state_file=str(Path(self.dir.name) / "mt5.json")))
+        self.assertTrue(nach_neustart.auto)
+
+    def test_konto_sagt_welches_terminal_gelesen_wird(self):
+        from bengx_bot.mt5bruecke import Konto
+        self.mt5._konto = Konto(5001, "Ben", "Tradequo", "EUR", False)
+        self.trade()
+        text = self.sag("/konto")
+        self.assertIn("Konto 5001", text)
+        self.assertIn("Tradequo", text)
+        self.assertIn("Demo", text)
+        self.assertIn("1 offene Position", text)
+
+    def test_konto_ohne_metatrader(self):
+        bot = TelegramBot(self.cfg, self.tg, self.net, self.verteiler)
+        self.assertIn("MetaTrader ist aus",
+                      "\n".join(bot.handle(update("/konto"))))

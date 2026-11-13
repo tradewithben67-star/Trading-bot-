@@ -370,7 +370,28 @@ def cmd_konto(args) -> int:
     print(f"Konfiguration  {konfig.resolve()}")
     print(f"Zugangsdaten   {datei.resolve()}"
           f"{'' if datei.exists() else '   (gibt es nicht!)'}")
-    print(f"Symbol laut Konfiguration: {cfg.mt5.symbol!r}")
+    print()
+
+    # Was in dieser Datei steht — alles auf einmal. Die Live-Sperre meldet
+    # immer nur das erste, was fehlt; hier sieht man gleich alles.
+    fehlt = []
+    if not cfg.live.enabled:
+        fehlt.append("live.enabled = true")
+    if cfg.live.broker.lower() not in ("mt5", "metatrader5", "tradequo"):
+        fehlt.append('live.broker = "mt5"')
+    print(f"Bot            {cfg.bot.name}")
+    if cfg.bot.name == "einzelschuss":
+        quelle = (cfg.einzelschuss.calendar
+                  if cfg.einzelschuss.trigger == "kalender" else "ohne Kalender")
+        print(f"Auslöser       {cfg.einzelschuss.trigger}  ({quelle})")
+    print(f"Symbol         {cfg.mt5.symbol}")
+    print(f"Live           {'ein' if cfg.live.enabled else 'AUS'}"
+          f", Broker {cfg.live.broker}")
+    if fehlt:
+        print()
+        print("  Zum Handeln fehlt noch in config.toml:")
+        for zeile in fehlt:
+            print(f"    {zeile}")
     print()
 
     try:

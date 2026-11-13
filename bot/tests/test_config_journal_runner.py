@@ -70,6 +70,48 @@ class TestConfig(unittest.TestCase):
             Config.load("gibt-es-nicht.toml")
 
 
+class TestBeispielkonfiguration(unittest.TestCase):
+    """Die Beispieldatei ist der erste Schritt im Schnellstart. Wenn sie sich
+    nicht lesen lässt, scheitert jeder Einstieg an Zeile eins."""
+
+    datei = Path(__file__).resolve().parents[1] / "config.example.toml"
+
+    def test_the_example_config_can_be_read(self):
+        cfg = Config.load(self.datei)
+        self.assertEqual(cfg.bot.name, "dauerlaeufer")
+
+    def test_it_holds_a_section_for_every_bot(self):
+        import tomllib
+
+        with self.datei.open("rb") as fh:
+            roh = tomllib.load(fh)
+        for abschnitt in ("bot", "market", "costs", "strategy", "swing",
+                          "einzelschuss", "copy", "risk", "data", "live"):
+            self.assertIn(abschnitt, roh)
+
+    def test_every_bot_validates_against_it(self):
+        from bengx_bot.config import BOT_NAMES
+
+        for name in BOT_NAMES:
+            with self.subTest(bot=name):
+                cfg = Config.load(self.datei)
+                cfg.bot.name = name
+                cfg.validate()
+
+    def test_the_values_match_the_defaults_in_the_code(self):
+        """Sonst erklärt die Beispieldatei etwas anderes als der Bot tut."""
+        import tomllib
+        from dataclasses import asdict
+
+        with self.datei.open("rb") as fh:
+            roh = tomllib.load(fh)
+        standard = asdict(Config())
+        for abschnitt, werte in roh.items():
+            for schluessel, wert in werte.items():
+                with self.subTest(wo=f"{abschnitt}.{schluessel}"):
+                    self.assertEqual(standard[abschnitt][schluessel], wert)
+
+
 class TestJournal(unittest.TestCase):
     def test_roundtrip(self):
         with tempfile.TemporaryDirectory() as d:
@@ -215,12 +257,36 @@ class TestRunner(unittest.TestCase):
                 Runner(cfg, live=True)
             self.assertIn("live.enabled", str(cm.exception))
 
-    def test_live_needs_a_backtest(self):
+    def test_repeated_ticks_do_not_duplicate_open_positions(self):
+        """`loop()` benutzt denselben Runner immer wieder. Wer bei jedem
+        Durchlauf den Zustand dazulädt, statt ihn zu ersetzen, verdoppelt
+        seine Positionen — und zwar bei jedem Takt."""
+        with tempfile.TemporaryDirectory() as d:
+            cfg = self._setup(d)
+            runner = Runner(cfg)
+            runner.tick()
+            offen = len(runner.broker.positions)
+            for _ in range(5):
+                runner.tick()
+            self.assertEqual(len(runner.broker.positions), offen)
+            gespeichert = json.loads(
+                (Path(cfg.live.state_dir) / "state.json").read_text())
+            self.assertEqual(len(gespeichert["positions"]), offen)
+
+    def test_live_needs_a_backtest_for_real_money(self):
+        """Die Pflicht hängt am Konto, nicht an der Konfiguration: MT5 muss
+        selbst sagen, dass es ein Übungskonto ist. Sagt es Echtgeld, wird
+        nachgerechnet — daran ändert keine Einstellung etwas."""
+        from tests.fake_mt5 import FakeMT5, Konto, TRADE_MODE_REAL
         with tempfile.TemporaryDirectory() as d:
             cfg = self._setup(d)
             cfg.live.enabled = True
+            cfg.live.broker = "mt5"
+            cfg.live.allow_demo_without_backtest = True
+            cfg.mt5.server_utc_offset_hours = 2.0
+            echt = FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL))
             with self.assertRaises(LiveGateError) as cm:
-                Runner(cfg, live=True)
+                Runner(cfg, live=True, mt5_modul=echt)
             self.assertIn("Backtest", str(cm.exception))
 
     def test_live_still_refuses_with_the_paper_broker(self):
@@ -235,15 +301,23 @@ class TestRunner(unittest.TestCase):
             self.assertIn("paper", str(cm.exception))
 
     def test_changing_a_rule_invalidates_the_release(self):
+        from tests.fake_mt5 import FakeMT5, Konto, TRADE_MODE_REAL
         with tempfile.TemporaryDirectory() as d:
             cfg = self._setup(d)
             cfg.live.enabled = True
+            cfg.live.broker = "mt5"
+            cfg.mt5.server_utc_offset_hours = 2.0
             p = backtest_path(cfg)
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text("{}", encoding="utf-8")
-            cfg.strategy.stop_atr = 3.0          # Regel geändert
+            echt = FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL))
+            # Mit dem Backtest zum aktuellen Regelwerk darf er laufen ...
+            Runner(cfg, live=True, mt5_modul=echt)
+            # ... und sobald eine Regel wandert, gilt er nicht mehr.
+            cfg.strategy.stop_atr = 3.0
             with self.assertRaises(LiveGateError) as cm:
-                Runner(cfg, live=True)
+                Runner(cfg, live=True,
+                       mt5_modul=FakeMT5(konto=Konto(trade_mode=TRADE_MODE_REAL)))
             self.assertIn("Backtest", str(cm.exception))
 
 

@@ -165,6 +165,55 @@ def synthetic(bars: int = 3000, start: float = 2000.0, seed: int = 7,
     return out
 
 
+def news_synthetic(days: int = 12, start: float = 2000.0, seed: int = 11,
+                   release_hour: int = 12, release_minute: int = 30,
+                   spike: float = 6.0, quiet: float = 0.25,
+                   begin: datetime | None = None
+                   ) -> tuple[list[Candle], list[datetime]]:
+    """Ruhige Minutenkerzen mit einer Nachricht an jedem Werktag.
+
+    Für den Einzelschuss-Bot: `synthetic()` schwankt je Minute so stark, dass
+    der Ruhe-Filter zu Recht jeden Termin ablehnt — was die Mechanik nicht
+    prüft. Hier liegt vor dem Termin Ruhe und danach ein Ausschlag, dessen
+    Richtung wechselt.
+
+    Gibt die Kerzen und die Terminzeiten zurück. Auch das sind keine echten
+    Kurse: ein Ergebnis darauf sagt nichts über den Markt.
+    """
+    rng = random.Random(seed)
+    t = begin or datetime(2024, 1, 1, tzinfo=timezone.utc)
+    price = start
+    out: list[Candle] = []
+    events: list[datetime] = []
+    for tag in range(days):
+        hoch = t + timedelta(days=tag)
+        if hoch.weekday() >= 5:                      # am Wochenende ruht der Markt
+            continue
+        termin = hoch.replace(hour=release_hour, minute=release_minute)
+        events.append(termin)
+        # Von drei Stunden vor bis drei Stunden nach dem Termin.
+        minute = termin - timedelta(hours=3)
+        richtung = 1 if rng.random() < 0.5 else -1
+        for k in range(360):
+            o = price
+            if k == 180:                             # die Nachrichtenkerze
+                c = o + spike * richtung * rng.uniform(0.6, 1.4)
+            else:
+                nach = 1.0 if k < 180 else 2.5       # danach bleibt es unruhig
+                c = o + rng.gauss(0, quiet) * nach
+            docht = abs(rng.gauss(0, quiet))
+            out.append(Candle(
+                ts=minute, open=round(o, 2),
+                high=round(max(o, c) + docht, 2),
+                low=round(min(o, c) - docht, 2),
+                close=round(c, 2),
+                volume=round(rng.uniform(500, 5000)),
+            ))
+            price = c
+            minute += timedelta(minutes=1)
+    return out, events
+
+
 def iter_closed(candles: Sequence[Candle], warmup: int) -> Iterator[int]:
     """Indizes der Kerzen, die der Bot bewerten darf."""
     for i in range(max(warmup, 1), len(candles)):

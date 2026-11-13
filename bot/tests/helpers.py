@@ -175,3 +175,62 @@ def ifvg_entry_phase():
     for _ in range(40):
         rows.append((p, p + 0.4, p - 0.4, p + 0.1)); p += 0.1
     return [(round(a, 2), round(b, 2), round(c, 2), round(d, 2)) for a, b, c, d in rows]
+
+
+def quiet_minutes(n: int, price: float = 2000.0, wick: float = 0.2,
+                  drift: float = 0.0):
+    """Ruhige Minutenkerzen: kleine Dochte, kaum Richtung.
+
+    Der Einzelschuss braucht Ruhe vor der Nachricht — mit den unruhigen
+    Reihen aus `synthetic()` greift der Filter zu Recht sofort.
+    """
+    rows = []
+    p = price
+    for _ in range(n):
+        o = p
+        c = p + drift
+        # Auf Cent gerundet, wie echte Kurse: sonst liegt ein Hoch um
+        # 2e-13 unter einer Orderstufe und der Test prüft Fließkomma.
+        rows.append((round(o, 2), round(max(o, c) + wick, 2),
+                     round(min(o, c) - wick, 2), round(c, 2)))
+        p = c
+    return rows
+
+
+def news_scenario(event_minute: int = 60, after: int = 90, direction: int = 1,
+                  spike: float = 6.0, price: float = 2000.0, wick: float = 0.2,
+                  follow: float = 0.2, start: datetime = START):
+    """Ruhiger Vorlauf, eine Nachrichtenkerze, dann Nachlauf.
+
+    Gibt `(candles, event_ts)` zurück; `event_ts` ist der Beginn der
+    Nachrichtenkerze. `direction` +1 läuft nach oben, -1 nach unten,
+    `spike` ist die Strecke in USD, `follow` der Nachlauf je Minute.
+    """
+    rows = quiet_minutes(event_minute, price=price, wick=wick)
+    p = price
+    o, c = p, round(p + spike * direction, 2)
+    rows.append((round(o, 2), round(max(o, c) + wick, 2),
+                 round(min(o, c) - wick, 2), c))
+    rows += quiet_minutes(after, price=c, wick=wick, drift=follow * direction)
+    candles = rows_to_candles(rows, start=start)
+    return candles, candles[event_minute].ts
+
+
+def whipsaw_scenario(event_minute: int = 60, price: float = 2000.0,
+                     wick: float = 0.2, up: float = 2.0, down: float = 8.0,
+                     after: int = 90, start: datetime = START):
+    """Erst nach oben über die Kaufstufe, dann weit unter die Verkaufsstufe.
+
+    Prüft den Kern: die zweite Order ist gestrichen, sobald die erste läuft.
+    Ein Netz-Bot würde hier unten noch einmal einsteigen.
+    """
+    rows = quiet_minutes(event_minute, price=price, wick=wick)
+    o, c = price, round(price + up, 2)
+    rows.append((round(o, 2), round(max(o, c) + wick, 2),
+                 round(min(o, c) - wick, 2), c))                    # Kaufstufe
+    o = c
+    c = round(price - down, 2)
+    rows.append((o, round(o + wick, 2), round(c - wick, 2), c))      # Rutsch nach unten
+    rows += quiet_minutes(after, price=c, wick=wick, drift=-0.2)
+    candles = rows_to_candles(rows, start=start)
+    return candles, candles[event_minute].ts

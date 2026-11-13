@@ -1,6 +1,6 @@
-"""Welcher Bot läuft. Beide erfüllen dieselbe Schnittstelle — `prepare`,
+"""Welcher Bot läuft. Alle erfüllen dieselbe Schnittstelle — `prepare`,
 `evaluate`, `warmup_bars`, `exit_rules` —, deshalb arbeiten Maschine,
-Backtest und Runner mit beiden unverändert.
+Backtest und Runner mit jedem unverändert.
 """
 
 from __future__ import annotations
@@ -10,6 +10,7 @@ from typing import Protocol, Sequence
 from .config import Config
 from .copier import Kopierer
 from .model import Candle, Signal
+from .news import Einzelschuss
 from .strategy import Dauerlaeufer, ExitRules
 from .swing import SwingTrader
 
@@ -26,6 +27,7 @@ class Strategy(Protocol):
 BOTS = {
     "dauerlaeufer": Dauerlaeufer,
     "swing": SwingTrader,
+    "einzelschuss": Einzelschuss,
     "kopierer": Kopierer,
 }
 

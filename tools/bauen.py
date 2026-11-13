@@ -26,8 +26,8 @@ KOPF = """<!doctype html>
 BESCHREIBUNG = {
     "index.html": "BENGX - Ben, 18, aus Deutschland, handelt seit einem Jahr "
                   "ausschliesslich Gold. Signale, Lernbereich und Bots.",
-    "konsole.html": "BENGX Bot-Konsole - die drei Bots einstellen: "
-                    "Signal-Kopierer, Dauerlaeufer und Swing.",
+    "konsole.html": "BENGX Bot-Konsole - die vier Bots einstellen: "
+                    "Signal-Kopierer, Dauerlaeufer, Swing und Einzelschuss.",
 }
 
 

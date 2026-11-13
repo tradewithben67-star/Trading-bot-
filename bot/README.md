@@ -1,14 +1,15 @@
 # Die Bots
 
-Die drei Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
+Die vier Bots aus dem Bereich **X** der Website, alle auf XAU/USD:
 
 | `[bot] name` | Bot | Zeitrahmen | Idee |
 | --- | --- | --- | --- |
 | `dauerlaeufer` | **Dauerläufer** | 1h | Trendfolge: Ausbruch im gerichteten Markt |
 | `swing` | **Swing** | 1m (+5m, 1h) | Liquiditäts-Sweep, Fortsetzung, Einstieg in die Lücke |
+| `einzelschuss` | **Einzelschuss** | 1m | zwei Order um eine Nachricht, eine wird gehandelt |
 | `kopierer` | **Signal-Kopierer** | beliebig | spiegelt Bens Signale aus einer `signals.json` |
 
-Beide erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
+Alle erfüllen dieselbe Schnittstelle und teilen sich Maschine, Risikosteuerung,
 Backtest, Protokoll und Not-Aus. Reines Standard-Python ab 3.11. Für den Handel selbst gibt es keine
 Abhängigkeiten; nur das freie Schreiben in Telegram braucht `anthropic`.
 
@@ -19,9 +20,12 @@ cd bot
 
 python3 -m bengx_bot rules              # Regelwerk des Dauerläufers
 python3 -m bengx_bot --bot swing rules  # Regelwerk des Swing-Bots
+python3 -m bengx_bot --bot einzelschuss rules
 python3 -m bengx_bot --bot kopierer rules
+python3 -m bengx_bot konto              # Verbindung zu MetaTrader 5 prüfen
+python3 -m bengx_bot lernen             # was die bisherigen Trades sagen
 python3 -m bengx_bot selftest           # Mechanik auf erfundenen Daten prüfen
-python3 -m unittest discover -s tests -t .   # 278 Tests
+python3 -m unittest discover -s tests -t .   # 438 Tests
 
 cp config.example.toml config.toml      # anpassen
 python3 -m bengx_bot --config config.toml backtest --csv data/xauusd_h1.csv
@@ -114,6 +118,201 @@ er ausgelassen hat.
 
 Schließt Ben, schließt der Kopierer mit (`close_with_source`). Der eigene Stop
 hat trotzdem Vorrang: wird er in derselben Kerze getroffen, gilt er.
+
+## Einzelschuss
+
+Das Vorbild läuft als MetaTrader-EA auf XAU/USD: zwei Order um eine Nachricht,
+**eine** davon wird ausgeführt, die andere gestrichen. Kein Nachkaufen, kein
+Netz, keine Verdopplung — daher der Name.
+
+| Schritt | Was passiert |
+| --- | --- |
+| 1 | **Scharfmachen** — 60 s vor dem Termin steht der Referenzkurs fest: der Schluss der letzten Kerze, die davor fertig ist. Darüber und darunter liegt je eine Stop-Order, 15 Pips entfernt |
+| 2 | **Ruhe davor** — war die Spanne der letzten 15 Minuten größer als 60 Pips, wird nicht gehandelt. Eine laufende Bewegung sägt die Straddle auf, bevor die Nachricht da ist |
+| 3 | **Einzelschuss** — die erste Seite, die berührt wird, wird gehandelt; die andere Order verfällt im selben Augenblick |
+| 4 | **Frist** — wird in 5 Minuten keine Seite berührt, verfallen beide. Der Termin ist dann vorbei |
+
+Stop und Ziel stehen in **Pips**, nicht in ATR: bei einer Nachricht geht es um
+die ersten Minuten, nicht um die Tagesvolatilität. Beide messen sich an der
+Orderstufe, nicht am Fill — dort, wo sie in der Plattform eingetragen würden.
+
+### Woher die Termine kommen
+
+```toml
+trigger = "kalender"     # Termine aus news.json
+trigger = "ausbruch"     # ohne Kalender
+```
+
+Mit **Kalender** liest der Bot `news.json`; `news.example.json` zeigt das
+Format. Gehandelt wird nur, was in `impacts` steht — üblich sind CPI, PPI, NFP
+und FOMC. Ein unlesbarer Zeitstempel in der Datei bricht den Lauf ab, statt
+stillschweigend einen Termin zu verschlucken, an dem der Bot dann nicht handelt.
+
+Mit **Ausbruch** braucht er keine Datei: eine Minutenkerze, deren Spanne 3 × ATR
+erreicht und mindestens 30 Pips misst, gilt selbst als Ereignis. Die Order
+liegen dann über ihrem Hoch und unter ihrem Tief. Das ist der Weg, wenn niemand
+den Kalender pflegt.
+
+### Zwei Dinge, die den Backtest ehrlich halten
+
+**Beide Seiten in einer Minute.** Werden Kauf- und Verkaufsstufe in derselben
+Minutenkerze berührt, ist aus Kerzendaten nicht zu erkennen, welche zuerst kam.
+Dann gilt die ungünstige Annahme (`tie_break = "pessimistic"`): gehandelt wird
+die Seite *gegen* die Richtung der Kerze — also die, die anschließend in den
+Stop läuft. `"skip"` lässt solche Termine stattdessen aus; das sieht hübscher
+aus, als es ist, weil es gerade die Fehlausbrüche entfernt.
+
+**Der Stop in der Eröffnungsminute.** Bei allen anderen Bots wird der Stop erst
+ab der Kerze nach dem Einstieg geprüft — bei Stundenkerzen wäre alles andere
+geraten. Der Einzelschuss schaltet das ab (`stop_on_entry_bar`): bei einer
+Nachricht fallen Einstieg und Stop oft in dieselbe Minute, und wer das übergeht,
+schönt den Backtest genau an der Stelle, auf die es ankommt.
+
+Dazu kommt `news_slippage_pips`: ein Aufschlag auf den Fill, weil im
+Nachrichtenmoment keine Stop-Order zum Wunschkurs füllt. Er geht gegen die
+eigene Richtung, vergrößert damit das gerechnete Risiko und schlägt so auch auf
+die Positionsgröße durch. Lieber zu hoch ansetzen als zu niedrig.
+
+### Grenzen
+
+Höchstens 2 Termine am Tag, mindestens 30 Minuten zwischen zwei Trades, und pro
+Termin genau ein Trade — auch wenn er sofort in den Stop läuft. Es gibt kein
+zweites Mal.
+
+Der Bot braucht **Minutenkerzen** in `data.csv`.
+
+## Am Konto: MetaTrader 5
+
+Tradequo läuft über MetaTrader 5. Der Anschluss steht in `mt5.py` und erfüllt
+dieselbe Schnittstelle wie das Papierkonto — die Maschine merkt keinen
+Unterschied, der Markt schon.
+
+**Nur unter Windows.** Das Paket `MetaTrader5` gibt es für kein anderes System.
+Auf Linux und Mac bleibt der Bot auf dem Papierkonto; der Anschluss lässt sich
+dort bis auf den letzten Schritt prüfen, aber nicht betreiben.
+
+### In sechs Schritten
+
+1. **MetaTrader 5 installieren**, Demokonto beim Broker anlegen, im Terminal
+   anmelden. Unter *Extras → Optionen → Expert Advisors* den **Algo-Handel
+   erlauben**.
+2. **Symbolnamen nachsehen.** Im Fenster *Marktübersicht* steht, wie dein
+   Broker Gold nennt: `XAUUSD`, `XAUUSD.r`, `GOLD`, `GOLD.m` — das kommt in
+   `config.toml` unter `[mt5] symbol`.
+3. **`.env` ausfüllen** (`.env.example` zeigt alles): `MT5_LOGIN`,
+   `MT5_PASSWORD` (das Handels-, nicht das Investorpasswort) und `MT5_SERVER`.
+   Die Datei steht in `.gitignore` und verlässt deinen Rechner nicht.
+4. **`konto.bat` doppelklicken.** Das handelt nichts, sondern zeigt nur, ob
+   die Verbindung steht — und was der Bot an diesem Konto handeln *würde*.
+5. **`config.toml`** aus `config.example.toml` anlegen, `[bot] name` auf den
+   gewünschten Bot stellen, `[live] enabled = true` und `broker = "mt5"`.
+6. **`handeln.bat` doppelklicken.** Es prüft erst die Verbindung und startet
+   den Bot nur, wenn sie steht.
+
+Not-Aus: die Datei `state/KILLSWITCH` anlegen. Beim nächsten Durchlauf wird
+alles geschlossen und nichts Neues eröffnet. `/aus` in Telegram tut dasselbe.
+
+### Demokonto und Echtgeld
+
+Der Bot fragt **MT5 selbst**, was für ein Konto das ist — nicht die
+Konfiguration.
+
+| Konto | Backtest nötig? |
+| --- | --- |
+| Demo- oder Wettbewerbskonto | nein, `live.allow_demo_without_backtest` steht auf `true` |
+| Echtgeldkonto | **immer**, und daran ändert kein Schalter etwas |
+
+Ausprobieren ist der Sinn eines Demokontos. Echtes Geld wird vorher
+nachgerechnet.
+
+### Was der Anschluss richtig macht
+
+* **Unzen und Lots.** Der Bot rechnet in Unzen, MT5 in Lots; bei Gold ist ein
+  Lot meist 100 Unzen. Wer das verwechselt, handelt das Hundertfache.
+  Gerundet wird **ab**, und was unter der Mindestmenge landet, wird nicht
+  gehandelt — mit Begründung.
+
+  Praktisch heißt das: Mit 0,5 % Risiko und 25 Pips Stop braucht es rund
+  **500 € Kapital**, damit überhaupt eine handelbare Menge herauskommt. Darunter
+  bleibt der Bot stehen. Genau deshalb empfehlen die Leute, die solche Bots
+  verkaufen, ein **Cent-Konto** — dort wiegt ein Lot ein Hundertstel.
+
+* **Serverzeit.** Die meisten Broker stellen ihren Server auf UTC+2 oder UTC+3.
+  Der Einzelschuss hängt an Terminen in UTC; zwei Stunden Versatz und er
+  handelt die falsche Minute. Der Bot misst den Versatz am laufenden Kurs.
+  Am Wochenende geht das nicht — dann `mt5.server_utc_offset_hours` eintragen.
+
+* **Der Broker schließt, nicht der Bot.** Stop und Ziel liegen als echte SL/TP
+  im Terminal. Die meisten Trades enden dort. Jeder Durchlauf gleicht deshalb
+  zuerst ab, was das Terminal seit dem letzten Mal geschlossen hat, und holt
+  es ins Protokoll. Ohne das stünde dort nur, was die Maschine selbst
+  geschlossen hat — und das wären ausgerechnet die wenigsten.
+
+* **Gebucht wird der Fill.** Nicht der Kurs, den die Strategie wollte. Der
+  Unterschied ist die Slippage, und die gehört ins Protokoll, nicht ins
+  Vergessen.
+
+* **Fremde Trades bleiben fremd.** Der Bot fasst nur Positionen mit seiner
+  eigenen `magic`-Kennung an. Was du von Hand öffnest, rührt er nicht an.
+
+### Einzelschuss am Terminal
+
+Hier liegt die wichtigste Einschränkung, und sie ist eine Frage der Bauart.
+
+Die Maschine bewertet **abgeschlossene** Minutenkerzen und schickt danach eine
+**Marktorder**. Zwischen dem Augenblick, in dem die Orderstufe berührt wird,
+und der Order liegt damit bis zu eine Minute — ausgerechnet die, in der sich
+der Kurs am schnellsten bewegt. Ein echter Nachrichten-EA legt stattdessen
+**Stop-Order ins Terminal**, die genau an der Stufe auslösen.
+
+Was das ausmacht, misst der Bot selbst. In einem Probelauf gegen ein
+nachgebautes Terminal lagen die Einstiege im Mittel **21 Pips neben der
+Stufe** — bei einem Orderabstand von 15 und einem Stop von 25 Pips ist das
+nicht mehr dieselbe Strategie.
+
+`python -m bengx_bot lernen` meldet das als eigenen Befund, sobald es auftritt.
+Solange es auftritt, gilt: **der Einzelschuss auf MT5 prüft die Mechanik, nicht
+das Regelwerk.** Wer das dicht haben will, braucht echte Pending-Order mit
+Gegenseitig-Löschen — das ist der nächste Bauabschnitt und steht noch aus.
+
+Die anderen drei Bots trifft das kaum: Dauerläufer, Swing und Kopierer hängen
+nicht an einer Stufe, die auf die Sekunde getroffen werden muss.
+
+## Aus Fehlern lernen
+
+```bash
+python3 -m bengx_bot lernen
+```
+
+Der Bot **verstellt keine Regel selbst**, und das ist Absicht. Bei höchstens
+zwei Terminen am Tag kommen im Monat vierzig Trades zusammen. Aus vierzig
+Zahlen lässt sich kein Parameter schätzen, der morgen noch gilt — man fittet
+Rauschen. Eine Automatik, die nach drei Verlusten den Abstand verstellt, hätte
+am Ende ein Regelwerk, das zu genau diesen drei Verlusten passt. Dazu käme,
+dass sie still ändert, wogegen du gerade prüfst: der Fingerabdruck wandert,
+der Backtest gilt nicht mehr, und niemand weiß hinterher, welche Fassung
+welche Zahlen gemacht hat.
+
+Stattdessen hält jeder Trade sein Umfeld fest — Termin, Richtung, Spread beim
+Einstieg, Slippage, Abweichung von der gewollten Stufe, Haltedauer — und
+`lernen` rechnet daraus Befunde:
+
+| Befund | Was dahintersteckt |
+| --- | --- |
+| Order füllen schlechter als gerechnet | `news_slippage_pips` ist zu optimistisch |
+| Der Bot steigt woanders ein, als er will | die Bauart oben — Marktorder statt Stop-Order |
+| Spread beim Einstieg breiter als angenommen | `costs.spread_pips` schönt den Backtest |
+| Order werden vom ersten Ausschlag abgeholt | `offset_pips` zu eng |
+| Positionen an der Mindestmenge | das Konto trägt das eingestellte Risiko nicht |
+| Termin X kostet bisher | Kandidat zum Streichen aus `news.json` |
+| Die meisten Trades laufen in den Zeitstop | die Bewegung kam gar nicht |
+
+Jeder Befund nennt **seine Stückzahl**. Unter acht Fällen steht ausdrücklich
+dabei, dass es für eine Aussage nicht reicht. Ein Muster aus drei Trades ist
+kein Muster.
+
+Was du übernehmen willst, trägst du selbst ein — in `config.toml` oder in der
+Bot-Konsole — und rechnest danach neu nach.
 
 ## Assistent in Telegram
 
@@ -296,22 +495,23 @@ Website im Bereich **G** liest. Die Kette ist damit geschlossen: Kerze → Signa
 
 ## Echtes Geld
 
-Noch nicht möglich, und das ist Absicht. `live` prüft der Reihe nach:
+`live` prüft der Reihe nach:
 
 1. `live.enabled = true` muss bewusst gesetzt sein.
-2. Ein Backtest-Bericht zum aktuellen Fingerabdruck muss vorliegen.
-3. Ein Broker-Anschluss muss eingetragen sein.
+2. `live.broker` muss ein Anschluss sein, den es gibt — eingebaut ist `"mt5"`.
+3. **Was für ein Konto das ist, sagt MT5 selbst.** Meldet es ein Übungskonto,
+   darf der Bot ohne Backtest handeln. Meldet es Echtgeld, muss ein
+   Backtest-Bericht zum aktuellen Fingerabdruck vorliegen — und das lässt sich
+   nicht abschalten.
 
-An Punkt 3 bricht es ab: ein echter Anschluss braucht Zugangsdaten und gehört in
-eine eigene Klasse nach dem Vorbild von `Broker` in `broker.py` — mit den
-Schlüsseln aus der Umgebung, niemals im Repository. Bis dahin läuft alles auf
-dem Papierkonto, mit demselben Code.
+Der Anschluss steht in `mt5.py` und ist fertig; wie man ihn einrichtet, steht
+oben unter [Am Konto: MetaTrader 5](#am-konto-metatrader-5). **Er läuft nur
+unter Windows**, weil es das Paket `MetaTrader5` nur dort gibt.
 
-**Das Konto liegt bei Tradequo**, und Tradequo läuft über **MetaTrader 5**. Der
-Weg dorthin führt also über MT5: entweder das offizielle Paket `MetaTrader5`
-(nur Windows) oder eine Brücke zu einem Expert Advisor. Zu bauen sind genau vier
-Methoden — `open`, `reduce`, `close` und ein Kontostand. `PaperBroker` zeigt, was
-sie zurückgeben müssen, und die 171 Tests laufen gegen dieselbe Schnittstelle.
+Für einen anderen Broker gehört eine eigene Klasse nach dem Vorbild von
+`Broker` in `broker.py` daneben — mit den Zugangsdaten aus der Umgebung,
+niemals im Repository. Zu bauen sind vier Methoden; `PaperBroker` und
+`MT5Broker` zeigen beide, was sie zurückgeben müssen.
 
 Ein Hinweis zum Wochenende: Tradequo bietet mit **GOLD247** seit September 2026
 auch samstags und sonntags Gold an. Beide Bots stellen freitags trotzdem glatt
@@ -328,6 +528,9 @@ nachrechnen, was die breiteren Spreads kosten.
 | `config.py` | TOML laden, prüfen, Fingerabdruck bilden |
 | `strategy.py` | Regelwerk des Dauerläufers |
 | `swing.py` | Regelwerk des Swing-Bots |
+| `news.py` | Regelwerk des Einzelschuss samt Kalender |
+| `mt5.py` | Anschluss an MetaTrader 5: Order, Kerzen, Konto, Abgleich |
+| `lernen.py` | wertet die Trades aus und schlägt Änderungen vor |
 | `copier.py` | Signal-Kopierer samt Datei- und HTTP-Quelle |
 | `timeframes.py` | 5m und 1h aus Minutenkerzen, Swing-Punkte, Sweeps, FVGs |
 | `bots.py` | welcher Bot läuft |
@@ -345,6 +548,7 @@ nachrechnen, was die breiteren Spreads kosten.
 | `cli.py` | Kommandozeile |
 | `einrichten.py` | Einrichtung: .env anlegen, Token prüfen, Chat-Kennung holen |
 | `einrichten.bat`, `starten.bat`, `pruefen.bat` | zum Doppelklicken unter Windows |
+| `konto.bat`, `handeln.bat` | Verbindung prüfen, Bot am Konto starten |
 
 Backtest und Live benutzen **dieselbe** `engine.py`. Was der Test prüft, läuft
 später auch wirklich so.
@@ -355,7 +559,7 @@ später auch wirklich so.
 python3 -m unittest discover -s tests -t .
 ```
 
-278 Tests. Sie decken die Indikatoren, jede einzelne Regel aller drei Bots, die
+438 Tests. Sie decken die Indikatoren, jede einzelne Regel aller vier Bots, die
 Zeitrahmen-Aggregation, Swing-Punkte, Sweeps und Lücken, die Risikogrenzen, die
 Kostenrechnung des Brokers, die Ausstiegslogik (kein Blick in die Zukunft, Stop
 vor Ziel, Trailing nur enger), den Backtest, das Protokollformat und die

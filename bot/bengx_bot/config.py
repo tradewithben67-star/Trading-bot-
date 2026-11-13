@@ -12,6 +12,10 @@ from pathlib import Path
 from typing import Any
 
 
+# Die Bots, die es gibt. `bots.BOTS` muss dazu passen; ein Test prüft das.
+BOT_NAMES = ("dauerlaeufer", "swing", "einzelschuss", "kopierer")
+
+
 @dataclass
 class MarketConfig:
     symbol: str = "XAU/USD"
@@ -54,7 +58,7 @@ class StrategyConfig:
 
 @dataclass
 class BotConfig:
-    name: str = "dauerlaeufer"        # "dauerlaeufer" oder "swing"
+    name: str = "dauerlaeufer"        # dauerlaeufer | swing | einzelschuss | kopierer
 
 
 @dataclass
@@ -88,6 +92,36 @@ class SwingConfig:
 
 
 @dataclass
+class EinzelschussConfig:
+    """Der Einzelschuss: zwei Order um eine Nachricht, eine wird gehandelt."""
+
+    trigger: str = "kalender"         # kalender | ausbruch
+    calendar: str = "news.json"       # bei trigger = "kalender"
+    impacts: list[str] = field(default_factory=lambda: ["hoch", "high"])
+    arm_seconds_before: int = 60      # so lange vor dem Termin steht der Kurs fest
+    offset_pips: float = 15.0         # Abstand der Order vom Referenzkurs
+    window_minutes: int = 5           # danach verfallen beide Order
+    prerange_minutes: int = 15        # Fenster für die Ruhe davor
+    max_prerange_pips: float = 60.0   # breiter: nicht handeln
+    stop_pips: float = 25.0
+    target_pips: float = 50.0
+    news_slippage_pips: float = 3.0   # Aufschlag auf den Fill bei der Nachricht
+    partial_r: float = 1.0
+    partial_fraction: float = 0.5
+    trail_atr: float = 2.0
+    max_hold_minutes: int = 60
+    max_events_per_day: int = 2
+    min_minutes_between: int = 30
+    tie_break: str = "pessimistic"    # pessimistic | skip
+    burst_atr: float = 3.0            # bei trigger = "ausbruch"
+    min_burst_pips: float = 30.0
+    atr_period: int = 14
+    session_start_hour: int = 7
+    session_end_hour: int = 20
+    friday_cutoff_hour: int = 19
+
+
+@dataclass
 class CopyConfig:
     """Der Signal-Kopierer: woher die Signale kommen und wie streng er folgt."""
 
@@ -109,6 +143,21 @@ class CopyConfig:
     max_hold_bars: int = 480
     friday_cutoff_hour: int = 19
     atr_period: int = 14
+
+
+@dataclass
+class MT5Config:
+    """Der Anschluss an MetaTrader 5. Zugangsdaten stehen hier NICHT —
+    die kommen aus bot/.env und gehören niemals ins Repository."""
+
+    symbol: str = "XAUUSD"            # beim Broker nachsehen: XAUUSD, GOLD, XAUUSD.r ...
+    magic: int = 770315               # Kennung der eigenen Order im Terminal
+    deviation_points: int = 20        # erlaubte Abweichung beim Fill, in Points
+    filling: str = "auto"             # auto | fok | ioc | return
+    candles: int = 1500               # so viele Kerzen je Durchlauf holen
+    timeframe_minutes: int = 1
+    server_utc_offset_hours: float | None = None   # None = am Terminal messen
+    sync_stops: bool = True           # nachgezogene Stops ins Terminal schreiben
 
 
 @dataclass
@@ -137,6 +186,10 @@ class LiveConfig:
     state_dir: str = "state"
     journal: str = "state/trades.jsonl"
     signals_out: str = "../signals.json"
+    # Auf einem Demokonto darf ohne Backtest gehandelt werden — dort liegt
+    # kein Geld. Für ein Echtgeldkonto gilt die Pflicht weiter, und MT5 muss
+    # selbst bestätigen, dass es ein Übungskonto ist.
+    allow_demo_without_backtest: bool = True
 
 
 @dataclass
@@ -146,7 +199,9 @@ class Config:
     costs: CostConfig = field(default_factory=CostConfig)
     strategy: StrategyConfig = field(default_factory=StrategyConfig)
     swing: SwingConfig = field(default_factory=SwingConfig)
+    einzelschuss: EinzelschussConfig = field(default_factory=EinzelschussConfig)
     copy: CopyConfig = field(default_factory=CopyConfig)
+    mt5: MT5Config = field(default_factory=MT5Config)
     risk: RiskConfig = field(default_factory=RiskConfig)
     data: DataConfig = field(default_factory=DataConfig)
     live: LiveConfig = field(default_factory=LiveConfig)
@@ -178,7 +233,9 @@ class Config:
             costs=build(CostConfig, "costs"),
             strategy=build(StrategyConfig, "strategy"),
             swing=build(SwingConfig, "swing"),
+            einzelschuss=build(EinzelschussConfig, "einzelschuss"),
             copy=build(CopyConfig, "copy"),
+            mt5=build(MT5Config, "mt5"),
             risk=build(RiskConfig, "risk"),
             data=build(DataConfig, "data"),
             live=build(LiveConfig, "live"),
@@ -188,11 +245,13 @@ class Config:
 
     def validate(self) -> None:
         s, r, m = self.strategy, self.risk, self.market
-        if self.bot.name not in ("dauerlaeufer", "swing", "kopierer"):
+        if self.bot.name not in BOT_NAMES:
             raise ValueError(f"unbekannter Bot: {self.bot.name!r} "
-                             "(erlaubt: dauerlaeufer, swing, kopierer)")
+                             f"(erlaubt: {', '.join(BOT_NAMES)})")
         self._validate_swing()
+        self._validate_einzelschuss()
         self._validate_copy()
+        self._validate_mt5()
         if m.pip <= 0:
             raise ValueError("market.pip muss größer als 0 sein")
         if s.breakout < 2:
@@ -235,6 +294,60 @@ class Config:
         if not 0 <= w.session_start_hour < w.session_end_hour <= 24:
             raise ValueError("swing: die Handelszeit muss innerhalb eines Tages liegen")
 
+    def _validate_einzelschuss(self) -> None:
+        e = self.einzelschuss
+        if e.trigger not in ("kalender", "ausbruch"):
+            raise ValueError("einzelschuss.trigger muss kalender oder ausbruch sein")
+        if e.tie_break not in ("pessimistic", "skip"):
+            raise ValueError("einzelschuss.tie_break muss pessimistic oder skip sein")
+        if e.offset_pips <= 0:
+            raise ValueError("einzelschuss.offset_pips muss größer als 0 sein")
+        if e.stop_pips <= 0 or e.target_pips <= 0:
+            raise ValueError("einzelschuss: Stop und Ziel müssen größer als 0 sein")
+        if e.news_slippage_pips < 0:
+            raise ValueError("einzelschuss.news_slippage_pips darf nicht negativ sein")
+        if e.arm_seconds_before < 0:
+            raise ValueError("einzelschuss.arm_seconds_before darf nicht negativ sein")
+        if e.max_prerange_pips <= 0:
+            raise ValueError("einzelschuss.max_prerange_pips muss größer als 0 sein")
+        if e.burst_atr <= 0:
+            raise ValueError("einzelschuss.burst_atr muss größer als 0 sein")
+        if not 0 <= e.partial_fraction < 1:
+            raise ValueError("einzelschuss.partial_fraction muss zwischen 0 und 1 liegen")
+        if e.partial_r <= 0:
+            raise ValueError("einzelschuss.partial_r muss größer als 0 sein")
+        if e.max_events_per_day < 1:
+            raise ValueError("einzelschuss.max_events_per_day muss mindestens 1 sein")
+        if e.min_minutes_between < 0:
+            raise ValueError("einzelschuss.min_minutes_between darf nicht negativ sein")
+        for name in ("window_minutes", "prerange_minutes", "max_hold_minutes",
+                     "atr_period"):
+            if getattr(e, name) < 1:
+                raise ValueError(f"einzelschuss.{name} muss mindestens 1 sein")
+        if not 0 <= e.session_start_hour < e.session_end_hour <= 24:
+            raise ValueError("einzelschuss: die Handelszeit muss innerhalb eines Tages liegen")
+        if self.bot.name == "einzelschuss" and e.trigger == "kalender" and not e.calendar:
+            raise ValueError('einzelschuss.trigger ist "kalender", '
+                             "aber einzelschuss.calendar ist leer")
+
+    def _validate_mt5(self) -> None:
+        m = self.mt5
+        if not str(m.symbol).strip():
+            raise ValueError("mt5.symbol darf nicht leer sein")
+        if m.filling not in ("auto", "fok", "ioc", "return"):
+            raise ValueError("mt5.filling muss auto, fok, ioc oder return sein")
+        if m.deviation_points < 0:
+            raise ValueError("mt5.deviation_points darf nicht negativ sein")
+        if m.candles < 50:
+            raise ValueError("mt5.candles muss mindestens 50 sein")
+        if m.timeframe_minutes not in (1, 5, 15, 30, 60, 240, 1440):
+            raise ValueError("mt5.timeframe_minutes muss 1, 5, 15, 30, 60, "
+                             "240 oder 1440 sein")
+        if (m.server_utc_offset_hours is not None
+                and not -12 <= m.server_utc_offset_hours <= 14):
+            raise ValueError("mt5.server_utc_offset_hours muss zwischen "
+                             "-12 und 14 liegen")
+
     def _validate_copy(self) -> None:
         c = self.copy
         if c.source not in ("file", "http"):
@@ -267,6 +380,7 @@ class Config:
             "costs": asdict(self.costs),
             "strategy": asdict(self.strategy),
             "swing": asdict(self.swing),
+            "einzelschuss": asdict(self.einzelschuss),
             "copy": asdict(self.copy),
             "risk": asdict(self.risk),
         }

@@ -103,7 +103,7 @@ REGELN
 Ich bin Ben, 18, aus Deutschland, handle seit einem Jahr ausschließlich
 Gold.
 
-VIP
+VIP — 10 € die Woche
 Alle Signale, mit Begründung — Sweep, BOS, FVG — und das
 Chance-Risiko-Verhältnis. Nur auf Einladung. Wenn du rein willst,
 schreib mir hier.

@@ -208,9 +208,20 @@ bei Kündigung. Das braucht ein Geschäftskonto und ein paar Tage Vorlauf.
 
 ## 10. Worauf du achten solltest
 
-**Der Preis steht noch nicht fest.** Du hast mir keinen genannt, deshalb
-steht in keiner Nachricht eine Zahl. Sag mir einen, dann trage ich ihn
-überall ein, wo er hingehört.
+**Der Preis: 10 € die Woche.** Er steht in der angehefteten Nachricht
+des Inner Circle, denn dort wird verkauft. In VIP selbst steht er
+nicht — wer drin ist, hat schon bezahlt.
+
+**Überleg dir monatlich statt wöchentlich.** 10 € die Woche sind rund
+43 € im Monat, der Preis ist also in Ordnung. Aber weil du von Hand
+einlädst, bedeutet wöchentlich: bei jedem Mitglied **viermal im Monat**
+nachsehen, ob gezahlt wurde. Bei 20 Mitgliedern sind das 80
+Kontrollen im Monat statt 20.
+
+Bei monatlich nimmst du fast dasselbe Geld ein und hast ein Viertel der
+Arbeit. 40 € im Monat ist eine runde Zahl, die niemanden abschreckt.
+Wenn der Einstieg niedriger sein soll: die erste Woche für 10 € zum
+Reinschnuppern, danach monatlich.
 
 **Weitergeleitete Signale sind dein größtes Risiko.** Ein Mitglied, das
 deine Signale in eine andere Gruppe kopiert, kostet dich alle künftigen

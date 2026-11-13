@@ -252,6 +252,7 @@ def cmd_telegram(args) -> int:
     import os
 
     from .gruppen import GruppenSettings, Verteiler
+    from .mt5bruecke import Bruecke, BrueckeSettings, EchtesMT5
     from .telegram import (HttpTransport, TelegramBot, TelegramSettings,
                            load_env_file)
 
@@ -289,7 +290,27 @@ def cmd_telegram(args) -> int:
         print(f"Rückblick täglich um {verteiler.settings.rueckblick_um}",
               file=sys.stderr)
 
-    bot = TelegramBot(cfg, tg, netz, verteiler)
+    # MetaTrader: nur wenn eingeschaltet. Beim Start gilt alles, was
+    # ohnehin offen ist, als bekannt — sonst rauschen beim ersten Mal
+    # saemtliche laufenden Positionen als frische Signale raus.
+    bruecke = None
+    bs = BrueckeSettings.from_env(umgebung)
+    if bs.an:
+        try:
+            bruecke = Bruecke(EchtesMT5(), bs)
+            offen = bruecke.gleichstand()
+            print(f"MetaTrader: verbunden, {offen} offene Position(en) "
+                  "gelten als bekannt"
+                  + ("" if not bs.ohne_rueckfrage else ", Versand OHNE Rückfrage"),
+                  file=sys.stderr)
+        except RuntimeError as exc:
+            print(f"MetaTrader: {exc}", file=sys.stderr)
+            bruecke = None
+    else:
+        print("MetaTrader: aus (MT5=1 in bot/.env schaltet es ein)",
+              file=sys.stderr)
+
+    bot = TelegramBot(cfg, tg, netz, verteiler, bruecke)
     if args.once:
         print(f"{bot.poll_once()} Nachricht(en) verarbeitet.")
         return 0
@@ -356,8 +377,25 @@ def cmd_pruefen(args) -> int:
         print(f"   Rückblick täglich um: "
               f"{verteiler.settings.rueckblick_um or 'aus'}")
 
-    # 3. Handelsbot
-    print("\n3. Handelsbot")
+    # 3. MetaTrader
+    from .mt5bruecke import BrueckeSettings
+    bs = BrueckeSettings.from_env(umgebung)
+    print("\n3. MetaTrader")
+    if not bs.an:
+        print("   aus — MT5=1 in bot/.env schaltet es ein")
+    else:
+        try:
+            from .mt5bruecke import EchtesMT5
+            offen = len(EchtesMT5().positionen())
+            print(f"   verbunden, {offen} offene Position(en)")
+        except RuntimeError as exc:
+            print(f"   {exc}")
+            fehlt.append("eine Verbindung zu MetaTrader")
+        print("   Versand: " + ("OHNE Rückfrage" if bs.ohne_rueckfrage
+                                else "mit Rückfrage"))
+
+    # 4. Handelsbot
+    print("\n4. Handelsbot")
     print(f"   Regelwerk: {cfg.bot.name}")
     p = Path(cfg.live.killswitch_file)
     print(f"   Not-Aus: {'GESETZT — es wird nicht gehandelt' if p.exists() else 'nicht gesetzt'}")

@@ -208,11 +208,13 @@ Befehle:
 class TelegramBot:
     def __init__(self, config: Config, settings: TelegramSettings,
                  transport: Transport,
-                 verteiler: Verteiler | None = None) -> None:
+                 verteiler: Verteiler | None = None,
+                 bruecke: Any = None) -> None:
         self.cfg = config
         self.tg = settings
         self.net = transport
         self.verteiler = verteiler
+        self.bruecke = bruecke
         self.offset = 0
 
     # ---- Zugang ---------------------------------------------------------
@@ -300,14 +302,7 @@ class TelegramBot:
             raus = self._v().freigeben()
         except (ValueError, RuntimeError) as exc:
             return str(exc)
-        zeilen = [f"Raus als {raus['id']}."]
-        if raus["sofort"]:
-            zeilen.append("An: " + ", ".join(raus["sofort"]))
-        if raus["wartet"]:
-            zeilen.append("Folgt: " + ", ".join(raus["wartet"]))
-        if raus["ausgelassen"]:
-            zeilen.append("Nicht an: " + ", ".join(raus["ausgelassen"]))
-        return "\n".join(zeilen)
+        return self._bilanz(raus)
 
     def _ergebnis(self, kennung: str, lage: str) -> str:
         v = self._v()
@@ -393,8 +388,60 @@ class TelegramBot:
                 "disable_web_page_preview": True,
             })
 
+    def neue_trades(self) -> None:
+        """Schaut in MetaTrader, ob Ben einen Trade gestellt hat."""
+        if self.bruecke is None or self.verteiler is None or not self.tg.chat_id:
+            return
+        try:
+            neue = self.bruecke.neue()
+        except Exception as exc:                  # MT5 darf nichts reissen
+            print(f"MetaTrader nicht gelesen: {exc}", flush=True)
+            return
+        for roh in neue:
+            self._gemeldeter_trade(roh)
+
+    def _gemeldeter_trade(self, roh: dict[str, Any]) -> None:
+        fehlt = [was for was, wert in (("Stop", roh.get("sl")),
+                                       ("Ziel", roh.get("tp"))) if not wert]
+        if fehlt:
+            # Ein Signal ohne Stop gehört nicht in eine Gruppe.
+            self.send(self.tg.chat_id,
+                      f"Neuer Trade in {roh['pair']} erkannt, aber "
+                      f"{' und '.join(fehlt)} fehlt in MetaTrader. "
+                      "Trag es dort nach und melde das Signal von Hand.")
+            return
+        if self.bruecke.settings.ohne_rueckfrage:
+            try:
+                raus = self.verteiler.signal_senden(dict(roh))
+            except (ValueError, RuntimeError) as exc:
+                self.send(self.tg.chat_id, f"Trade nicht verschickt: {exc}")
+                return
+            self.send(self.tg.chat_id, "Automatisch raus.\n" + self._bilanz(raus))
+            return
+        try:
+            self.verteiler.entwurf(dict(roh))
+        except (ValueError, RuntimeError) as exc:
+            self.send(self.tg.chat_id, f"Trade nicht übernommen: {exc}")
+            return
+        teile = [f"Neuer Trade in {roh['pair']} — so würde er rausgehen:", ""]
+        for name, text in self.verteiler.entwurf_vorschau().items():
+            teile += [f"── {name} ──", text, ""]
+        teile.append("Schicken? „ja“ oder „nein“.")
+        self.send(self.tg.chat_id, "\n".join(teile))
+
+    def _bilanz(self, raus: dict[str, Any]) -> str:
+        zeilen = [f"Raus als {raus['id']}."]
+        if raus["sofort"]:
+            zeilen.append("An: " + ", ".join(raus["sofort"]))
+        if raus["wartet"]:
+            zeilen.append("Folgt: " + ", ".join(raus["wartet"]))
+        if raus["ausgelassen"]:
+            zeilen.append("Nicht an: " + ", ".join(raus["ausgelassen"]))
+        return "\n".join(zeilen)
+
     def nebenbei(self) -> None:
-        """Was ohne Zutun passiert: wartende Signale und der Rückblick."""
+        """Was ohne Zutun passiert: Trades, wartende Signale, Rückblick."""
+        self.neue_trades()
         if self.verteiler is None:
             return
         try:

@@ -148,7 +148,12 @@ def pruefen(signal: dict[str, Any]) -> dict[str, Any]:
         except (TypeError, ValueError):
             raise ValueError(f"{name} ist keine Zahl: {roh!r}") from None
 
-    entry, sl, tp = zahl("entry"), zahl("sl"), zahl("tp")
+    # Mehrere Teilziele: MetaTrader kennt je Position ein TP, wer gestaffelt
+    # aussteigt eroeffnet mehrere. Das naechste Ziel ist dann das erste —
+    # und reicht allein, auch wenn kein einzelnes tp dabeisteht.
+    ziele = [float(z) for z in (signal.get("ziele") or []) if float(z) > 0]
+    entry, sl = zahl("entry"), zahl("sl")
+    tp = ziele[0] if ziele else zahl("tp")
     if entry <= 0:
         raise ValueError("Einstieg muss größer als null sein.")
     if seite == "long" and not (sl < entry < tp):
@@ -160,7 +165,15 @@ def pruefen(signal: dict[str, Any]) -> dict[str, Any]:
                          f"Einstieg liegen (Stop {de(sl)}, Einstieg {de(entry)}, "
                          f"Ziel {de(tp)}).")
 
-    return {
+    for z in ziele[1:]:
+        if seite == "long" and z <= tp:
+            raise ValueError("Die weiteren Ziele müssen bei long über dem "
+                             "ersten liegen.")
+        if seite == "short" and z >= tp:
+            raise ValueError("Die weiteren Ziele müssen bei short unter dem "
+                             "ersten liegen.")
+
+    raus = {
         "id": str(signal.get("id") or "").strip(),
         "pair": str(signal.get("pair") or "XAU/USD").strip().upper(),
         "side": seite,
@@ -169,33 +182,56 @@ def pruefen(signal: dict[str, Any]) -> dict[str, Any]:
         "tp": tp,
         "note": str(signal.get("note") or "").strip(),
     }
+    if ziele:
+        raus["ziele"] = ziele
+    # Stellen und Symbol kommen aus der MT5-Bruecke mit; ohne sie bleibt
+    # es bei Gold.
+    for feld in ("stellen", "symbol"):
+        if signal.get(feld) is not None:
+            raus[feld] = signal[feld]
+    # Bei "pip" ist None eine Aussage, kein Fehlen: in Bitcoin oder im DAX
+    # rechnet niemand in Pips. Deshalb zaehlt hier, ob der Schluessel da
+    # ist — sonst griffe Golds Pipgroesse und aus 1000 Dollar wuerden
+    # 10.000 Pips.
+    if "pip" in signal:
+        raus["pip"] = signal["pip"]
+    return raus
 
 
 def text_signal(signal: dict[str, Any], ausfuehrlich: bool, pip: float,
                 werbung: bool = False) -> str:
     """Die Nachricht für eine Gruppe."""
-    seite = "LONG" if signal["side"] == "long" else "SHORT"
-    sl_p = pips(signal["entry"], signal["sl"], pip)
-    tp_p = pips(signal["entry"], signal["tp"], pip)
+    richtung = "BUY" if signal["side"] == "long" else "SELL"
+    markt = signal.get("pair") or "XAU/USD"
+    stellen = int(signal.get("stellen") or 2)
+    # In Bitcoin oder im DAX rechnet niemand in Pips. Dann nennt das
+    # Signal nur Kurse und das Chance-Risiko-Verhältnis.
+    pip_hier = signal.get("pip", pip)
+    ziele = signal.get("ziele") or [signal["tp"]]
 
-    zeilen = [f"{signal['pair']} · {seite}", ""]
+    zeilen = [f"BEN {markt} {richtung}", ""]
+    zeilen.append(f"Einstieg  {de(signal['entry'], stellen)}")
+
+    def mit_pips(preis: float) -> str:
+        text = de(preis, stellen)
+        if ausfuehrlich and pip_hier:
+            text += f"   ({pips(signal['entry'], preis, pip_hier):.0f} Pips)"
+        return text
+
+    zeilen.append(f"Stop      {mit_pips(signal['sl'])}")
+    if len(ziele) == 1:
+        zeilen.append(f"Ziel      {mit_pips(ziele[0])}")
+    else:
+        for i, z in enumerate(ziele, 1):
+            zeilen.append(f"TP{i}       {mit_pips(z)}")
+
     if ausfuehrlich:
-        zeilen += [
-            f"Einstieg  {de(signal['entry'])}",
-            f"Stop      {de(signal['sl'])}   ({sl_p:.0f} Pips)",
-            f"Ziel      {de(signal['tp'])}   ({tp_p:.0f} Pips)",
-        ]
-        v = crv(signal["entry"], signal["sl"], signal["tp"])
+        v = crv(signal["entry"], signal["sl"], ziele[-1])
         if v is not None:
             zeilen.append(f"CRV       {de(v, 1)}")
         if signal["note"]:
             zeilen += ["", signal["note"]]
-    else:
-        zeilen += [
-            f"Einstieg  {de(signal['entry'])}",
-            f"Stop      {de(signal['sl'])}",
-            f"Ziel      {de(signal['tp'])}",
-        ]
+
     if werbung:
         zeilen += ["", WERBUNG]
     zeilen += ["", HINWEIS]
@@ -203,8 +239,9 @@ def text_signal(signal: dict[str, Any], ausfuehrlich: bool, pip: float,
 
 
 def text_ergebnis(signal: dict[str, Any], status: str, pip_zahl: float) -> str:
-    seite = "LONG" if signal.get("side") == "long" else "SHORT"
-    kopf = f"{signal.get('pair', 'XAU/USD')} · {seite} — {STATUS_TEXT.get(status, status)}"
+    richtung = "BUY" if signal.get("side") == "long" else "SELL"
+    kopf = (f"BEN {signal.get('pair', 'XAU/USD')} {richtung} — "
+            f"{STATUS_TEXT.get(status, status)}")
     if status == "be":
         return kopf
     return f"{kopf}\n{pip_zahl:+.0f} Pips"
@@ -427,6 +464,15 @@ class Verteiler:
                              "für einen Einstieg. Leg ihn neu an.")
         self._stand.pop("entwurf", None)
         return self.signal_senden(dict(entwurf["signal"]))
+
+    def entwurf_vorschau(self) -> dict[str, str]:
+        """Wie der bereitliegende Entwurf in jeder Gruppe aussähe."""
+        entwurf = self._stand.get("entwurf")
+        if not entwurf:
+            return {}
+        return {g.name: text_signal(entwurf["signal"], g.ausfuehrlich, self.pip,
+                                    werbung=(g.schluessel == "inner"))
+                for g in self.gruppen()}
 
     def entwurf_liegt(self) -> bool:
         """Wartet gerade ein Entwurf auf das Ja?"""

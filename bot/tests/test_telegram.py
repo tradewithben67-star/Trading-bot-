@@ -209,3 +209,97 @@ class TestBetrieb(Base):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestAusMetaTrader(Base):
+    """Trade in MT5 gestellt -> Signal liegt fertig da."""
+
+    def setUp(self):
+        super().setUp()
+        from bengx_bot.mt5bruecke import Bruecke, BrueckeSettings, FakeMT5
+        self.mt5 = FakeMT5()
+        self.bruecke = Bruecke(self.mt5, BrueckeSettings(
+            state_file=str(Path(self.dir.name) / "mt5.json")))
+        self.bot = TelegramBot(self.cfg, self.tg, self.net,
+                               self.verteiler, self.bruecke)
+
+    def trade(self, **kw):
+        from bengx_bot.mt5bruecke import Position
+        werte = dict(ticket=1, symbol="XAUUSD", seite="long", entry=4012.0,
+                     sl=4004.0, tp=4029.0, volumen=0.1, geoeffnet=1000.0)
+        werte.update(kw)
+        self.mt5.dazu(Position(**werte))
+
+    def an_ben(self):
+        return "\n".join(n["text"] for n in self.net.sent if n["chat_id"] == "42")
+
+    def test_neuer_trade_wird_als_entwurf_vorgelegt(self):
+        self.trade()
+        self.bot.neue_trades()
+        text = self.an_ben()
+        self.assertIn("Neuer Trade in GOLD", text)
+        self.assertIn("BEN GOLD BUY", text)
+        self.assertIn("Schicken?", text)
+        # noch nichts in den Gruppen
+        self.assertEqual([n for n in self.net.sent if n["chat_id"] != "42"], [])
+
+    def test_ja_schickt_ihn_raus(self):
+        self.trade()
+        self.bot.neue_trades()
+        self.net.sent.clear()
+        self.sag("ja")
+        an_gruppen = [n for n in self.net.sent if n["chat_id"] in ("-100", "-200")]
+        self.assertEqual(len(an_gruppen), 2)
+        self.assertIn("BEN GOLD BUY", an_gruppen[0]["text"])
+
+    def test_anderer_markt(self):
+        self.trade(symbol="BTCUSD", entry=60000.0, sl=59000.0, tp=63000.0)
+        self.bot.neue_trades()
+        text = self.an_ben()
+        self.assertIn("BEN BTCUSD BUY", text)
+        self.assertNotIn("Pips", text)      # in Bitcoin rechnet niemand in Pips
+
+    def test_short_heisst_sell(self):
+        self.trade(seite="short", entry=4030.0, sl=4040.0, tp=4010.0)
+        self.bot.neue_trades()
+        self.assertIn("BEN GOLD SELL", self.an_ben())
+
+    def test_mehrere_teilziele(self):
+        self.trade(ticket=1, tp=4029.0, geoeffnet=1000.0)
+        self.trade(ticket=2, tp=4045.0, geoeffnet=1010.0)
+        self.bot.neue_trades()
+        text = self.an_ben()
+        self.assertIn("TP1", text)
+        self.assertIn("TP2", text)
+        self.assertIn("4.045,00", text)
+
+    def test_ohne_stop_kommt_nichts_raus(self):
+        self.trade(sl=0.0)
+        self.bot.neue_trades()
+        self.assertIn("Stop", self.an_ben())
+        self.assertIn("fehlt in MetaTrader", self.an_ben())
+        self.assertFalse(self.verteiler.entwurf_liegt())
+
+    def test_ohne_rueckfrage_geht_er_direkt_raus(self):
+        self.bruecke.settings.ohne_rueckfrage = True
+        self.trade()
+        self.bot.neue_trades()
+        an_gruppen = [n for n in self.net.sent if n["chat_id"] in ("-100", "-200")]
+        self.assertEqual(len(an_gruppen), 2)
+        self.assertIn("Automatisch raus", self.an_ben())
+
+    def test_kaputtes_mt5_reisst_nichts(self):
+        class Kaputt:
+            def positionen(self): raise RuntimeError("Terminal zu")
+        from bengx_bot.mt5bruecke import Bruecke, BrueckeSettings
+        bot = TelegramBot(self.cfg, self.tg, self.net, self.verteiler,
+                          Bruecke(Kaputt(), BrueckeSettings(
+                              state_file=str(Path(self.dir.name) / "x.json"))))
+        bot.nebenbei()          # darf nicht werfen
+
+    def test_derselbe_trade_nur_einmal(self):
+        self.trade()
+        self.bot.neue_trades()
+        self.net.sent.clear()
+        self.bot.neue_trades()
+        self.assertEqual(self.net.sent, [])

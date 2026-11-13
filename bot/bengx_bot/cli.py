@@ -427,6 +427,23 @@ def cmd_konto(args) -> int:
         except MT5Error as exc:
             print(f"  {groesse:.2f} Unzen — {str(exc).splitlines()[0]}")
             print("  Der Bot würde an diesem Konto nichts handeln.")
+            # Nicht nur sagen, dass es klemmt, sondern womit es ginge.
+            kleinste = info.volume_min * info.contract_size      # in Unzen
+            noetig = kleinste * je_unze                          # Verlust bei Stop
+            print()
+            print("  Zwei Wege:")
+            if konto.equity > 0:
+                anteil = noetig / konto.equity
+                print(f"    a) risk.risk_per_trade auf mindestens "
+                      f"{anteil:.2%} setzen. Dann wird die kleinste Menge")
+                print(f"       handelbar — aber jeder Trade riskiert dann "
+                      f"{noetig:.2f} von {konto.equity:.0f}.")
+            kapital = noetig / cfg.risk.risk_per_trade
+            print(f"    b) das Konto auf mindestens {kapital:.0f} "
+                  f"{konto.currency} bringen. Bei einem Demokonto")
+            print(f"       ist das der ehrlichere Weg: die Einstellungen "
+                  f"bleiben, wie sie live")
+            print(f"       auch wären.")
             return 1
 
         if not konto.demo:

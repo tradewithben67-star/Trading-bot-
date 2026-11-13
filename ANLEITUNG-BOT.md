@@ -217,7 +217,7 @@ Wenn du den Nachrichtenhandel willst statt der Ausbrüche:
 | `Das Symbol 'XAUUSD' kennt dein Broker nicht` | Die Meldung **listet die Gold-Symbole deines Brokers gleich mit auf** — eine davon in `config.toml` unter `[mt5] symbol` eintragen, im Zweifel die oberste. Alle Symbole sehen: `py -3 -m bengx_bot --config config.toml konto --symbole` |
 | `Keine Kerzen für …` | In MT5 den M1-Chart für Gold öffnen, damit die Historie lädt. |
 | `Der letzte Tick … ist X Stunden entfernt` | Markt ist zu (Wochenende). Warten — oder in `config.toml` `server_utc_offset_hours = 2` eintragen. |
-| `Die Position wäre 0.0050 Lots groß` | Das Konto ist zu klein für das eingestellte Risiko. Ab ~500 € geht es bei 25 Pips Stop; darunter braucht es ein **Cent-Konto**. |
+| `Die Position wäre 0.0060 Lots groß` | Das Konto ist zu klein für das eingestellte Risiko. `konto.bat` rechnet dir aus, welches Risiko oder welches Kapital es bräuchte. Bei 25 Pips Stop und 0,5 % Risiko sind das rund **500 €**. Auf einem Demokonto: einfach eines mit mehr Guthaben eröffnen. |
 | `Für dieses Regelwerk liegt kein Backtest vor` | Du hast ein **Echtgeldkonto** verbunden. Nimm ein Demokonto. |
 | `live.enabled steht auf false` | In `config.toml` unter `[live]` auf `true` setzen. |
 | `Kalender nicht gefunden: news.json` | Entweder `news.json` anlegen (Teil 8) oder `trigger = "ausbruch"` setzen. |

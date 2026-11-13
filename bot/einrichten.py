@@ -288,6 +288,26 @@ def frage_mt5(werte: dict[str, str]) -> None:
         werte["MT5"] = "0"
 
 
+def nachtrag(werte: dict[str, str], ueberschrift: bool = True) -> bool:
+    """Fragt nur nach dem, was in der .env noch gar nicht steht.
+
+    Zwei Wege fuehren hierher: die Einrichtung uebernimmt Einstellungen aus
+    einer frueheren Entpackung, oder LOSGEHTS findet eine fertige .env. In
+    beiden Faellen waere eine neue Einstellung sonst nie gesetzt worden —
+    und genau das ist passiert: MetaTrader blieb aus, weil nach dem
+    Uebernehmen niemand mehr danach gefragt hat.
+    """
+    if "MT5" in werte:
+        return False
+    if ueberschrift:
+        print("\nBENGX — eine neue Einstellung")
+        print("=" * 38)
+    frage_mt5(werte)
+    schreiben(werte)
+    pakete_nachziehen(werte)
+    return True
+
+
 def schreiben(werte: dict[str, str]) -> None:
     vorlage = VORLAGE.read_text(encoding="utf-8") if VORLAGE.exists() else ""
     ENV.write_text(zusammenfuehren(vorlage, werte), encoding="utf-8")
@@ -337,15 +357,9 @@ def main() -> int:
     # Einstellungen mit, ohne alles noch einmal durchzugehen.
     if "--nur-neues" in sys.argv and ENV.exists():
         werte = lesen(ENV)
-        if "MT5" in werte:
-            return 0                      # nichts Neues, still weiter
-        print("\nBENGX — eine neue Einstellung")
-        print("=" * 38)
-        frage_mt5(werte)
-        schreiben(werte)
-        pakete_nachziehen(werte)
-        print("\nFertig.")
-        return 0
+        if nachtrag(werte):
+            print("\nFertig.")
+        return 0                          # sonst still weiter
 
     print("\nBENGX — Telegram-Assistent einrichten")
     print("=" * 38)
@@ -372,14 +386,12 @@ def main() -> int:
                      if alt.get("TELEGRAM_VIP_CHAT_ID")
                      and alt.get("TELEGRAM_INNER_CHAT_ID") else ""))
             if ja("   Übernehmen?", True):
-                vorlage = (VORLAGE.read_text(encoding="utf-8")
-                           if VORLAGE.exists() else "")
-                ENV.write_text(zusammenfuehren(vorlage, alt), encoding="utf-8")
-                try:
-                    os.chmod(ENV, 0o600)
-                except OSError:
-                    pass
-                print(f"\nÜbernommen nach {ENV}")
+                schreiben(alt)
+                print("Übernommen — Token, Chat-Kennung und Gruppen stehen.")
+                # Alles Neue, das es seit der alten Fassung gibt, jetzt
+                # nachfragen. Frueher ging es hier sofort raus, und eine
+                # neue Einstellung wurde nie gesetzt.
+                nachtrag(alt, ueberschrift=False)
                 print("\n" + _weiter_so())
                 return 0
             break

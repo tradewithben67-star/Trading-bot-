@@ -262,3 +262,62 @@ class TestZweiterBot(unittest.TestCase):
         finally:
             einrichten.urllib.request.urlopen = alt
         self.assertLess(time.time() - t0, 5, "haette sofort abbrechen muessen")
+
+
+class TestNachtrag(unittest.TestCase):
+    """Neue Einstellungen muessen auch den erreichen, der laengst
+    eingerichtet hat.
+
+    Genau hier ist es schiefgegangen: nach „Übernehmen?" ging die
+    Einrichtung sofort raus, die MetaTrader-Frage kam nie, und im
+    Fenster stand dann „MetaTrader: aus".
+    """
+
+    def _lauf(self, inhalt: str, antworten: list[bool]):
+        with tempfile.TemporaryDirectory() as d:
+            env = Path(d) / ".env"
+            if inhalt:
+                env.write_text(inhalt, encoding="utf-8")
+            alt_env, alt_vorlage = einrichten.ENV, einrichten.VORLAGE
+            alt_ja, alt_pakete = einrichten.ja, einrichten.pakete_nachziehen
+            gefragt: list[str] = []
+            einrichten.ENV = env
+            einrichten.VORLAGE = Path(d) / "gibt-es-nicht"
+            einrichten.pakete_nachziehen = lambda werte: None
+
+            def ja(text, standard=False):
+                gefragt.append(text)
+                return antworten.pop(0) if antworten else standard
+
+            einrichten.ja = ja
+            try:
+                werte = einrichten.lesen(env)
+                geaendert = einrichten.nachtrag(werte)
+                return geaendert, einrichten.lesen(env), gefragt
+            finally:
+                einrichten.ENV, einrichten.VORLAGE = alt_env, alt_vorlage
+                einrichten.ja, einrichten.pakete_nachziehen = alt_ja, alt_pakete
+
+    def test_fragt_nach_metatrader_wenn_es_fehlt(self):
+        geaendert, werte, gefragt = self._lauf(
+            "TELEGRAM_TOKEN=1:abc\n", [True, False])
+        self.assertTrue(geaendert)
+        self.assertEqual(werte["MT5"], "1")
+        self.assertEqual(werte["MT5_OHNE_RUECKFRAGE"], "0")
+        self.assertEqual(werte["TELEGRAM_TOKEN"], "1:abc")
+        self.assertTrue(any("Einschalten" in t for t in gefragt))
+
+    def test_nein_schreibt_null_und_fragt_nicht_weiter(self):
+        geaendert, werte, gefragt = self._lauf(
+            "TELEGRAM_TOKEN=1:abc\n", [False])
+        self.assertTrue(geaendert)
+        self.assertEqual(werte["MT5"], "0")
+        self.assertNotIn("MT5_OHNE_RUECKFRAGE", werte)
+        self.assertEqual(len(gefragt), 1)
+
+    def test_schweigt_wenn_schon_beantwortet(self):
+        geaendert, werte, gefragt = self._lauf(
+            "TELEGRAM_TOKEN=1:abc\nMT5=0\n", [True])
+        self.assertFalse(geaendert)
+        self.assertEqual(gefragt, [])
+        self.assertEqual(werte["MT5"], "0")

@@ -1,0 +1,16 @@
+# Windows-Batchdateien liegen hier mit CRLF, und zwar als Bytes.
+#
+# "-text" heißt: Git fasst sie nicht an — kein Umwandeln beim Einchecken,
+# keines beim Auschecken. Das ist wichtig, weil der Bot auch als ZIP von
+# GitHub geladen wird, und ein ZIP bekommt keine Umwandlung beim Auschecken.
+# Mit reinen Unix-Zeilenenden frisst cmd.exe die ersten Zeichen jeder Zeile,
+# und das Fenster füllt sich mit "Der Befehl ho ist entweder falsch
+# geschrieben oder konnte nicht gefunden werden" — gemeint war echo.
+*.bat -text
+
+# Die Mac-Gegenstücke brauchen das Gegenteil: mit CRLF startet die Shell
+# dort gar nicht erst.
+*.command text eol=lf
+
+*.py text eol=lf
+*.sh text eol=lf

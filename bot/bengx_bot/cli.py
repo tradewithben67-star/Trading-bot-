@@ -76,13 +76,38 @@ def cmd_backtest(args) -> int:
     return 0
 
 
+def _betrieb(runner, args) -> int:
+    """Einen Runner laufen lassen und Fehler als Satz melden, nicht als
+    Traceback. Wer vor einem Stapel Python-Zeilen steht, liest die Ursache
+    nicht mehr."""
+    try:
+        if getattr(args, "loop", False):
+            runner.loop(getattr(args, "interval", None))
+        else:
+            print(runner.tick())
+    except FileNotFoundError as exc:
+        print(f"Eine Datei fehlt.\n\n{exc}", file=sys.stderr)
+        return 2
+    except KeyboardInterrupt:
+        print("\nAbgebrochen.", file=sys.stderr)
+        return 130
+    return 0
+
+
 def cmd_paper(args) -> int:
     cfg = _load(args)
     runner = Runner(cfg, live=False)
-    if args.loop:
-        runner.loop(args.interval)
-        return 0
-    print(json.dumps(runner.tick(), ensure_ascii=False, indent=2))
+    try:
+        if args.loop:
+            runner.loop(args.interval)
+            return 0
+        print(json.dumps(runner.tick(), ensure_ascii=False, indent=2))
+    except FileNotFoundError as exc:
+        print(f"Eine Datei fehlt.\n\n{exc}", file=sys.stderr)
+        return 2
+    except KeyboardInterrupt:
+        print("\nAbgebrochen.", file=sys.stderr)
+        return 130
     return 0
 
 
@@ -103,19 +128,15 @@ def cmd_live(args) -> int:
         print(f"Symbol {cfg.mt5.symbol}, Takt {cfg.live.poll_seconds} s. "
               f"Not-Aus: Datei {cfg.live.killswitch_file} anlegen.\n")
 
+    from .mt5 import MT5Error
     try:
-        if args.loop:
-            runner.loop(args.interval)
-        else:
-            print(runner.tick())
-    except KeyboardInterrupt:
-        print("\nAbgebrochen. Offene Positionen bleiben offen — im Terminal "
-              "nachsehen.", file=sys.stderr)
-        return 130
+        return _betrieb(runner, args)
+    except MT5Error as exc:
+        print(f"MetaTrader 5 meldet ein Problem.\n\n{exc}", file=sys.stderr)
+        return 4
     finally:
         if runner.terminal is not None:
             runner.terminal.schliessen()
-    return 0
 
 
 def cmd_report(args) -> int:

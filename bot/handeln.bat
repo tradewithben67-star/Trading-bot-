@@ -14,15 +14,44 @@ echo   Durchlauf wird alles geschlossen und nichts Neues eroeffnet.
 echo.
 
 if not exist "config.toml" (
-  echo   Es fehlt config.toml. Kopiere config.example.toml nach
-  echo   config.toml und trage dein Symbol ein.
+  if exist "config.example.toml" (
+    copy "config.example.toml" "config.toml" >nul
+    echo   Es gab noch keine config.toml — ich habe sie aus der Vorlage
+    echo   angelegt. Bitte jetzt eintragen:
+    echo     [bot] name            = welcher Bot laufen soll
+    echo     [mt5] symbol          = wie dein Broker Gold nennt
+    echo     [live] enabled        = true
+    echo     [live] broker         = "mt5"
+    echo.
+    echo   Danach diese Datei noch einmal doppelklicken.
+    echo.
+    notepad "config.toml"
+    pause
+    exit /b 1
+  )
+  echo   Es fehlt config.example.toml. Ist der Ordner vollstaendig?
   echo.
   pause
   exit /b 1
 )
 
 if not exist ".env" (
-  echo   Es fehlt .env mit den MT5-Zugangsdaten.
+  if exist ".env.example" (
+    copy ".env.example" ".env" >nul
+    echo   Es gab noch keine .env — ich habe sie aus der Vorlage angelegt.
+    echo.
+    echo   Bitte jetzt bot\.env im Editor oeffnen und ganz unten eintragen:
+    echo     MT5_LOGIN     = deine Kontonummer
+    echo     MT5_PASSWORD  = dein HANDELSpasswort
+    echo     MT5_SERVER    = der Servername, genau wie im Terminal
+    echo.
+    echo   Danach diese Datei noch einmal doppelklicken.
+    echo.
+    notepad ".env"
+    pause
+    exit /b 1
+  )
+  echo   Es fehlen .env und .env.example. Ist der Ordner vollstaendig?
   echo.
   pause
   exit /b 1

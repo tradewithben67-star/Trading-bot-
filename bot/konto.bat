@@ -13,11 +13,32 @@ echo   Vorher: MetaTrader 5 starten und anmelden.
 echo.
 
 if not exist ".env" (
-  echo   Noch keine .env. Bitte zuerst einrichten.bat doppelklicken
-  echo   und darin MT5_LOGIN, MT5_PASSWORD und MT5_SERVER eintragen.
+  if exist ".env.example" (
+    copy ".env.example" ".env" >nul
+    echo   Es gab noch keine .env — ich habe sie aus der Vorlage angelegt.
+    echo.
+    echo   Bitte jetzt bot\.env im Editor oeffnen und ganz unten eintragen:
+    echo     MT5_LOGIN     = deine Kontonummer
+    echo     MT5_PASSWORD  = dein HANDELSpasswort
+    echo     MT5_SERVER    = der Servername, genau wie im Terminal
+    echo.
+    echo   Danach diese Datei noch einmal doppelklicken.
+    echo.
+    notepad ".env"
+    pause
+    exit /b 1
+  )
+  echo   Es fehlen .env und .env.example. Ist der Ordner vollstaendig?
   echo.
   pause
   exit /b 1
+)
+
+if not exist "config.toml" (
+  copy "config.example.toml" "config.toml" >nul
+  echo   config.toml aus der Vorlage angelegt. Falls dein Broker Gold
+  echo   anders nennt als XAUUSD, sagt der Test das gleich.
+  echo.
 )
 
 py -3 --version >nul 2>nul && goto :mitpy

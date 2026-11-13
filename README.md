@@ -129,6 +129,12 @@ Golddaten vorliegt und ein Broker angebunden ist; beides erzwingt er selbst.
 
 Die Auswahl auf der Seite ist bis zur Broker-Anbindung eine Merkliste.
 
+## Den Bot ans Konto bringen
+
+Schritt für Schritt, mit allen Links: **[ANLEITUNG-BOT.md](ANLEITUNG-BOT.md)** —
+Python, MetaTrader 5, Demokonto, Zugangsdaten, erster Lauf und was zu tun ist,
+wenn etwas klemmt.
+
 ## Lokal ansehen
 
 ```bash

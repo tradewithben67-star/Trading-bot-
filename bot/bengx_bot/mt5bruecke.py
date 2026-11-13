@@ -27,6 +27,23 @@ from .maerkte import anzeigename, nachkommastellen, pipgroesse
 
 
 @dataclass(frozen=True)
+class Konto:
+    """Welches Handelskonto im Terminal angemeldet ist."""
+    nummer: int
+    inhaber: str
+    broker: str
+    waehrung: str
+    echt: bool
+
+    def __str__(self) -> str:
+        art = "Echtgeld" if self.echt else "Demo"
+        teile = [f"Konto {self.nummer}", art]
+        if self.broker:
+            teile.insert(1, self.broker)
+        return " · ".join(teile)
+
+
+@dataclass(frozen=True)
 class Position:
     ticket: int
     symbol: str
@@ -40,16 +57,22 @@ class Position:
 
 class Quelle(Protocol):
     def positionen(self) -> list[Position]: ...
+    def konto(self) -> Konto | None: ...
 
 
 class FakeMT5:
     """Für Tests: liefert, was man hineinlegt."""
 
-    def __init__(self, positionen: list[Position] | None = None) -> None:
+    def __init__(self, positionen: list[Position] | None = None,
+                 konto: Konto | None = None) -> None:
         self.liste = list(positionen or [])
+        self._konto = konto
 
     def positionen(self) -> list[Position]:
         return list(self.liste)
+
+    def konto(self) -> Konto | None:
+        return self._konto
 
     def dazu(self, *neue: Position) -> None:
         self.liste.extend(neue)
@@ -77,6 +100,24 @@ class EchtesMT5:
             raise RuntimeError(
                 "MetaTrader 5 antwortet nicht. Ist das Terminal offen und "
                 f"angemeldet? ({mt5.last_error()})")
+
+    def konto(self) -> Konto | None:           # pragma: no cover - nur Windows
+        """Das Konto, das im Terminal gerade angemeldet ist.
+
+        Der Bot sucht sich kein Konto aus — er liest das, was offen ist.
+        Deshalb soll beim Start dastehen, welches das ist.
+        """
+        info = self.mt5.account_info()
+        if info is None:
+            return None
+        echt = getattr(self.mt5, "ACCOUNT_TRADE_MODE_REAL", 2)
+        return Konto(
+            nummer=int(getattr(info, "login", 0)),
+            inhaber=str(getattr(info, "name", "") or ""),
+            broker=str(getattr(info, "company", "") or ""),
+            waehrung=str(getattr(info, "currency", "") or ""),
+            echt=getattr(info, "trade_mode", None) == echt,
+        )
 
     def positionen(self) -> list[Position]:    # pragma: no cover - nur Windows
         roh = self.mt5.positions_get()
@@ -139,6 +180,10 @@ class Bruecke:
     settings: BrueckeSettings = field(default_factory=BrueckeSettings)
     uhr: Callable[[], float] = None  # type: ignore[assignment]
     _bekannt: set[int] = field(default_factory=set)
+    _konto: int | None = None
+    # Wird gesetzt, wenn im Terminal ein anderes Konto angemeldet wurde.
+    # Der Aufrufer liest es aus und sagt Ben Bescheid.
+    gewechselt: tuple[int | None, int] | None = None
 
     def __post_init__(self) -> None:
         if self.uhr is None:
@@ -157,8 +202,11 @@ class Bruecke:
         try:
             daten = json.loads(p.read_text(encoding="utf-8"))
             self._bekannt = {int(t) for t in daten.get("bekannt", [])}
+            nummer = daten.get("konto")
+            self._konto = int(nummer) if nummer else None
         except (ValueError, OSError, TypeError):
             self._bekannt = set()
+            self._konto = None
 
     def _sichern(self) -> None:
         p = self._pfad()
@@ -167,8 +215,39 @@ class Bruecke:
         behalten = sorted(self._bekannt)[-500:]
         self._bekannt = set(behalten)
         tmp = p.with_suffix(p.suffix + ".neu")
-        tmp.write_text(json.dumps({"bekannt": behalten}), encoding="utf-8")
+        tmp.write_text(json.dumps({"bekannt": behalten, "konto": self._konto}),
+                       encoding="utf-8")
         tmp.replace(p)
+
+    # ---- Konto ------------------------------------------------------------
+    def konto(self) -> Konto | None:
+        """Welches Konto im Terminal angemeldet ist, oder None."""
+        holen = getattr(self.quelle, "konto", None)
+        if holen is None:
+            return None
+        try:
+            return holen()
+        except Exception:        # ein fehlendes Konto darf nichts reissen
+            return None
+
+    def _konto_pruefen(self) -> bool:
+        """True, wenn gerade ein anderes Konto angemeldet ist als zuletzt.
+
+        Ohne diese Pruefung waere jede Position des neuen Kontos auf einen
+        Schlag ein frisches Signal — beim Wechsel von Demo auf Echtgeld
+        waeren das sofort ein Dutzend.
+        """
+        jetzt = self.konto()
+        if jetzt is None or not jetzt.nummer:
+            return False
+        if self._konto == jetzt.nummer:
+            return False
+        vorher, self._konto = self._konto, jetzt.nummer
+        if vorher is None:
+            self._sichern()          # erstes Mal: nur merken
+            return False
+        self.gewechselt = (vorher, jetzt.nummer)
+        return True
 
     # ---- Erster Lauf ------------------------------------------------------
     def gleichstand(self) -> int:
@@ -177,6 +256,9 @@ class Bruecke:
         Beim ersten Start sollen nicht alle Positionen, die ohnehin schon
         laufen, als frische Signale in die Gruppen rauschen.
         """
+        jetzt = self.konto()
+        if jetzt is not None and jetzt.nummer:
+            self._konto = jetzt.nummer
         offen = self.quelle.positionen()
         self._bekannt |= {p.ticket for p in offen}
         self._sichern()
@@ -190,6 +272,11 @@ class Bruecke:
         nacheinander geöffnet werden zu einem Signal mit mehreren Zielen
         zusammengefasst.
         """
+        if self._konto_pruefen():
+            # Anderes Konto: dessen laufende Positionen sind kein Signal.
+            self.gleichstand()
+            return []
+
         offen = self.quelle.positionen()
         frisch = [p for p in offen if p.ticket not in self._bekannt]
         if not frisch:

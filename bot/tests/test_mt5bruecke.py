@@ -7,7 +7,8 @@ import unittest
 from pathlib import Path
 
 from bengx_bot import maerkte
-from bengx_bot.mt5bruecke import Bruecke, BrueckeSettings, FakeMT5, Position
+from bengx_bot.mt5bruecke import (Bruecke, BrueckeSettings, FakeMT5, Konto,
+                                  Position)
 
 
 def pos(ticket, symbol="XAUUSD", seite="long", entry=4012.0, sl=4004.0,
@@ -15,8 +16,12 @@ def pos(ticket, symbol="XAUUSD", seite="long", entry=4012.0, sl=4004.0,
     return Position(ticket, symbol, seite, entry, sl, tp, volumen, geoeffnet)
 
 
-def bauen(ordner, positionen=(), fenster=90):
-    quelle = FakeMT5(list(positionen))
+def konto(nummer=5001, echt=False):
+    return Konto(nummer, "Ben", "Tradequo", "EUR", echt)
+
+
+def bauen(ordner, positionen=(), fenster=90, mit_konto=None):
+    quelle = FakeMT5(list(positionen), mit_konto)
     b = Bruecke(quelle, BrueckeSettings(
         zusammen_sekunden=fenster,
         state_file=str(Path(ordner) / "mt5.json")))
@@ -153,3 +158,56 @@ class TestTeilziele(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestKonto(unittest.TestCase):
+    """Der Bot sucht sich kein Konto aus — er liest das, was im Terminal
+    angemeldet ist. Deshalb muss er sagen koennen, welches das ist, und
+    merken, wenn ein anderes auftaucht."""
+
+    def test_lesbar_fuer_menschen(self):
+        self.assertEqual(str(konto()), "Konto 5001 · Tradequo · Demo")
+        self.assertEqual(str(konto(77, echt=True)),
+                         "Konto 77 · Tradequo · Echtgeld")
+
+    def test_quelle_ohne_konto_stoert_nicht(self):
+        with tempfile.TemporaryDirectory() as d:
+            b, _ = bauen(d, [pos(1)])
+            self.assertIsNone(b.konto())
+            self.assertEqual(b.gleichstand(), 1)
+
+    def test_erster_lauf_meldet_keinen_wechsel(self):
+        with tempfile.TemporaryDirectory() as d:
+            b, quelle = bauen(d, mit_konto=konto(5001))
+            b.gleichstand()
+            quelle.dazu(pos(1))
+            self.assertEqual(len(b.neue()), 1)
+            self.assertIsNone(b.gewechselt)
+
+    def test_anderes_konto_wird_nicht_zu_signalen(self):
+        with tempfile.TemporaryDirectory() as d:
+            b, quelle = bauen(d, [pos(1)], mit_konto=konto(5001))
+            b.gleichstand()
+
+            # Ben meldet sich auf dem Echtgeldkonto an. Dort laufen
+            # bereits drei Positionen — die sind kein frisches Signal.
+            quelle._konto = konto(9002, echt=True)
+            quelle.liste = [pos(10), pos(11, seite="short"), pos(12)]
+            self.assertEqual(b.neue(), [])
+            self.assertEqual(b.gewechselt, (5001, 9002))
+
+            # Was er danach stellt, schon.
+            quelle.dazu(pos(13, symbol="BTCUSD", geoeffnet=1_700_009_999.0))
+            frisch = b.neue()
+            self.assertEqual(len(frisch), 1)
+            self.assertEqual(frisch[0]["pair"], "BTCUSD")
+
+    def test_kontonummer_ueberlebt_den_neustart(self):
+        with tempfile.TemporaryDirectory() as d:
+            b, quelle = bauen(d, [pos(1)], mit_konto=konto(5001))
+            b.gleichstand()
+
+            zweite = Bruecke(FakeMT5([pos(1), pos(2)], konto(9002)),
+                             BrueckeSettings(state_file=str(Path(d) / "mt5.json")))
+            self.assertEqual(zweite.neue(), [])
+            self.assertEqual(zweite.gewechselt, (5001, 9002))

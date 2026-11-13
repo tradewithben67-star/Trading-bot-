@@ -397,6 +397,15 @@ class TelegramBot:
         except Exception as exc:                  # MT5 darf nichts reissen
             print(f"MetaTrader nicht gelesen: {exc}", flush=True)
             return
+        gewechselt = getattr(self.bruecke, "gewechselt", None)
+        if gewechselt:
+            self.bruecke.gewechselt = None
+            vorher, jetzt = gewechselt
+            self.send(self.tg.chat_id,
+                      f"In MetaTrader ist jetzt Konto {jetzt} angemeldet "
+                      f"(vorher {vorher}). Was dort schon offen war, lasse "
+                      "ich liegen — gemeldet wird nur, was du ab jetzt "
+                      "stellst.")
         for roh in neue:
             self._gemeldeter_trade(roh)
 

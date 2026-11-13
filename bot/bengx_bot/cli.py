@@ -299,9 +299,14 @@ def cmd_telegram(args) -> int:
         try:
             bruecke = Bruecke(EchtesMT5(), bs)
             offen = bruecke.gleichstand()
+            konto = bruecke.konto()
             print(f"MetaTrader: verbunden, {offen} offene Position(en) "
                   "gelten als bekannt"
                   + ("" if not bs.ohne_rueckfrage else ", Versand OHNE Rückfrage"),
+                  file=sys.stderr)
+            # Welches Konto gelesen wird, soll man sehen, ohne danach zu
+            # suchen — es ist einfach das im Terminal angemeldete.
+            print(f"   Konto: {konto if konto else 'konnte ich nicht lesen'}",
                   file=sys.stderr)
         except RuntimeError as exc:
             print(f"MetaTrader: {exc}", file=sys.stderr)
@@ -386,8 +391,11 @@ def cmd_pruefen(args) -> int:
     else:
         try:
             from .mt5bruecke import EchtesMT5
-            offen = len(EchtesMT5().positionen())
+            quelle = EchtesMT5()
+            offen = len(quelle.positionen())
             print(f"   verbunden, {offen} offene Position(en)")
+            konto = quelle.konto()
+            print(f"   Konto: {konto if konto else 'konnte ich nicht lesen'}")
         except RuntimeError as exc:
             print(f"   {exc}")
             fehlt.append("eine Verbindung zu MetaTrader")

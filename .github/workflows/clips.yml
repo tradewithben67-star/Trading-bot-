@@ -87,3 +87,6 @@ jobs:
             gh release create clip-state --target "$GITHUB_SHA" --title "Clip-Liste (nicht loeschen)" \
               --notes "Merkt sich, welche Clips schon gemacht wurden." --latest=false
           gh release upload clip-state clipper/state/gesehen.json --clobber
+          shopt -s nullglob
+          bilder=(clipper/ausgabe/vorschau/*.jpg)
+          [ ${#bilder[@]} -eq 0 ] || gh release upload clip-state "${bilder[@]}" --clobber

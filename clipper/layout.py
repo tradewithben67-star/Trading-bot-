@@ -62,7 +62,7 @@ def gesichter_finden(quelle: Path, proben: int = 16):
         return []
     skala = min(1.0, 960 / w)
     sw, sh = int(w * skala), int(h * skala)
-    det = cv2.FaceDetectorYN.create(str(MODELL), "", (sw, sh), 0.75)
+    det = cv2.FaceDetectorYN.create(str(MODELL), "", (sw, sh), 0.6)
     bilder = []
     for i in np.linspace(0, n - 1, proben).astype(int):
         cap.set(cv2.CAP_PROP_POS_FRAMES, int(i))
@@ -77,24 +77,40 @@ def gesichter_finden(quelle: Path, proben: int = 16):
     return bilder
 
 
+def _gruppen(bilder):
+    """Fasst Gesichter zusammen, die ueber mehrere Bilder an derselben Stelle auftauchen."""
+    gruppen = []
+    for i, b in enumerate(bilder):
+        for g in b:
+            for gr in gruppen:
+                cx, cy, fw, fh = (statistics.median(t[1][k] for t in gr) for k in range(4))
+                if abs(g[0] - cx) < max(1.5 * fw, 0.06) and abs(g[1] - cy) < max(1.2 * fh, 0.08):
+                    gr.append((i, g))
+                    break
+            else:
+                gruppen.append([(i, g)])
+    return gruppen
+
+
 def _facecam(bilder):
-    """Meist genau ein Gesicht, das ungefaehr an derselben Stelle am Rand bleibt = Facecam."""
-    mit = [b for b in bilder if b]
-    if len(mit) < 0.25 * len(bilder):
+    """Eine Stelle am Bildrand, an der fast immer ein Gesicht ist = Facecam.
+
+    Sind dagegen oft groessere Gesichter in der Bildmitte, ist es IRL -> kein Facecam-Layout.
+    """
+    n = len(bilder)
+    mitte = sum(1 for b in bilder if any(abs(g[0] - 0.5) < 0.25 and abs(g[1] - 0.5) < 0.3
+                                         and g[3] >= 0.05 for g in b))
+    if mitte >= 0.3 * n:
         return None
-    if sum(len(b) for b in mit) / len(mit) > 1.6:   # mehrere Leute gleichzeitig -> IRL
-        return None
-    haupt = [max(b, key=lambda g: g[3]) for b in mit]
-    cx, cy, fw, fh = (statistics.median(g[i] for g in haupt) for i in range(4))
-    nah = [g for g in haupt if abs(g[0] - cx) < max(1.5 * fw, 0.08)
-           and abs(g[1] - cy) < max(1.2 * fh, 0.1)]
-    if len(nah) < 0.7 * len(haupt):
-        return None
-    am_rand = cx < 0.3 or cx > 0.7 or cy < 0.3 or cy > 0.7
-    if not am_rand or fh >= 0.25:
-        return None
-    streuung = max(g[0] for g in nah) - min(g[0] for g in nah)
-    return cx, cy, fw, streuung
+    bester, beste_anzahl = None, 0
+    for gr in _gruppen(bilder):
+        anzahl = len({i for i, _ in gr})
+        cx, cy, fw, fh = (statistics.median(t[1][k] for t in gr) for k in range(4))
+        am_rand = cx < 0.3 or cx > 0.7 or cy < 0.3 or cy > 0.7
+        if am_rand and fh < 0.3 and anzahl >= 0.25 * n and anzahl > beste_anzahl:
+            xs = [t[1][0] for t in gr]
+            bester, beste_anzahl = (cx, cy, fw, max(xs) - min(xs)), anzahl
+    return bester
 
 
 def standard(w: int, h: int) -> Layout:
@@ -146,8 +162,16 @@ def _zoom_layout(w, h, bilder) -> Layout:
                   kanal_oben=unten + 20, sub_mitte=False, sub_y=sub_y)
 
 
-def waehlen(quelle: Path) -> Layout:
+def _feste_cam(w, h, box) -> Layout:
+    """Cam-Position aus der Konfiguration: [x, y, breite, hoehe], relativ zur Bildgroesse."""
+    x, y, bw, bh = box
+    return _facecam_layout(w, h, (x + bw / 2, y + bh / 2 - 0.05 * bh, bw / 3.4, 0.0))
+
+
+def waehlen(quelle: Path, feste_cam=None) -> Layout:
     w, h = groesse_von(quelle)
+    if feste_cam:
+        return _feste_cam(w, h, feste_cam)
     try:
         bilder = gesichter_finden(quelle)
     except Exception as e:

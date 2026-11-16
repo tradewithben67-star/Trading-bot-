@@ -71,7 +71,12 @@ dev.twitch.tv eine App anlegen und `TWITCH_CLIENT_ID` und
 | `hashtags`, `hashtags_pro_streamer` | landen in der Beschreibung |
 | `untertitel` | `false` = ohne Untertitel (schneller) |
 
-Die Uhrzeiten stehen in `.github/workflows/clips.yml` (`cron`).
+Die Uhrzeiten stehen in `.github/workflows/clips.yml` (`cron`). Weil GitHubs
+Zeitplan oft verspätet oder gar nicht startet, stößt jeder Lauf zusätzlich
+selbst den nächsten an (ca. 30 Minuten nach seinem Start).
+
+**Anhalten:** Actions → „Clips machen“ → „…“ (oben rechts) → **Disable workflow**.
+**Wieder starten:** dort **Enable workflow**, dann einmal **Run workflow**.
 
 ## Wichtig
 

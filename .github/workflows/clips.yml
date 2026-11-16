@@ -1,7 +1,10 @@
 name: Clips machen
 
-# Laeuft durchgehend alle 30 Minuten von allein (GitHub startet manchmal ein
-# paar Minuten spaeter) und jederzeit per Knopf: Actions -> "Clips machen" -> "Run workflow".
+# Laeuft durchgehend etwa alle 30 Minuten und jederzeit per Knopf:
+# Actions -> "Clips machen" -> "Run workflow".
+# Weil GitHubs Zeitplan (cron) oft verspaetet oder gar nicht startet, stoesst
+# jeder Lauf am Ende selbst den naechsten an (ca. 30 Min. nach seinem Start).
+# Anhalten: Actions -> "Clips machen" -> "..." -> "Disable workflow".
 on:
   schedule:
     - cron: "7,37 * * * *"
@@ -14,18 +17,24 @@ on:
 
 permissions:
   contents: write
-
-concurrency:
-  group: clips
-  cancel-in-progress: false
+  actions: write      # damit ein Lauf den naechsten anstossen kann
 
 jobs:
   clips:
     runs-on: ubuntu-latest
     timeout-minutes: 90
+    concurrency:
+      group: clips
+      cancel-in-progress: false
+    outputs:
+      start: ${{ steps.start.outputs.zeit }}
     env:
       GH_TOKEN: ${{ github.token }}
     steps:
+      - name: Startzeit merken
+        id: start
+        run: echo "zeit=$(date +%s)" >> "$GITHUB_OUTPUT"
+
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
@@ -89,3 +98,34 @@ jobs:
           shopt -s nullglob
           bilder=(clipper/ausgabe/vorschau/*.jpg)
           [ ${#bilder[@]} -eq 0 ] || gh release upload clip-state "${bilder[@]}" --clobber
+
+  # Sicherung, weil GitHubs Zeitplan (cron) oft verspaetet oder gar nicht startet:
+  # ca. 30 Minuten nach dem Start den naechsten Lauf anstossen. Eigener Job, damit
+  # das Warten einen Lauf von Hand nicht blockiert.
+  weiter:
+    needs: clips
+    # nur auf dem Hauptzweig, und nicht wenn der Lauf von Hand abgebrochen wurde
+    if: ${{ !cancelled() && github.ref_name == github.event.repository.default_branch }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GH_TOKEN: ${{ github.token }}
+      GH_REPO: ${{ github.repository }}
+      START: ${{ needs.clips.outputs.start }}
+    steps:
+      - name: Warten und naechsten Lauf anstossen
+        run: |
+          start=${START:-$(date +%s)}
+          warten=$(( 1800 - ($(date +%s) - start) ))
+          if [ "$warten" -gt 0 ]; then
+            echo "Warte $warten Sekunden bis zum naechsten Lauf"
+            sleep "$warten"
+          fi
+          andere=$(gh run list --workflow clips.yml --limit 20 --json databaseId,status \
+            --jq "[.[] | select(.status != \"completed\" and .databaseId != $GITHUB_RUN_ID)] | length")
+          if [ "$andere" -gt 0 ]; then
+            echo "Es laeuft oder wartet schon ein anderer Lauf - kein neuer noetig."
+            exit 0
+          fi
+          gh workflow run clips.yml --ref "$GITHUB_REF_NAME"
+          echo "Naechster Lauf angestossen."

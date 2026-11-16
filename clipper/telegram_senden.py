@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 """Schickt alle fertigen Clips aus ausgabe/ per Telegram-Bot an dich.
 
-Braucht TELEGRAM_BOT_TOKEN und TELEGRAM_CHAT_ID. Fehlt eins davon,
-macht das Skript nichts (die Clips liegen dann nur im GitHub-Release).
+Braucht nur TELEGRAM_BOT_TOKEN. Die Chat-ID wird so gefunden:
+  1. TELEGRAM_CHAT_ID, falls gesetzt
+  2. sonst die gespeicherte Datei (Pfad als 2. Argument)
+  3. sonst der Chat der letzten Nachricht an den Bot (du schreibst ihm einmal /start)
+Gefundene IDs werden in der Datei gespeichert.
+
+Aufruf: telegram_senden.py <ausgabe-ordner> <chat-id-datei>
 """
 import json
 import os
@@ -12,9 +17,39 @@ from pathlib import Path
 import requests
 
 ausgabe = Path(sys.argv[1] if len(sys.argv) > 1 else Path(__file__).parent / "ausgabe")
-token, chat = os.environ.get("TELEGRAM_BOT_TOKEN"), os.environ.get("TELEGRAM_CHAT_ID")
-if not (token and chat):
-    print("Telegram nicht eingerichtet, ueberspringe.")
+chat_datei = Path(sys.argv[2]) if len(sys.argv) > 2 else Path(__file__).parent / "state" / "telegram_chat.txt"
+token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+if not token:
+    print("Telegram nicht eingerichtet (TELEGRAM_BOT_TOKEN fehlt), ueberspringe.")
+    sys.exit(0)
+api = f"https://api.telegram.org/bot{token}"
+
+
+def chat_id_finden() -> str | None:
+    cid = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if cid:
+        return cid
+    if chat_datei.exists() and chat_datei.read_text().strip():
+        return chat_datei.read_text().strip()
+    r = requests.get(f"{api}/getUpdates", timeout=30).json()
+    for upd in reversed(r.get("result", [])):
+        nachricht = upd.get("message") or upd.get("edited_message") or {}
+        chat = nachricht.get("chat", {})
+        if chat.get("id"):
+            cid = str(chat["id"])
+            chat_datei.parent.mkdir(parents=True, exist_ok=True)
+            chat_datei.write_text(cid)
+            requests.post(f"{api}/sendMessage", timeout=30, data={
+                "chat_id": cid,
+                "text": "✅ Verbunden! Ab jetzt bekommst du hier jeden neuen Clip."})
+            print("Chat-ID gefunden und gespeichert.")
+            return cid
+    return None
+
+
+cid = chat_id_finden()
+if not cid:
+    print("Chat-ID unbekannt: Schreibe deinem Bot in Telegram einmal /start.")
     sys.exit(0)
 
 liste = json.loads((ausgabe / "liste.json").read_text()) if (ausgabe / "liste.json").exists() else []
@@ -22,7 +57,8 @@ for c in liste:
     video = ausgabe / c["datei"]
     text = video.with_suffix(".txt").read_text(encoding="utf-8")[:1000]
     with video.open("rb") as f:
-        r = requests.post(f"https://api.telegram.org/bot{token}/sendVideo",
-                          data={"chat_id": chat, "caption": text, "supports_streaming": "true"},
-                          files={"video": (video.name, f, "video/mp4")}, timeout=300)
+        r = requests.post(f"{api}/sendVideo", timeout=300,
+                          data={"chat_id": cid, "caption": text, "supports_streaming": "true",
+                                "width": 1080, "height": 1920},
+                          files={"video": (video.name, f, "video/mp4")})
     print(video.name, "->", r.status_code, "" if r.ok else r.text[:200])

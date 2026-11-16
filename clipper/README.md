@@ -1,8 +1,8 @@
 # Clip-Fabrik
 
-Macht 4x am Tag von allein TikTok-Clips von **Rohat, Trymacs, Zarbex,
-Eligella und Papaplatte**. Läuft auf den Servern von GitHub, dein iPad
-muss dafür nicht an sein.
+Macht durchgehend (alle 30 Minuten) TikTok-Clips von **Rohat, Trymacs,
+Zarbex, Eligella und Papaplatte** und schickt sie dir per Telegram. Läuft
+auf den Servern von GitHub, dein iPad muss dafür nicht an sein.
 
 ## Was passiert bei jedem Lauf
 
@@ -33,17 +33,23 @@ muss dafür nicht an sein.
    → laden → *In Fotos sichern* → in TikTok hochladen → Beschreibung aus
    den Release-Notizen kopieren.
 
-### Optional: Clips direkt aufs iPad per Telegram
+### Clips per Telegram bekommen
 
-Repo → Settings → Secrets and variables → Actions → *New repository secret*:
+1. In Telegram **@BotFather** öffnen → `/newbot` → Namen ausdenken
+   (z. B. „Meine Clips“) → Benutzernamen, der auf `bot` endet.
+   BotFather schickt dir einen **Token** (sieht aus wie `123456:ABC-...`).
+2. Auf github.com: Repo → **Settings** → **Secrets and variables** →
+   **Actions** → **New repository secret**
+   - Name: `CLIPS_TELEGRAM_BOT_TOKEN`
+   - Secret: den Token von BotFather einfügen → **Add secret**
+3. In Telegram deinen neuen Bot öffnen und **Start** drücken
+   (bzw. `/start` schreiben).
 
-| Name | Wert |
-|---|---|
-| `CLIPS_TELEGRAM_BOT_TOKEN` | Token eines Telegram-Bots (von @BotFather) |
-| `CLIPS_TELEGRAM_CHAT_ID` | deine Chat-ID (z. B. von @userinfobot) |
+Beim nächsten Lauf schreibt dir der Bot „✅ Verbunden!“, danach kommt jeder
+neue Clip als Video mit fertiger Beschreibung. Gefällt er dir: Video
+gedrückt halten → Speichern → in TikTok posten. Sonst einfach ignorieren.
 
-Dann kommt jeder Clip mit Beschreibung als Nachricht. Gedrückt halten →
-*Speichern* → posten.
+Den Token **nie** in einen Chat kopieren, nur in GitHub als Secret.
 
 ### Optional: offizielle Twitch-API
 
@@ -56,7 +62,7 @@ dev.twitch.tv eine App anlegen und `TWITCH_CLIENT_ID` und
 | Feld | Bedeutung |
 |---|---|
 | `streamer` | Name + Twitch-Kanal. Weitere einfach dazuschreiben. |
-| `clips_pro_streamer` | wie viele Clips pro Streamer und Lauf |
+| `clips_pro_streamer` | wie viele neue Clips pro Streamer und Lauf (alle 30 Min.) |
 | `mindest_aufrufe` | schwächere Clips werden ignoriert |
 | `hashtags`, `hashtags_pro_streamer` | landen in der Beschreibung |
 | `untertitel` | `false` = ohne Untertitel (schneller) |

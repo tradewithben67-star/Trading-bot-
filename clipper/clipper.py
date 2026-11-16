@@ -1,0 +1,294 @@
+#!/usr/bin/env python3
+"""Clip-Fabrik: holt die besten neuen Twitch-Clips, schneidet sie ins
+TikTok-Hochformat, brennt Untertitel ein und legt Video + Beschreibung ab.
+
+Ablauf pro Streamer:
+  1. Top-Clips der letzten 24 Stunden holen (nach Aufrufen sortiert).
+     Die Zuschauer haben die besten Momente damit schon ausgesucht.
+  2. Schon verarbeitete Clips ueberspringen (state-Datei).
+  3. Clip laden, auf 1080x1920 bringen: unscharfer Hintergrund,
+     Spielbild in der Mitte, Titel oben, Untertitel unten.
+  4. MP4 + fertige TikTok-Beschreibung nach ausgabe/ schreiben.
+
+Ohne Twitch-Schluessel liest das Skript die oeffentliche Clip-Liste
+ueber yt-dlp. Sind TWITCH_CLIENT_ID und TWITCH_CLIENT_SECRET gesetzt,
+nimmt es die offizielle Twitch-API.
+
+Testen ohne Twitch:  python clipper.py --lokal video.mp4 --titel "Test"
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import json
+import os
+import re
+import subprocess
+import sys
+import tempfile
+import urllib.parse
+import urllib.request
+from pathlib import Path
+
+HIER = Path(__file__).resolve().parent
+BREITE, HOEHE = 1080, 1920
+VORNE_H = 810  # Hoehe des scharfen Spielbilds (4:3-Ausschnitt auf 1080 Breite)
+VORNE_Y = (HOEHE - VORNE_H) // 2
+
+
+# --------------------------------------------------------------------------
+# Clips finden
+# --------------------------------------------------------------------------
+
+def _json_holen(url: str, headers: dict | None = None, data: bytes | None = None) -> dict:
+    req = urllib.request.Request(url, data=data, headers=headers or {})
+    with urllib.request.urlopen(req, timeout=30) as r:
+        return json.load(r)
+
+
+def clips_helix(login: str, zeitraum: str) -> list[dict]:
+    cid, secret = os.environ["TWITCH_CLIENT_ID"], os.environ["TWITCH_CLIENT_SECRET"]
+    token = _json_holen(
+        "https://id.twitch.tv/oauth2/token",
+        data=urllib.parse.urlencode({
+            "client_id": cid, "client_secret": secret,
+            "grant_type": "client_credentials"}).encode(),
+    )["access_token"]
+    h = {"Client-Id": cid, "Authorization": f"Bearer {token}"}
+    users = _json_holen(f"https://api.twitch.tv/helix/users?login={login}", h)["data"]
+    if not users:
+        return []
+    stunden = {"24hr": 24, "7d": 168, "30d": 720}.get(zeitraum, 24)
+    seit = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=stunden))
+    q = urllib.parse.urlencode({
+        "broadcaster_id": users[0]["id"], "first": 20,
+        "started_at": seit.strftime("%Y-%m-%dT%H:%M:%SZ")})
+    data = _json_holen(f"https://api.twitch.tv/helix/clips?{q}", h)["data"]
+    return [{"id": c["id"], "url": c["url"], "titel": c["title"],
+             "aufrufe": c["view_count"], "dauer": c["duration"]} for c in data]
+
+
+def clips_ytdlp(login: str, zeitraum: str) -> list[dict]:
+    import yt_dlp
+    url = f"https://www.twitch.tv/{login}/clips?filter=clips&range={zeitraum}"
+    opts = {"quiet": True, "extract_flat": True, "playlistend": 20, "skip_download": True}
+    with yt_dlp.YoutubeDL(opts) as y:
+        info = y.extract_info(url, download=False) or {}
+    out = []
+    for e in info.get("entries") or []:
+        if not e or not e.get("url"):
+            continue
+        out.append({"id": str(e.get("id") or e["url"].rstrip("/").split("/")[-1]),
+                    "url": e["url"], "titel": e.get("title") or "",
+                    "aufrufe": e.get("view_count") or 0,
+                    "dauer": e.get("duration") or 0})
+    return out
+
+
+def clips_finden(login: str, zeitraum: str) -> list[dict]:
+    if os.environ.get("TWITCH_CLIENT_ID") and os.environ.get("TWITCH_CLIENT_SECRET"):
+        try:
+            return clips_helix(login, zeitraum)
+        except Exception as e:  # faellt auf yt-dlp zurueck
+            print(f"  Twitch-API fehlgeschlagen ({e}), nehme yt-dlp", flush=True)
+    return clips_ytdlp(login, zeitraum)
+
+
+def clip_laden(url: str, ziel: Path) -> Path:
+    import yt_dlp
+    opts = {"quiet": True, "outtmpl": str(ziel.with_suffix(".%(ext)s")),
+            "format": "best[ext=mp4]/best", "noprogress": True}
+    with yt_dlp.YoutubeDL(opts) as y:
+        info = y.extract_info(url, download=True)
+        return Path(y.prepare_filename(info))
+
+
+# --------------------------------------------------------------------------
+# Untertitel
+# --------------------------------------------------------------------------
+
+_modell = None
+
+
+def woerter_erkennen(video: Path, modell: str, sprache: str) -> list[tuple[float, float, str]]:
+    global _modell
+    from faster_whisper import WhisperModel
+    if _modell is None:
+        _modell = WhisperModel(modell, device="cpu", compute_type="int8")
+    segmente, _ = _modell.transcribe(str(video), language=sprache,
+                                     word_timestamps=True, vad_filter=True)
+    woerter = []
+    for s in segmente:
+        for w in s.words or []:
+            t = w.word.strip()
+            if t:
+                woerter.append((w.start, w.end, t))
+    return woerter
+
+
+def in_happen(woerter, max_woerter=3, max_luecke=0.6):
+    happen, akt = [], []
+    for w in woerter:
+        if akt and (len(akt) >= max_woerter or w[0] - akt[-1][1] > max_luecke
+                    or re.search(r"[.!?]$", akt[-1][2])):
+            happen.append(akt)
+            akt = []
+        akt.append(w)
+    if akt:
+        happen.append(akt)
+    return [(h[0][0], max(h[-1][1], h[0][0] + 0.25), " ".join(x[2] for x in h)) for h in happen]
+
+
+def _ass_zeit(s: float) -> str:
+    s = max(0.0, s)
+    h, rest = divmod(s, 3600)
+    m, sek = divmod(rest, 60)
+    return f"{int(h)}:{int(m):02d}:{sek:05.2f}"
+
+
+def _ass_text(t: str) -> str:
+    return t.replace("\\", "/").replace("{", "(").replace("}", ")").replace("\n", " ").strip()
+
+
+def ass_schreiben(pfad: Path, dauer: float, titel: str, kanal: str, happen) -> None:
+    kopf = f"""[Script Info]
+ScriptType: v4.00+
+PlayResX: {BREITE}
+PlayResY: {HOEHE}
+WrapStyle: 0
+ScaledBorderAndShadow: yes
+
+[V4+ Styles]
+Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
+Style: Titel,DejaVu Sans,72,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,70,70,{HOEHE - VORNE_Y + 50},1
+Style: Kanal,DejaVu Sans,46,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,1,8,40,40,{VORNE_Y + VORNE_H + 30},1
+Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,8,50,50,{VORNE_Y + VORNE_H + 130},1
+
+[Events]
+Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
+"""
+    ende = _ass_zeit(dauer + 1)
+    zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(titel)}",
+              f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,twitch.tv/{_ass_text(kanal)}"]
+    for start, stop, text in happen:
+        pop = r"{\fscx80\fscy80\t(0,90,\fscx105\fscy105)\t(90,160,\fscx100\fscy100)}"
+        zeilen.append(f"Dialogue: 2,{_ass_zeit(start)},{_ass_zeit(stop)},Sub,,0,0,0,,"
+                      f"{pop}{_ass_text(text).upper()}")
+    pfad.write_text(kopf + "\n".join(zeilen) + "\n", encoding="utf-8")
+
+
+# --------------------------------------------------------------------------
+# Schnitt
+# --------------------------------------------------------------------------
+
+def dauer_von(video: Path) -> float:
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                        "-of", "default=nw=1:nk=1", str(video)],
+                       capture_output=True, text=True, check=True)
+    return float(r.stdout.strip() or 0)
+
+
+def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
+               max_sek: float) -> None:
+    dauer = min(dauer_von(quelle), max_sek)
+    happen = []
+    if cfg.get("untertitel", True):
+        try:
+            happen = in_happen(woerter_erkennen(quelle, cfg.get("whisper_modell", "small"),
+                                                cfg.get("sprache", "de")))
+        except Exception as e:
+            print(f"  Untertitel uebersprungen: {e}", flush=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        ass = Path(tmp) / "text.ass"
+        ass_schreiben(ass, dauer, titel, kanal, happen)
+        filter_ = (
+            f"[0:v]scale={BREITE}:{HOEHE}:force_original_aspect_ratio=increase,"
+            f"crop={BREITE}:{HOEHE},boxblur=30:2,eq=brightness=-0.15[bg];"
+            f"[0:v]crop='min(iw,ih*4/3)':ih,scale={BREITE}:{VORNE_H}[fg];"
+            f"[bg][fg]overlay=0:{VORNE_Y},ass=text.ass,fps=30[v]"
+        )
+        cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(quelle.resolve()),
+               "-t", f"{dauer:.2f}", "-filter_complex", filter_,
+               "-map", "[v]", "-map", "0:a?",
+               "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
+               "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
+               "-movflags", "+faststart", str(ziel.resolve())]
+        subprocess.run(cmd, check=True, cwd=tmp)
+
+
+def beschreibung(clip: dict, s: dict, cfg: dict) -> str:
+    tags = cfg.get("hashtags_pro_streamer", {}).get(s["twitch"], []) + cfg.get("hashtags", [])
+    titel = clip["titel"].strip() or f"{s['name']} eskaliert"
+    return f"{titel} 😂\n\n🎥 Credit: twitch.tv/{s['twitch']}\n\n{' '.join(tags)}"
+
+
+# --------------------------------------------------------------------------
+# Hauptprogramm
+# --------------------------------------------------------------------------
+
+def _sicher(name: str) -> str:
+    return re.sub(r"[^A-Za-z0-9_-]+", "-", name)[:60].strip("-") or "clip"
+
+
+def lauf(cfg: dict, state_pfad: Path, ausgabe: Path) -> int:
+    ausgabe.mkdir(parents=True, exist_ok=True)
+    gesehen: dict = json.loads(state_pfad.read_text()) if state_pfad.exists() else {}
+    grenze = (dt.date.today() - dt.timedelta(days=21)).isoformat()
+    gesehen = {k: v for k, v in gesehen.items() if v >= grenze}
+    heute = dt.date.today().isoformat()
+    fertig = []
+
+    for s in cfg["streamer"]:
+        print(f"== {s['name']} ({s['twitch']})", flush=True)
+        try:
+            clips = clips_finden(s["twitch"], cfg.get("zeitraum", "24hr"))
+        except Exception as e:
+            print(f"  Clip-Liste nicht ladbar: {e}", flush=True)
+            continue
+        clips = [c for c in clips if c["id"] not in gesehen
+                 and c["aufrufe"] >= cfg.get("mindest_aufrufe", 0)]
+        clips.sort(key=lambda c: c["aufrufe"], reverse=True)
+        for c in clips[: cfg.get("clips_pro_streamer", 2)]:
+            print(f"  {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
+            name = f"{s['twitch']}_{_sicher(c['id'])}"
+            try:
+                with tempfile.TemporaryDirectory() as tmp:
+                    roh = clip_laden(c["url"], Path(tmp) / "roh")
+                    hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
+                               s["twitch"], cfg, cfg.get("max_sekunden", 60))
+            except Exception as e:
+                print(f"  Fehler: {e}", flush=True)
+                continue
+            (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
+            gesehen[c["id"]] = heute
+            fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
+                           "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
+
+    state_pfad.parent.mkdir(parents=True, exist_ok=True)
+    state_pfad.write_text(json.dumps(gesehen, indent=1, sort_keys=True))
+    (ausgabe / "liste.json").write_text(json.dumps(fertig, indent=1, ensure_ascii=False))
+    print(f"\nFertig: {len(fertig)} neue Clips in {ausgabe}", flush=True)
+    return len(fertig)
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--config", type=Path, default=HIER / "config.json")
+    ap.add_argument("--state", type=Path, default=HIER / "state" / "gesehen.json")
+    ap.add_argument("--ausgabe", type=Path, default=HIER / "ausgabe")
+    ap.add_argument("--lokal", type=Path, help="eine lokale Datei schneiden (Test)")
+    ap.add_argument("--titel", default="Test-Clip")
+    ap.add_argument("--kanal", default="papaplatte")
+    a = ap.parse_args()
+    cfg = json.loads(a.config.read_text(encoding="utf-8"))
+    if a.lokal:
+        a.ausgabe.mkdir(parents=True, exist_ok=True)
+        ziel = a.ausgabe / f"test_{_sicher(a.lokal.stem)}.mp4"
+        hochformat(a.lokal, ziel, a.titel, a.kanal, cfg, cfg.get("max_sekunden", 60))
+        print(ziel)
+        return
+    lauf(cfg, a.state, a.ausgabe)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

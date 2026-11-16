@@ -5,3 +5,5 @@ bot/config.toml
 bot/data/*.csv
 bot/.env
 *.png
+clipper/ausgabe/
+clipper/state/

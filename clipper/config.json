@@ -1,0 +1,27 @@
+{
+  "streamer": [
+    {"name": "Rohat",      "twitch": "xrohat"},
+    {"name": "Trymacs",    "twitch": "trymacs"},
+    {"name": "Zarbex",     "twitch": "zarbex"},
+    {"name": "Eligella",   "twitch": "eliasn97"},
+    {"name": "Papaplatte", "twitch": "papaplatte"}
+  ],
+
+  "clips_pro_streamer": 2,
+  "mindest_aufrufe": 300,
+  "zeitraum": "24hr",
+  "max_sekunden": 60,
+
+  "untertitel": true,
+  "whisper_modell": "small",
+  "sprache": "de",
+
+  "hashtags": ["#fyp", "#foryou", "#twitch", "#streamer", "#clips", "#deutsch"],
+  "hashtags_pro_streamer": {
+    "xrohat":     ["#rohat", "#xrohat", "#gtarp"],
+    "trymacs":    ["#trymacs"],
+    "zarbex":     ["#zarbex", "#gtarp"],
+    "eliasn97":   ["#eligella", "#eliasn97"],
+    "papaplatte": ["#papaplatte"]
+  }
+}

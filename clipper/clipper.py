@@ -30,10 +30,11 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import layout  # noqa: E402
+
 HIER = Path(__file__).resolve().parent
 BREITE, HOEHE = 1080, 1920
-VORNE_H = 810  # Hoehe des scharfen Spielbilds (4:3-Ausschnitt auf 1080 Breite)
-VORNE_Y = (HOEHE - VORNE_H) // 2
 
 
 # --------------------------------------------------------------------------
@@ -156,7 +157,8 @@ def _ass_text(t: str) -> str:
     return t.replace("\\", "/").replace("{", "(").replace("}", ")").replace("\n", " ").strip()
 
 
-def ass_schreiben(pfad: Path, dauer: float, titel: str, kanal: str, happen) -> None:
+def ass_schreiben(pfad: Path, dauer: float, titel: str, kanal: str, happen, lay) -> None:
+    sub_ausr, sub_rand = (5, 0) if lay.sub_mitte else (8, lay.sub_y)
     kopf = f"""[Script Info]
 ScriptType: v4.00+
 PlayResX: {BREITE}
@@ -166,9 +168,9 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Titel,DejaVu Sans,72,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,70,70,{HOEHE - VORNE_Y + 50},1
-Style: Kanal,DejaVu Sans,46,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,1,8,40,40,{VORNE_Y + VORNE_H + 30},1
-Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,8,50,50,{VORNE_Y + VORNE_H + 130},1
+Style: Titel,DejaVu Sans,{lay.titel_groesse},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{HOEHE - lay.titel_unten},1
+Style: Kanal,DejaVu Sans,44,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,1,8,40,40,{lay.kanal_oben},1
+Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,{sub_ausr},50,50,{sub_rand},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -176,8 +178,9 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
     ende = _ass_zeit(dauer + 1)
     zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(titel)}",
               f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,twitch.tv/{_ass_text(kanal)}"]
+    pos = rf"\pos({BREITE // 2},{lay.sub_y})" if lay.sub_mitte else ""
     for start, stop, text in happen:
-        pop = r"{\fscx80\fscy80\t(0,90,\fscx105\fscy105)\t(90,160,\fscx100\fscy100)}"
+        pop = r"{\fscx80\fscy80\t(0,90,\fscx105\fscy105)\t(90,160,\fscx100\fscy100)" + pos + "}"
         zeilen.append(f"Dialogue: 2,{_ass_zeit(start)},{_ass_zeit(stop)},Sub,,0,0,0,,"
                       f"{pop}{_ass_text(text).upper()}")
     pfad.write_text(kopf + "\n".join(zeilen) + "\n", encoding="utf-8")
@@ -194,9 +197,23 @@ def dauer_von(video: Path) -> float:
     return float(r.stdout.strip() or 0)
 
 
+def filter_bauen(lay) -> str:
+    n = len(lay.felder)
+    teile = [f"[0:v]split={n + 1}[hg]" + "".join(f"[q{i}]" for i in range(n)),
+             f"[hg]scale={BREITE}:{HOEHE}:force_original_aspect_ratio=increase,"
+             f"crop={BREITE}:{HOEHE},boxblur=30:2,eq=brightness=-0.15[s0]"]
+    for i, f in enumerate(lay.felder):
+        teile.append(f"[q{i}]crop={f.w}:{f.h}:{f.x}:{f.y},scale={BREITE}:{f.oh},setsar=1[f{i}]")
+        teile.append(f"[s{i}][f{i}]overlay=0:{f.oy}[s{i + 1}]")
+    teile.append(f"[s{n}]ass=text.ass,fps=30[v]")
+    return ";".join(teile)
+
+
 def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
-               max_sek: float) -> None:
+               max_sek: float) -> str:
     dauer = min(dauer_von(quelle), max_sek)
+    lay = layout.waehlen(quelle)
+    print(f"  Layout: {lay.art}", flush=True)
     happen = []
     if cfg.get("untertitel", True):
         try:
@@ -205,21 +222,15 @@ def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
         except Exception as e:
             print(f"  Untertitel uebersprungen: {e}", flush=True)
     with tempfile.TemporaryDirectory() as tmp:
-        ass = Path(tmp) / "text.ass"
-        ass_schreiben(ass, dauer, titel, kanal, happen)
-        filter_ = (
-            f"[0:v]scale={BREITE}:{HOEHE}:force_original_aspect_ratio=increase,"
-            f"crop={BREITE}:{HOEHE},boxblur=30:2,eq=brightness=-0.15[bg];"
-            f"[0:v]crop='min(iw,ih*4/3)':ih,scale={BREITE}:{VORNE_H}[fg];"
-            f"[bg][fg]overlay=0:{VORNE_Y},ass=text.ass,fps=30[v]"
-        )
+        ass_schreiben(Path(tmp) / "text.ass", dauer, titel, kanal, happen, lay)
         cmd = ["ffmpeg", "-y", "-loglevel", "error", "-i", str(quelle.resolve()),
-               "-t", f"{dauer:.2f}", "-filter_complex", filter_,
+               "-t", f"{dauer:.2f}", "-filter_complex", filter_bauen(lay),
                "-map", "[v]", "-map", "0:a?",
                "-c:v", "libx264", "-preset", "veryfast", "-crf", "20",
                "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "160k",
                "-movflags", "+faststart", str(ziel.resolve())]
         subprocess.run(cmd, check=True, cwd=tmp)
+    return lay.art
 
 
 def beschreibung(clip: dict, s: dict, cfg: dict) -> str:

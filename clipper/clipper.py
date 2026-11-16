@@ -203,8 +203,8 @@ def filter_bauen(lay) -> str:
              f"[hg]scale={BREITE}:{HOEHE}:force_original_aspect_ratio=increase,"
              f"crop={BREITE}:{HOEHE},boxblur=30:2,eq=brightness=-0.15[s0]"]
     for i, f in enumerate(lay.felder):
-        teile.append(f"[q{i}]crop={f.w}:{f.h}:{f.x}:{f.y},scale={BREITE}:{f.oh},setsar=1[f{i}]")
-        teile.append(f"[s{i}][f{i}]overlay=0:{f.oy}[s{i + 1}]")
+        teile.append(f"[q{i}]crop={f.w}:{f.h}:{f.x}:{f.y},scale={f.ow}:{f.oh},setsar=1[f{i}]")
+        teile.append(f"[s{i}][f{i}]overlay={f.ox}:{f.oy}[s{i + 1}]")
     teile.append(f"[s{n}]ass=text.ass,fps=30[v]")
     return ";".join(teile)
 

@@ -1,10 +1,10 @@
 name: Clips machen
 
-# Laeuft 4x am Tag von allein (Uhrzeiten in UTC, deutsche Zeit = +1 Std.)
-# und jederzeit per Knopf: Actions -> "Clips machen" -> "Run workflow".
+# Laeuft durchgehend alle 30 Minuten von allein (GitHub startet manchmal ein
+# paar Minuten spaeter) und jederzeit per Knopf: Actions -> "Clips machen" -> "Run workflow".
 on:
   schedule:
-    - cron: "17 7,11,15,19 * * *"
+    - cron: "7,37 * * * *"
   workflow_dispatch:
     inputs:
       neu_schneiden:
@@ -45,7 +45,7 @@ jobs:
           key: whisper-small-v1
 
       - name: Liste schon gemachter Clips holen
-        run: gh release download clip-state -p gesehen.json -D clipper/state --clobber || echo "noch keine Liste"
+        run: gh release download clip-state -p gesehen.json -p telegram_chat.txt -D clipper/state --clobber || echo "noch keine Liste"
 
       - name: Clips suchen und schneiden
         env:
@@ -78,7 +78,7 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.CLIPS_TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.CLIPS_TELEGRAM_CHAT_ID }}
-        run: python clipper/telegram_senden.py clipper/ausgabe
+        run: python clipper/telegram_senden.py clipper/ausgabe clipper/state/telegram_chat.txt
 
       - name: Liste speichern
         run: |
@@ -87,3 +87,7 @@ jobs:
             gh release create clip-state --target "$GITHUB_SHA" --title "Clip-Liste (nicht loeschen)" \
               --notes "Merkt sich, welche Clips schon gemacht wurden." --latest=false
           gh release upload clip-state clipper/state/gesehen.json --clobber
+          [ ! -f clipper/state/telegram_chat.txt ] || gh release upload clip-state clipper/state/telegram_chat.txt --clobber
+          shopt -s nullglob
+          bilder=(clipper/ausgabe/vorschau/*.jpg)
+          [ ${#bilder[@]} -eq 0 ] || gh release upload clip-state "${bilder[@]}" --clobber

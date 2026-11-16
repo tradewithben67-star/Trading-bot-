@@ -203,16 +203,16 @@ def filter_bauen(lay) -> str:
              f"[hg]scale={BREITE}:{HOEHE}:force_original_aspect_ratio=increase,"
              f"crop={BREITE}:{HOEHE},boxblur=30:2,eq=brightness=-0.15[s0]"]
     for i, f in enumerate(lay.felder):
-        teile.append(f"[q{i}]crop={f.w}:{f.h}:{f.x}:{f.y},scale={BREITE}:{f.oh},setsar=1[f{i}]")
-        teile.append(f"[s{i}][f{i}]overlay=0:{f.oy}[s{i + 1}]")
+        teile.append(f"[q{i}]crop={f.w}:{f.h}:{f.x}:{f.y},scale={f.ow}:{f.oh},setsar=1[f{i}]")
+        teile.append(f"[s{i}][f{i}]overlay={f.ox}:{f.oy}[s{i + 1}]")
     teile.append(f"[s{n}]ass=text.ass,fps=30[v]")
     return ";".join(teile)
 
 
 def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
-               max_sek: float) -> str:
+               max_sek: float, feste_cam=None) -> str:
     dauer = min(dauer_von(quelle), max_sek)
-    lay = layout.waehlen(quelle)
+    lay = layout.waehlen(quelle, feste_cam)
     print(f"  Layout: {lay.art}", flush=True)
     happen = []
     if cfg.get("untertitel", True):
@@ -231,6 +231,17 @@ def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
                "-movflags", "+faststart", str(ziel.resolve())]
         subprocess.run(cmd, check=True, cwd=tmp)
     return lay.art
+
+
+def vorschau_speichern(quelle: Path, ziel: Path) -> None:
+    """Ein Originalbild aus der Clip-Mitte, um Cam-Positionen einzumessen."""
+    try:
+        ziel.parent.mkdir(parents=True, exist_ok=True)
+        mitte = dauer_von(quelle) / 2
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-ss", f"{mitte:.2f}", "-i", str(quelle),
+                        "-frames:v", "1", "-q:v", "3", str(ziel)], check=True)
+    except Exception as e:
+        print(f"  Vorschau fehlgeschlagen: {e}", flush=True)
 
 
 def beschreibung(clip: dict, s: dict, cfg: dict) -> str:
@@ -271,8 +282,10 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) ->
             try:
                 with tempfile.TemporaryDirectory() as tmp:
                     roh = clip_laden(c["url"], Path(tmp) / "roh")
+                    vorschau_speichern(roh, ausgabe / "vorschau" / f"{name}.jpg")
                     hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
-                               s["twitch"], cfg, cfg.get("max_sekunden", 60))
+                               s["twitch"], cfg, cfg.get("max_sekunden", 60),
+                               s.get("facecam"))
             except Exception as e:
                 print(f"  Fehler: {e}", flush=True)
                 continue

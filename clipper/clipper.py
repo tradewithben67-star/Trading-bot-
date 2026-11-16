@@ -32,6 +32,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import layout  # noqa: E402
+import telegram_versand  # noqa: E402
 
 HIER = Path(__file__).resolve().parent
 BREITE, HOEHE = 1080, 1920
@@ -265,7 +266,15 @@ def _sicher(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "-", name)[:60].strip("-") or "clip"
 
 
-def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) -> int:
+def _speichern(state_pfad: Path, gesehen: dict, ausgabe: Path, fertig: list) -> None:
+    """Nach jedem Clip sichern, damit ein abgebrochener Lauf nichts doppelt schickt."""
+    state_pfad.parent.mkdir(parents=True, exist_ok=True)
+    state_pfad.write_text(json.dumps(gesehen, indent=1, sort_keys=True))
+    (ausgabe / "liste.json").write_text(json.dumps(fertig, indent=1, ensure_ascii=False))
+
+
+def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False,
+         chat_datei: Path | None = None) -> int:
     ausgabe.mkdir(parents=True, exist_ok=True)
     gesehen: dict = json.loads(state_pfad.read_text()) if state_pfad.exists() else {}
     grenze = (dt.date.today() - dt.timedelta(days=21)).isoformat()
@@ -294,7 +303,8 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) ->
     kandidaten = kandidaten[: cfg.get("max_clips_pro_lauf", 25)]
     print(f"\nSchneide {len(kandidaten)} Clips\n", flush=True)
 
-    # 3. Schneiden
+    # 3. Schneiden, jeden fertigen Clip sofort verschicken und merken
+    tg = telegram_versand.verbinden(chat_datei) if chat_datei else None
     for _, s, c in kandidaten:
         print(f"  {s['name']:<12} {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
         name = f"{s['twitch']}_{_sicher(c['id'])}"
@@ -308,14 +318,16 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) ->
         except Exception as e:
             print(f"  Fehler: {e}", flush=True)
             continue
-        (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
+        text = beschreibung(c, s, cfg)
+        (ausgabe / f"{name}.txt").write_text(text, encoding="utf-8")
+        if tg:
+            tg.senden(ausgabe / f"{name}.mp4", text)
         gesehen[c["id"]] = heute
         fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
                        "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
+        _speichern(state_pfad, gesehen, ausgabe, fertig)
 
-    state_pfad.parent.mkdir(parents=True, exist_ok=True)
-    state_pfad.write_text(json.dumps(gesehen, indent=1, sort_keys=True))
-    (ausgabe / "liste.json").write_text(json.dumps(fertig, indent=1, ensure_ascii=False))
+    _speichern(state_pfad, gesehen, ausgabe, fertig)
     print(f"\nFertig: {len(fertig)} neue Clips in {ausgabe}", flush=True)
     return len(fertig)
 
@@ -328,6 +340,8 @@ def main() -> None:
     ap.add_argument("--lokal", type=Path, help="eine lokale Datei schneiden (Test)")
     ap.add_argument("--titel", default="Test-Clip")
     ap.add_argument("--kanal", default="papaplatte")
+    ap.add_argument("--telegram-chat", type=Path,
+                    help="Datei mit der Telegram-Chat-ID; aktiviert den Versand je Clip")
     ap.add_argument("--alles-neu", action="store_true",
                     help="auch schon gemachte Clips neu schneiden")
     a = ap.parse_args()
@@ -338,7 +352,7 @@ def main() -> None:
         hochformat(a.lokal, ziel, a.titel, a.kanal, cfg, cfg.get("max_sekunden", 60))
         print(ziel)
         return
-    lauf(cfg, a.state, a.ausgabe, a.alles_neu)
+    lauf(cfg, a.state, a.ausgabe, a.alles_neu, a.telegram_chat)
 
 
 if __name__ == "__main__":

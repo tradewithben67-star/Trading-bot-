@@ -47,14 +47,17 @@ jobs:
       - name: Liste schon gemachter Clips holen
         run: gh release download clip-state -p gesehen.json -p telegram_chat.txt -D clipper/state --clobber || echo "noch keine Liste"
 
-      - name: Clips suchen und schneiden
+      - name: Clips suchen, schneiden und per Telegram schicken
         env:
           TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
           TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.CLIPS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.CLIPS_TELEGRAM_CHAT_ID }}
           NEU: ${{ inputs.neu_schneiden && '--alles-neu' || '' }}
-        run: python clipper/clipper.py $NEU
+        run: python clipper/clipper.py --telegram-chat clipper/state/telegram_chat.txt $NEU
 
       - name: Clips als Release ablegen
+        if: always()
         run: |
           shopt -s nullglob
           videos=(clipper/ausgabe/*.mp4)
@@ -74,13 +77,8 @@ jobs:
           fi
           gh release upload "$tag" "${videos[@]}" clipper/ausgabe/*.txt --clobber
 
-      - name: An Telegram schicken (falls eingerichtet)
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.CLIPS_TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.CLIPS_TELEGRAM_CHAT_ID }}
-        run: python clipper/telegram_senden.py clipper/ausgabe clipper/state/telegram_chat.txt
-
       - name: Liste speichern
+        if: always()
         run: |
           [ -f clipper/state/gesehen.json ] || exit 0
           gh release view clip-state >/dev/null 2>&1 || \

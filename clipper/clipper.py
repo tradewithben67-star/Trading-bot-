@@ -47,7 +47,11 @@ def _json_holen(url: str, headers: dict | None = None, data: bytes | None = None
         return json.load(r)
 
 
-def clips_helix(login: str, zeitraum: str) -> list[dict]:
+def _grenze(stunden: float) -> dt.datetime:
+    return dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=stunden)
+
+
+def clips_helix(login: str, stunden: float) -> list[dict]:
     cid, secret = os.environ["TWITCH_CLIENT_ID"], os.environ["TWITCH_CLIENT_SECRET"]
     token = _json_holen(
         "https://id.twitch.tv/oauth2/token",
@@ -59,25 +63,28 @@ def clips_helix(login: str, zeitraum: str) -> list[dict]:
     users = _json_holen(f"https://api.twitch.tv/helix/users?login={login}", h)["data"]
     if not users:
         return []
-    stunden = {"24hr": 24, "7d": 168, "30d": 720}.get(zeitraum, 24)
-    seit = (dt.datetime.now(dt.timezone.utc) - dt.timedelta(hours=stunden))
     q = urllib.parse.urlencode({
-        "broadcaster_id": users[0]["id"], "first": 20,
-        "started_at": seit.strftime("%Y-%m-%dT%H:%M:%SZ")})
+        "broadcaster_id": users[0]["id"], "first": 100,
+        "started_at": _grenze(stunden).strftime("%Y-%m-%dT%H:%M:%SZ")})
     data = _json_holen(f"https://api.twitch.tv/helix/clips?{q}", h)["data"]
     return [{"id": c["id"], "url": c["url"], "titel": c["title"],
              "aufrufe": c["view_count"], "dauer": c["duration"]} for c in data]
 
 
-def clips_ytdlp(login: str, zeitraum: str) -> list[dict]:
+def clips_ytdlp(login: str, stunden: float) -> list[dict]:
+    """Oeffentliche Clip-Liste (nach Aufrufen sortiert), danach auf das Alter gefiltert."""
     import yt_dlp
-    url = f"https://www.twitch.tv/{login}/clips?filter=clips&range={zeitraum}"
-    opts = {"quiet": True, "extract_flat": True, "playlistend": 20, "skip_download": True}
+    bereich = "24hr" if stunden <= 24 else "7d" if stunden <= 168 else "30d"
+    url = f"https://www.twitch.tv/{login}/clips?filter=clips&range={bereich}"
+    opts = {"quiet": True, "extract_flat": True, "playlistend": 100, "skip_download": True}
     with yt_dlp.YoutubeDL(opts) as y:
         info = y.extract_info(url, download=False) or {}
+    grenze = _grenze(stunden).timestamp()
     out = []
     for e in info.get("entries") or []:
         if not e or not e.get("url"):
+            continue
+        if e.get("timestamp") and e["timestamp"] < grenze:
             continue
         out.append({"id": str(e.get("id") or e["url"].rstrip("/").split("/")[-1]),
                     "url": e["url"], "titel": e.get("title") or "",
@@ -86,13 +93,13 @@ def clips_ytdlp(login: str, zeitraum: str) -> list[dict]:
     return out
 
 
-def clips_finden(login: str, zeitraum: str) -> list[dict]:
+def clips_finden(login: str, stunden: float) -> list[dict]:
     if os.environ.get("TWITCH_CLIENT_ID") and os.environ.get("TWITCH_CLIENT_SECRET"):
         try:
-            return clips_helix(login, zeitraum)
+            return clips_helix(login, stunden)
         except Exception as e:  # faellt auf yt-dlp zurueck
             print(f"  Twitch-API fehlgeschlagen ({e}), nehme yt-dlp", flush=True)
-    return clips_ytdlp(login, zeitraum)
+    return clips_ytdlp(login, stunden)
 
 
 def clip_laden(url: str, ziel: Path) -> Path:
@@ -266,33 +273,45 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) ->
     heute = dt.date.today().isoformat()
     fertig = []
 
+    # 1. Clip-Listen aller Streamer holen (schnell, nur Text)
+    kandidaten = []
     for s in cfg["streamer"]:
-        print(f"== {s['name']} ({s['twitch']})", flush=True)
         try:
-            clips = clips_finden(s["twitch"], cfg.get("zeitraum", "24hr"))
+            clips = clips_finden(s["twitch"], cfg.get("max_alter_stunden", 24))
         except Exception as e:
-            print(f"  Clip-Liste nicht ladbar: {e}", flush=True)
+            print(f"== {s['name']}: Clip-Liste nicht ladbar: {e}", flush=True)
             continue
         clips = [c for c in clips if (alles_neu or c["id"] not in gesehen)
                  and c["aufrufe"] >= cfg.get("mindest_aufrufe", 0)]
         clips.sort(key=lambda c: c["aufrufe"], reverse=True)
-        for c in clips[: cfg.get("clips_pro_streamer", 2)]:
-            print(f"  {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
-            name = f"{s['twitch']}_{_sicher(c['id'])}"
-            try:
-                with tempfile.TemporaryDirectory() as tmp:
-                    roh = clip_laden(c["url"], Path(tmp) / "roh")
-                    vorschau_speichern(roh, ausgabe / "vorschau" / f"{name}.jpg")
-                    hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
-                               s["twitch"], cfg, cfg.get("max_sekunden", 60),
-                               s.get("facecam"))
-            except Exception as e:
-                print(f"  Fehler: {e}", flush=True)
-                continue
-            (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
-            gesehen[c["id"]] = heute
-            fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
-                           "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
+        clips = clips[: cfg.get("clips_pro_streamer", 2)]
+        print(f"== {s['name']} ({s['twitch']}): {len(clips)} neue Clips", flush=True)
+        kandidaten += [(rang, s, c) for rang, c in enumerate(clips)]
+
+    # 2. Reihum verteilen (erst der beste Clip jedes Streamers, dann der zweitbeste, ...)
+    #    und auf max_clips_pro_lauf begrenzen, damit ein Lauf nicht zu lange dauert.
+    kandidaten.sort(key=lambda k: (k[0], -k[2]["aufrufe"]))
+    kandidaten = kandidaten[: cfg.get("max_clips_pro_lauf", 25)]
+    print(f"\nSchneide {len(kandidaten)} Clips\n", flush=True)
+
+    # 3. Schneiden
+    for _, s, c in kandidaten:
+        print(f"  {s['name']:<12} {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
+        name = f"{s['twitch']}_{_sicher(c['id'])}"
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                roh = clip_laden(c["url"], Path(tmp) / "roh")
+                vorschau_speichern(roh, ausgabe / "vorschau" / f"{name}.jpg")
+                hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
+                           s["twitch"], cfg, cfg.get("max_sekunden", 60),
+                           s.get("facecam"))
+        except Exception as e:
+            print(f"  Fehler: {e}", flush=True)
+            continue
+        (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
+        gesehen[c["id"]] = heute
+        fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
+                       "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
 
     state_pfad.parent.mkdir(parents=True, exist_ok=True)
     state_pfad.write_text(json.dumps(gesehen, indent=1, sort_keys=True))

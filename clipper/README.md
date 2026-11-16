@@ -1,7 +1,9 @@
 # Clip-Fabrik
 
-Macht durchgehend (alle 30 Minuten) TikTok-Clips von **Rohat, Trymacs,
-Zarbex, Eligella und Papaplatte** und schickt sie dir per Telegram. Läuft
+Macht durchgehend (alle 30 Minuten) TikTok-Clips von **18 deutschen
+Streamern** (Rohat, Trymacs, Zarbex, Eligella, Papaplatte, gTasty, LetsHugo,
+Gleggmire, CoachLim, MontanaBlack, NoWay, BastiGHG, HandOfBlood, Tolkin,
+KrokoBoss, Nooreax, Knossi, Gronkh) und schickt sie dir per Telegram. Läuft
 auf den Servern von GitHub, dein iPad muss dafür nicht an sein.
 
 ## Was passiert bei jedem Lauf
@@ -62,6 +64,7 @@ dev.twitch.tv eine App anlegen und `TWITCH_CLIENT_ID` und
 | Feld | Bedeutung |
 |---|---|
 | `streamer` | Name + Twitch-Kanal. Weitere einfach dazuschreiben. |
+| `max_clips_pro_lauf` | Obergrenze pro Lauf, reihum über alle Streamer verteilt |
 | `clips_pro_streamer` | wie viele neue Clips pro Streamer und Lauf (alle 30 Min.) |
 | `mindest_aufrufe` | schwächere Clips werden ignoriert |
 | `max_alter_stunden` | wie alt ein Clip höchstens sein darf |

@@ -273,33 +273,45 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) ->
     heute = dt.date.today().isoformat()
     fertig = []
 
+    # 1. Clip-Listen aller Streamer holen (schnell, nur Text)
+    kandidaten = []
     for s in cfg["streamer"]:
-        print(f"== {s['name']} ({s['twitch']})", flush=True)
         try:
             clips = clips_finden(s["twitch"], cfg.get("max_alter_stunden", 24))
         except Exception as e:
-            print(f"  Clip-Liste nicht ladbar: {e}", flush=True)
+            print(f"== {s['name']}: Clip-Liste nicht ladbar: {e}", flush=True)
             continue
         clips = [c for c in clips if (alles_neu or c["id"] not in gesehen)
                  and c["aufrufe"] >= cfg.get("mindest_aufrufe", 0)]
         clips.sort(key=lambda c: c["aufrufe"], reverse=True)
-        for c in clips[: cfg.get("clips_pro_streamer", 2)]:
-            print(f"  {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
-            name = f"{s['twitch']}_{_sicher(c['id'])}"
-            try:
-                with tempfile.TemporaryDirectory() as tmp:
-                    roh = clip_laden(c["url"], Path(tmp) / "roh")
-                    vorschau_speichern(roh, ausgabe / "vorschau" / f"{name}.jpg")
-                    hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
-                               s["twitch"], cfg, cfg.get("max_sekunden", 60),
-                               s.get("facecam"))
-            except Exception as e:
-                print(f"  Fehler: {e}", flush=True)
-                continue
-            (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
-            gesehen[c["id"]] = heute
-            fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
-                           "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
+        clips = clips[: cfg.get("clips_pro_streamer", 2)]
+        print(f"== {s['name']} ({s['twitch']}): {len(clips)} neue Clips", flush=True)
+        kandidaten += [(rang, s, c) for rang, c in enumerate(clips)]
+
+    # 2. Reihum verteilen (erst der beste Clip jedes Streamers, dann der zweitbeste, ...)
+    #    und auf max_clips_pro_lauf begrenzen, damit ein Lauf nicht zu lange dauert.
+    kandidaten.sort(key=lambda k: (k[0], -k[2]["aufrufe"]))
+    kandidaten = kandidaten[: cfg.get("max_clips_pro_lauf", 25)]
+    print(f"\nSchneide {len(kandidaten)} Clips\n", flush=True)
+
+    # 3. Schneiden
+    for _, s, c in kandidaten:
+        print(f"  {s['name']:<12} {c['aufrufe']:>7} Aufrufe  {c['titel']}", flush=True)
+        name = f"{s['twitch']}_{_sicher(c['id'])}"
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                roh = clip_laden(c["url"], Path(tmp) / "roh")
+                vorschau_speichern(roh, ausgabe / "vorschau" / f"{name}.jpg")
+                hochformat(roh, ausgabe / f"{name}.mp4", c["titel"] or s["name"],
+                           s["twitch"], cfg, cfg.get("max_sekunden", 60),
+                           s.get("facecam"))
+        except Exception as e:
+            print(f"  Fehler: {e}", flush=True)
+            continue
+        (ausgabe / f"{name}.txt").write_text(beschreibung(c, s, cfg), encoding="utf-8")
+        gesehen[c["id"]] = heute
+        fertig.append({"datei": f"{name}.mp4", "streamer": s["name"],
+                       "titel": c["titel"], "aufrufe": c["aufrufe"], "url": c["url"]})
 
     state_pfad.parent.mkdir(parents=True, exist_ok=True)
     state_pfad.write_text(json.dumps(gesehen, indent=1, sort_keys=True))

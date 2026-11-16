@@ -12,6 +12,7 @@ Aufruf: telegram_senden.py <ausgabe-ordner> <chat-id-datei>
 import json
 import os
 import sys
+import time
 from pathlib import Path
 
 import requests
@@ -70,9 +71,17 @@ liste = json.loads((ausgabe / "liste.json").read_text()) if (ausgabe / "liste.js
 for c in liste:
     video = ausgabe / c["datei"]
     text = video.with_suffix(".txt").read_text(encoding="utf-8")[:1000]
-    with video.open("rb") as f:
-        r = requests.post(f"{api}/sendVideo", timeout=300,
-                          data={"chat_id": cid, "caption": text, "supports_streaming": "true",
-                                "width": 1080, "height": 1920},
-                          files={"video": (video.name, f, "video/mp4")})
+    for versuch in range(3):
+        with video.open("rb") as f:
+            r = requests.post(f"{api}/sendVideo", timeout=300,
+                              data={"chat_id": cid, "caption": text, "supports_streaming": "true",
+                                    "width": 1080, "height": 1920},
+                              files={"video": (video.name, f, "video/mp4")})
+        if r.status_code != 429:
+            break
+        # Telegram bremst: so lange warten, wie es sagt
+        warten = r.json().get("parameters", {}).get("retry_after", 5)
+        print(f"{video.name}: Telegram bremst, warte {warten}s")
+        time.sleep(warten + 1)
     print(video.name, "->", r.status_code, "" if r.ok else r.text[:200])
+    time.sleep(1.5)

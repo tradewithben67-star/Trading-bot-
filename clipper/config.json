@@ -1,13 +1,27 @@
 {
   "streamer": [
-    {"name": "Rohat",      "twitch": "xrohat"},
-    {"name": "Trymacs",    "twitch": "trymacs"},
-    {"name": "Zarbex",     "twitch": "zarbex"},
-    {"name": "Eligella",   "twitch": "eliasn97"},
-    {"name": "Papaplatte", "twitch": "papaplatte"}
+    {"name": "Rohat",        "twitch": "xrohat"},
+    {"name": "Trymacs",      "twitch": "trymacs"},
+    {"name": "Zarbex",       "twitch": "zarbex"},
+    {"name": "Eligella",     "twitch": "eliasn97"},
+    {"name": "Papaplatte",   "twitch": "papaplatte"},
+    {"name": "gTasty",       "twitch": "gtasty"},
+    {"name": "LetsHugo",     "twitch": "letshugotv"},
+    {"name": "Gleggmire",    "twitch": "gleggmire"},
+    {"name": "CoachLim",     "twitch": "coachlim"},
+    {"name": "MontanaBlack", "twitch": "montanablack88"},
+    {"name": "NoWay",        "twitch": "noway4u_sir"},
+    {"name": "BastiGHG",     "twitch": "bastighg"},
+    {"name": "HandOfBlood",  "twitch": "handofblood"},
+    {"name": "Tolkin",       "twitch": "tolkin"},
+    {"name": "KrokoBoss",    "twitch": "krokoboss"},
+    {"name": "Nooreax",      "twitch": "nooreax"},
+    {"name": "Knossi",       "twitch": "therealknossi"},
+    {"name": "Gronkh",       "twitch": "gronkh"}
   ],
 
   "clips_pro_streamer": 3,
+  "max_clips_pro_lauf": 25,
   "mindest_aufrufe": 100,
   "max_alter_stunden": 48,
   "max_sekunden": 60,
@@ -18,10 +32,23 @@
 
   "hashtags": ["#fyp", "#foryou", "#twitch", "#streamer", "#clips", "#deutsch"],
   "hashtags_pro_streamer": {
-    "xrohat":     ["#rohat", "#xrohat", "#gtarp"],
-    "trymacs":    ["#trymacs"],
-    "zarbex":     ["#zarbex", "#gtarp"],
-    "eliasn97":   ["#eligella", "#eliasn97"],
-    "papaplatte": ["#papaplatte"]
+    "xrohat":         ["#rohat", "#xrohat", "#gtarp"],
+    "trymacs":        ["#trymacs"],
+    "zarbex":         ["#zarbex", "#gtarp"],
+    "eliasn97":       ["#eligella", "#eliasn97"],
+    "papaplatte":     ["#papaplatte"],
+    "gtasty":         ["#gtasty"],
+    "letshugotv":     ["#letshugo", "#letshugotv"],
+    "gleggmire":      ["#gleggmire"],
+    "coachlim":       ["#coachlim"],
+    "montanablack88": ["#montanablack", "#monte"],
+    "noway4u_sir":    ["#noway", "#noway4u"],
+    "bastighg":       ["#bastighg"],
+    "handofblood":    ["#handofblood", "#hänno"],
+    "tolkin":         ["#tolkin"],
+    "krokoboss":      ["#krokoboss"],
+    "nooreax":        ["#nooreax"],
+    "therealknossi":  ["#knossi"],
+    "gronkh":         ["#gronkh"]
   }
 }

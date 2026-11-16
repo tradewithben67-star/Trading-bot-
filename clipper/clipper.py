@@ -247,7 +247,7 @@ def _sicher(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9_-]+", "-", name)[:60].strip("-") or "clip"
 
 
-def lauf(cfg: dict, state_pfad: Path, ausgabe: Path) -> int:
+def lauf(cfg: dict, state_pfad: Path, ausgabe: Path, alles_neu: bool = False) -> int:
     ausgabe.mkdir(parents=True, exist_ok=True)
     gesehen: dict = json.loads(state_pfad.read_text()) if state_pfad.exists() else {}
     grenze = (dt.date.today() - dt.timedelta(days=21)).isoformat()
@@ -262,7 +262,7 @@ def lauf(cfg: dict, state_pfad: Path, ausgabe: Path) -> int:
         except Exception as e:
             print(f"  Clip-Liste nicht ladbar: {e}", flush=True)
             continue
-        clips = [c for c in clips if c["id"] not in gesehen
+        clips = [c for c in clips if (alles_neu or c["id"] not in gesehen)
                  and c["aufrufe"] >= cfg.get("mindest_aufrufe", 0)]
         clips.sort(key=lambda c: c["aufrufe"], reverse=True)
         for c in clips[: cfg.get("clips_pro_streamer", 2)]:
@@ -296,6 +296,8 @@ def main() -> None:
     ap.add_argument("--lokal", type=Path, help="eine lokale Datei schneiden (Test)")
     ap.add_argument("--titel", default="Test-Clip")
     ap.add_argument("--kanal", default="papaplatte")
+    ap.add_argument("--alles-neu", action="store_true",
+                    help="auch schon gemachte Clips neu schneiden")
     a = ap.parse_args()
     cfg = json.loads(a.config.read_text(encoding="utf-8"))
     if a.lokal:
@@ -304,7 +306,7 @@ def main() -> None:
         hochformat(a.lokal, ziel, a.titel, a.kanal, cfg, cfg.get("max_sekunden", 60))
         print(ziel)
         return
-    lauf(cfg, a.state, a.ausgabe)
+    lauf(cfg, a.state, a.ausgabe, a.alles_neu)
 
 
 if __name__ == "__main__":

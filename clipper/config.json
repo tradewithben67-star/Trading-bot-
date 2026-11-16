@@ -7,9 +7,9 @@
     {"name": "Papaplatte", "twitch": "papaplatte"}
   ],
 
-  "clips_pro_streamer": 1,
-  "mindest_aufrufe": 300,
-  "zeitraum": "24hr",
+  "clips_pro_streamer": 3,
+  "mindest_aufrufe": 100,
+  "max_alter_stunden": 48,
   "max_sekunden": 60,
 
   "untertitel": true,

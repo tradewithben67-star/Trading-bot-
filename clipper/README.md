@@ -7,10 +7,10 @@ auf den Servern von GitHub, dein iPad muss dafür nicht an sein.
 ## Was passiert bei jedem Lauf
 
 1. Für jeden Streamer werden die **meistgesehenen Twitch-Clips der letzten
-   24 Stunden** geholt. Die Zuschauer haben die besten Momente damit
+   48 Stunden** geholt. Die Zuschauer haben die besten Momente damit
    schon ausgesucht.
 2. Clips, die schon gemacht wurden, werden übersprungen.
-3. Pro Streamer wird der **beste neue** Clip geschnitten:
+3. Pro Streamer werden die **3 besten neuen** Clips geschnitten (ab 100 Aufrufen):
    - Hochformat 1080×1920 (TikTok-Format)
    - unscharfer Hintergrund, Spielbild groß in der Mitte
    - Clip-Titel groß oben
@@ -64,6 +64,7 @@ dev.twitch.tv eine App anlegen und `TWITCH_CLIENT_ID` und
 | `streamer` | Name + Twitch-Kanal. Weitere einfach dazuschreiben. |
 | `clips_pro_streamer` | wie viele neue Clips pro Streamer und Lauf (alle 30 Min.) |
 | `mindest_aufrufe` | schwächere Clips werden ignoriert |
+| `max_alter_stunden` | wie alt ein Clip höchstens sein darf |
 | `hashtags`, `hashtags_pro_streamer` | landen in der Beschreibung |
 | `untertitel` | `false` = ohne Untertitel (schneller) |
 

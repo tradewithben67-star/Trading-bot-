@@ -113,9 +113,15 @@ _modell = None
 def woerter_erkennen(video: Path, modell: str, sprache: str) -> list[tuple[float, float, str]]:
     global _modell
     from faster_whisper import WhisperModel
+    import numpy as np
     if _modell is None:
         _modell = WhisperModel(modell, device="cpu", compute_type="int8")
-    segmente, _ = _modell.transcribe(str(video), language=sprache,
+    # Ton selbst mit ffmpeg dekodieren (16 kHz mono): umgeht PyAV-Versionsprobleme
+    roh = subprocess.run(["ffmpeg", "-v", "error", "-i", str(video), "-vn", "-ac", "1",
+                          "-ar", "16000", "-f", "f32le", "-"],
+                         capture_output=True, check=True).stdout
+    audio = np.frombuffer(roh, dtype=np.float32)
+    segmente, _ = _modell.transcribe(audio, language=sprache,
                                      word_timestamps=True, vad_filter=True)
     woerter = []
     for s in segmente:

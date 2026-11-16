@@ -10,7 +10,7 @@ auf den Servern von GitHub, dein iPad muss dafür nicht an sein.
    24 Stunden** geholt. Die Zuschauer haben die besten Momente damit
    schon ausgesucht.
 2. Clips, die schon gemacht wurden, werden übersprungen.
-3. Pro Streamer werden die **2 besten** Clips geschnitten:
+3. Pro Streamer wird der **beste neue** Clip geschnitten:
    - Hochformat 1080×1920 (TikTok-Format)
    - unscharfer Hintergrund, Spielbild groß in der Mitte
    - Clip-Titel groß oben

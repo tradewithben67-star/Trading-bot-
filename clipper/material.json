@@ -1,0 +1,5 @@
+{
+  "aufgabe": "erkunden",
+  "url": "https://footage.bloxclips.com/forgegui-showcase-campaign",
+  "proben": ["/api/campaigns/forgegui-showcase-campaign", "/api/forgegui-showcase-campaign", "/forgegui-showcase-campaign.json"]
+}

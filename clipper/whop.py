@@ -829,7 +829,10 @@ def beschreibung(c: dict, k: dict) -> str:
         name = re.sub(r"[^a-z0-9]", "", (k["person"] or c["kanal"] or "").lower())
         tags = " ".join(t for t in (f"#{name}" if name else "", "#fyp", "#viral", "#funny") if t)
     credit = k.get("credit") or c["kanal"] or k["person"]
-    return f"{c['titel']} 💀\n\n🎥 Credit: {credit}\n\n{tags}"
+    hook = c["titel"].strip()
+    if hook[-1:].isalnum():
+        hook += " 💀"
+    return f"{hook}\n\n🎥 Credit: {credit}\n\n{tags}"
 
 
 # --------------------------------------------------------------------------
@@ -941,6 +944,47 @@ def issue_laden(nr: int, ordner: Path) -> tuple[str, list[Path], dict]:
 # Hauptprogramm
 # --------------------------------------------------------------------------
 
+def transkripte_ausgeben(k: dict, benutzt: dict) -> int:
+    """Schritt 1 fuer handgeschriebene Hooks: neue Clips suchen, Ton erkennen und
+    jeden Kandidaten als eine Zeile 'KANDIDAT|{json}' ins Protokoll schreiben.
+    Es wird nichts geschnitten und nichts verschickt."""
+    from clipper import woerter_erkennen, in_happen
+    alte = [{"id": vid, "start": a, "ende": b} for vid, l in benutzt.items() for a, b in l]
+    kandidaten = twitch_clips(k, alte) + kick_clips(k, alte)
+    log(f"\n{len(kandidaten)} Kandidaten, erkenne Sprache ...")
+    for m in kandidaten:
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                roh = abschnitt_laden(m["url"], m["start"], m["ende"], Path(tmp) / "roh")
+                woerter = woerter_erkennen(roh, os.environ.get("WHOP_WHISPER", "small"),
+                                           k["sprache"])
+        except Exception as e:
+            log(f"  {m['id']}: {str(e)[:200]}")
+            continue
+        text = " ".join(f"[{int(a)}] {t}" for a, _, t in in_happen(woerter, max_woerter=8,
+                                                                    max_luecke=1.0))
+        print("KANDIDAT|" + json.dumps({
+            "id": m["id"], "url": m["url"], "link": m.get("quelle_link", m["url"]),
+            "titel": m["video"], "warum": m["warum"], "dauer": m["ende"], "text": text},
+            ensure_ascii=False), flush=True)
+    return 3  # kein Fehler, aber auch nichts zum Verschicken
+
+
+def auswahl_momente(auswahl: list[dict], k: dict) -> list[dict]:
+    """Schritt 2: vorgegebene Clips mit fertigem Hook."""
+    out = []
+    for x in auswahl:
+        start = float(x.get("start", 0))
+        ende = float(x.get("ende", start + k["max_sekunden"]))
+        ende = min(ende, start + k["max_sekunden"] - 0.5)
+        out.append({"id": x["id"], "url": x["url"], "start": start, "ende": ende,
+                    "titel": x["hook"], "warum": x.get("warum", ""), "punkte": 10,
+                    "video": x.get("titel", x["hook"]), "kanal": x.get("kanal", ""),
+                    "youtube": "youtube.com" in x["url"],
+                    "quelle_link": x.get("link", x["url"])})
+    return out
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Whop-Auftrag: Kriterien rein, Clips raus.")
     ap.add_argument("--kriterien", type=Path, help="Textdatei mit dem Auftragstext")
@@ -956,6 +1000,8 @@ def main() -> int:
     ap.add_argument("--hashtags", default="", help='z.B. "#tjr #trading #fyp"')
     ap.add_argument("--credit", default="", help='z.B. "@TJRTrades"')
     ap.add_argument("--auftrag-json", type=Path, help="alle Angaben als JSON-Datei")
+    ap.add_argument("--nur-transkripte", action="store_true",
+                    help="nur Kandidaten mit Transkript ins Protokoll schreiben (fuer eigene Hooks)")
     ap.add_argument("--ausgabe", type=Path, default=HIER / "whop_ausgabe")
     ap.add_argument("--benutzt", type=Path, default=HIER / "state" / "whop_benutzt.json",
                     help="merkt sich verwendete Stellen, damit kein Clip doppelt eingereicht wird")
@@ -974,6 +1020,10 @@ def main() -> int:
         a.beide_varianten = a.beide_varianten or j.get("beide_varianten", False)
         a.hashtags = a.hashtags or j.get("hashtags", "")
         a.credit = a.credit or j.get("credit", "")
+        a.nur_transkripte = a.nur_transkripte or j.get("nur_transkripte", False)
+        auswahl = j.get("auswahl") or []
+    else:
+        auswahl = []
     text, bilder, extra = a.text, list(a.bild), {}
     if a.kriterien:
         text += "\n" + a.kriterien.read_text(encoding="utf-8")
@@ -1004,11 +1054,17 @@ def main() -> int:
         return 1
 
     benutzt = json.loads(a.benutzt.read_text()) if a.benutzt.exists() else {}
+    if a.nur_transkripte and not auswahl:
+        return transkripte_ausgeben(k, benutzt)
     try:
-        kandidaten = quellen_sammeln(k, a.max_videos)
-        log(f"\n{len(kandidaten)} moegliche Videos/Streams")
-        momente = momente_finden(kandidaten, k, benutzt, a.max_pro_video, a.max_videos,
-                                 a.max_stream_stunden)
+        if auswahl:
+            k["anzahl"] = len(auswahl)
+            momente = auswahl_momente(auswahl, k)
+        else:
+            kandidaten = quellen_sammeln(k, a.max_videos)
+            log(f"\n{len(kandidaten)} moegliche Videos/Streams")
+            momente = momente_finden(kandidaten, k, benutzt, a.max_pro_video, a.max_videos,
+                                     a.max_stream_stunden)
         clips = clips_schneiden(momente, k, a.ausgabe)
     except YoutubeSperre:
         kommentar.write_text(

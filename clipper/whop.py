@@ -424,7 +424,7 @@ MOMENT_SCHEMA = {
             "properties": {
                 "start": {"type": "number", "description": "Sekunde, an der der Clip beginnt"},
                 "ende": {"type": "number", "description": "Sekunde, an der der Clip endet"},
-                "titel": {"type": "string", "description": "Kurzer, knackiger Titel"},
+                "titel": {"type": "string", "description": "Kurzer TikTok-Hook in der Sprache des Videos, neugierig machend, z.B. \"bro bought a $3.5m car and can't fit in it\""},
                 "warum": {"type": "string", "description": "Ein Satz, warum der Moment funktioniert"},
                 "punkte": {"type": "integer", "description": "1-10, wie stark der Moment ist"},
             },
@@ -524,7 +524,7 @@ def momente_mit_regeln(v: dict, k: dict, wie_viele: int) -> list[dict]:
             continue
         satz = " ".join(t for s, _, t in v["zeilen"] if a <= s <= b)
         satz = LACHER.sub("", satz).strip()
-        out.append({"start": a, "ende": b, "titel": " ".join(satz.split()[:8]) or v["titel"],
+        out.append({"start": a, "ende": b, "titel": v["titel"] or " ".join(satz.split()[:8]),
                     "warum": "viele Lacher" if lacher else "oft wiederholte Stelle",
                     "punkte": min(10, 5 + int(wert))})
         if len(out) >= wie_viele:
@@ -707,44 +707,69 @@ def _dateiname(text: str) -> str:
 
 
 def clips_schneiden(momente: list[dict], k: dict, ausgabe: Path) -> list[dict]:
+    """Ein Eintrag pro Moment. Mit k["beide_varianten"] gibt es jeden Clip zweimal:
+    mit und ohne eingebrannte Untertitel (beide im Hochformat)."""
     fertig = []
     fmt = k["format"]
+    if k.get("beide_varianten"):
+        varianten = [("_mit_untertitel", True), ("_ohne_untertitel", False)]
+        hoch_noetig = True
+    else:
+        varianten = [("", k["untertitel"])]
+        hoch_noetig = k["hochformat"]
     for m in momente:
         if len(fertig) >= k["anzahl"]:
             break
         nr = len(fertig) + 1
-        name = f"clip_{nr:02d}_{_dateiname(m['titel'])}.{fmt}"
-        log(f"\nSchneide {name}  ({_mmss(m['start'])}-{_mmss(m['ende'])} aus {m['url']})")
+        basis = f"clip_{nr:02d}_{_dateiname(m['titel'])}"
+        log(f"\nSchneide {basis}  ({_mmss(m['start'])}-{_mmss(m['ende'])} aus {m['url']})")
+        dateien = []
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 roh = abschnitt_laden(m["url"], m["start"], m["ende"], Path(tmp) / "roh")
-                if k["hochformat"]:
-                    from clipper import hochformat
-                    hoch = Path(tmp) / "hoch.mp4"
-                    cfg = {"untertitel": k["untertitel"], "sprache": k["sprache"],
-                           "whisper_modell": os.environ.get("WHOP_WHISPER", "small")}
-                    kanal = m["kanal"] if "twitch.tv" in m["url"] else \
-                        f"{'YouTube' if m['youtube'] else 'Quelle'}: {m['kanal'] or k['person']}"
-                    hochformat(roh, hoch, m["titel"], kanal, cfg, k["max_sekunden"])
-                    roh = hoch
-                exportieren(roh, ausgabe / name, fmt, k["max_sekunden"])
+                for zusatz, untertitel in varianten:
+                    name = f"{basis}{zusatz}.{fmt}"
+                    quelle = roh
+                    if hoch_noetig:
+                        from clipper import hochformat
+                        quelle = Path(tmp) / f"hoch{zusatz}.mp4"
+                        cfg = {"untertitel": untertitel, "sprache": k["sprache"],
+                               "whisper_modell": os.environ.get("WHOP_WHISPER", "small")}
+                        kanal = m["kanal"] if "twitch.tv" in m["url"] else \
+                            f"{'YouTube' if m['youtube'] else 'Quelle'}: {m['kanal'] or k['person']}"
+                        hochformat(roh, quelle, m["titel"], kanal, cfg, k["max_sekunden"])
+                    exportieren(quelle, ausgabe / name, fmt, k["max_sekunden"])
+                    dateien.append((name, untertitel))
         except Exception as e:
             log(f"  Fehler: {str(e)[:300]}")
+            for name, _ in dateien:
+                (ausgabe / name).unlink(missing_ok=True)
             continue
-        d = dauer_von(ausgabe / name)
+        d = dauer_von(ausgabe / dateien[0][0])
         if d < k["min_sekunden"] - 0.5:
             log(f"  nur {d:.1f} s lang, verworfen")
-            (ausgabe / name).unlink(missing_ok=True)
+            for name, _ in dateien:
+                (ausgabe / name).unlink(missing_ok=True)
             continue
-        w, h = groesse(ausgabe / name)
+        w, h = groesse(ausgabe / dateien[0][0])
         link = m["url"]
         if m["youtube"]:
             link = re.sub(r"[&?]t=\d+s?", "", link)
             link += ("&" if "?" in link else "?") + f"t={int(m['start'])}s"
-        fertig.append({**m, "nr": nr, "datei": name, "dauer_clip": round(d, 1),
-                       "link": link, "breite": w, "hoehe": h})
-        log(f"  fertig: {d:.1f} s, {w}x{h}")
+        fertig.append({**m, "nr": nr, "datei": dateien[0][0], "varianten": dateien,
+                       "dauer_clip": round(d, 1), "link": link, "breite": w, "hoehe": h})
+        log(f"  fertig: {d:.1f} s, {w}x{h}, {len(dateien)} Datei(en)")
     return fertig
+
+
+def beschreibung(c: dict, k: dict) -> str:
+    """Fertige TikTok-Beschreibung: Hook, Credit, Hashtags."""
+    tags = k.get("hashtags") or ""
+    if not tags:
+        name = re.sub(r"[^a-z0-9]", "", (k["person"] or c["kanal"] or "").lower())
+        tags = " ".join(t for t in (f"#{name}" if name else "", "#fyp", "#viral", "#funny") if t)
+    credit = k.get("credit") or c["kanal"] or k["person"]
+    return f"{c['titel']} 💀\n\n🎥 Credit: {credit}\n\n{tags}"
 
 
 # --------------------------------------------------------------------------
@@ -767,17 +792,27 @@ def einreichung_schreiben(clips: list[dict], k: dict, ausgabe: Path) -> str:
             f"=== HINWEISE FÜR PRÜFER (ins Textfeld kopieren) ===\n{notizen}\n\n"
             f"=== MUSST DU SELBST MACHEN ===\n{selbst}\n")
     (ausgabe / "einreichung.txt").write_text(text, encoding="utf-8")
-    # Pro Clip eine Beschreibung (fuer Telegram) und die Liste
+    # Pro Datei eine Beschreibung (fuer Telegram) und die Liste
+    liste = []
     for c in clips:
-        (ausgabe / c["datei"]).with_suffix(".txt").write_text(
-            f"{c['titel']}\n\nSource: {c['link']}", encoding="utf-8")
-    (ausgabe / "liste.json").write_text(json.dumps(
-        [{"datei": c["datei"], "titel": c["titel"], "url": c["link"], "breite": c["breite"],
-          "hoehe": c["hoehe"], "punkte": c["punkte"], "warum": c["warum"]} for c in clips],
-        indent=1, ensure_ascii=False), encoding="utf-8")
+        text_tiktok = beschreibung(c, k)
+        for i, (name, untertitel) in enumerate(c.get("varianten") or [(c["datei"], None)]):
+            if untertitel is None:
+                text = text_tiktok
+            elif i == 0:
+                text = f"{text_tiktok}\n\n(Clip {c['nr']} · {'mit' if untertitel else 'ohne'} Untertitel)"
+            else:
+                text = (f"⬆️ Clip {c['nr']} {'mit' if untertitel else 'ohne'} Untertitel – "
+                        f"Beschreibung steht beim Video darüber")
+            (ausgabe / name).with_suffix(".txt").write_text(text, encoding="utf-8")
+            liste.append({"datei": name, "titel": c["titel"], "url": c["link"],
+                          "breite": c["breite"], "hoehe": c["hoehe"], "punkte": c["punkte"],
+                          "warum": c["warum"]})
+    (ausgabe / "liste.json").write_text(json.dumps(liste, indent=1, ensure_ascii=False),
+                                        encoding="utf-8")
     with zipfile.ZipFile(ausgabe / "alle_clips.zip", "w", zipfile.ZIP_STORED) as z:
-        for c in clips:
-            z.write(ausgabe / c["datei"], c["datei"])
+        for eintrag in liste:
+            z.write(ausgabe / eintrag["datei"], eintrag["datei"])
         z.write(ausgabe / "einreichung.txt", "einreichung.txt")
     return text
 
@@ -856,6 +891,11 @@ def main() -> int:
     ap.add_argument("--anzahl", type=int, help="Anzahl Clips (ueberschreibt die Kriterien)")
     ap.add_argument("--quelle", action="append", default=[],
                     help="Kanal-, Stream- oder Video-Link (mehrfach). Ohne: YouTube-Suche")
+    ap.add_argument("--beide-varianten", action="store_true",
+                    help="jeden Clip zweimal: mit und ohne Untertitel (Hochformat)")
+    ap.add_argument("--hashtags", default="", help='z.B. "#tjr #trading #fyp"')
+    ap.add_argument("--credit", default="", help='z.B. "@TJRTrades"')
+    ap.add_argument("--auftrag-json", type=Path, help="alle Angaben als JSON-Datei")
     ap.add_argument("--ausgabe", type=Path, default=HIER / "whop_ausgabe")
     ap.add_argument("--benutzt", type=Path, default=HIER / "state" / "whop_benutzt.json",
                     help="merkt sich verwendete Stellen, damit kein Clip doppelt eingereicht wird")
@@ -865,6 +905,15 @@ def main() -> int:
                     help="bei Streams ohne Untertitel nur so viel vom Anfang anhoeren")
     a = ap.parse_args()
 
+    if a.auftrag_json:
+        j = json.loads(a.auftrag_json.read_text(encoding="utf-8"))
+        a.text = a.text or j.get("text", "")
+        a.person = a.person or j.get("person", "")
+        a.anzahl = a.anzahl or j.get("anzahl")
+        a.quelle = a.quelle or j.get("quellen", [])
+        a.beide_varianten = a.beide_varianten or j.get("beide_varianten", False)
+        a.hashtags = a.hashtags or j.get("hashtags", "")
+        a.credit = a.credit or j.get("credit", "")
     text, bilder, extra = a.text, list(a.bild), {}
     if a.kriterien:
         text += "\n" + a.kriterien.read_text(encoding="utf-8")
@@ -879,6 +928,10 @@ def main() -> int:
         k["anzahl"] = a.anzahl or int(extra["anzahl"].strip())
     if a.quelle or extra.get("quellen"):
         k["quellen"] = a.quelle or extra["quellen"]
+    k["beide_varianten"] = a.beide_varianten
+    k["hashtags"], k["credit"] = a.hashtags, a.credit
+    if a.beide_varianten:
+        k["hochformat"] = True
     log("\nKriterien:\n" + json.dumps(k, indent=1, ensure_ascii=False))
 
     a.ausgabe.mkdir(parents=True, exist_ok=True)

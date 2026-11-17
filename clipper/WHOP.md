@@ -73,3 +73,11 @@ und `alle_clips.zip`. Am eigenen Rechner blockiert YouTube praktisch nie.
   Wird Handarbeit verlangt, riskierst du sonst die Auszahlung.
 - Sieh dir jeden Clip vor dem Einreichen an. Die Auswahl ist gut, aber nicht unfehlbar.
 - Nur öffentlich zugängliches Material, die Quelle steht immer dabei.
+
+## TikTok-Clips direkt per Telegram (ohne Issue)
+
+`clipper/auftrag.json` beschreibt einen Auftrag: Person, Quellen, Anzahl,
+`"beide_varianten": true` (jeder Clip mit **und** ohne Untertitel, 9:16),
+Hashtags und Credit. Sobald die Datei geändert und gepusht wird, startet der
+Lauf und schickt alle Clips samt fertiger TikTok-Beschreibung an deinen
+Telegram-Bot (dieselbe Einrichtung wie bei der Clip-Fabrik).

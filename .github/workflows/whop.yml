@@ -3,7 +3,11 @@ name: Whop-Clips
 # Startet von allein, sobald ein Issue mit dem Titel "[Whop] ..." eroeffnet wird
 # (Vorlage "Whop-Auftrag"). Neu starten: im Issue "nochmal" kommentieren.
 # Oder von Hand: Actions -> "Whop-Clips" -> "Run workflow".
+# Oder: clipper/auftrag.json aendern und pushen (schickt die Clips per Telegram).
 on:
+  push:
+    paths:
+      - clipper/auftrag.json
   issues:
     types: [opened]
   issue_comment:
@@ -34,7 +38,7 @@ concurrency:
 jobs:
   clips:
     if: >-
-      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'workflow_dispatch' || github.event_name == 'push' ||
       (github.event_name == 'issues' && startsWith(github.event.issue.title, '[Whop]')) ||
       (github.event_name == 'issue_comment' && startsWith(github.event.issue.title, '[Whop]') &&
        github.event.comment.user.login == github.repository_owner &&
@@ -86,6 +90,7 @@ jobs:
             export YTDLP_COOKIES_DATEI="$RUNNER_TEMP/cookies.txt"
           fi
           args=()
+          if [ "${{ github.event_name }}" = "push" ]; then args+=(--auftrag-json clipper/auftrag.json); fi
           if [ -n "$NR" ]; then args+=(--issue "$NR"); fi
           if [ -n "$IN_KRITERIEN" ]; then args+=(--text "$IN_KRITERIEN"); fi
           if [ -n "$IN_PERSON" ]; then args+=(--person "$IN_PERSON"); fi

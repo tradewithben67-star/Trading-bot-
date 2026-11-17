@@ -10,6 +10,43 @@
   "beide_varianten": true,
   "hashtags": "#tjr #tjrtrades #trading #daytrading #fyp #viral",
   "credit": "@TJRTrades",
-  "nur_transkripte": true,
-  "auswahl": []
+  "nur_transkripte": false,
+  "auswahl": [
+    {
+      "id": "clip_01M75Z27CE4KE56X21GJFQJS51",
+      "url": "https://clips.kick.com/clips/da/clip_01M75Z27CE4KE56X21GJFQJS51/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M75Z27CE4KE56X21GJFQJS51",
+      "titel": "TJR loses 210k on a bank holiday",
+      "kanal": "kick.com/tjr",
+      "hook": "he lost $210,000 because he wanted to have fun on a bank holiday 😭",
+      "ende": 34
+    },
+    {
+      "id": "clip_01M706EKDKH56KD7P4B4D8Z5CS",
+      "url": "https://clips.kick.com/clips/c9/clip_01M706EKDKH56KD7P4B4D8Z5CS/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M706EKDKH56KD7P4B4D8Z5CS",
+      "titel": "worst part of being rich",
+      "kanal": "kick.com/tjr",
+      "hook": "the worst part of being rich, according to tjr 💀",
+      "ende": 28
+    },
+    {
+      "id": "clip_01M6P5E7CFWFD96H71HEFHHYAR",
+      "url": "https://clips.kick.com/clips/c8/clip_01M6P5E7CFWFD96H71HEFHHYAR/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M6P5E7CFWFD96H71HEFHHYAR",
+      "titel": "Bart Simpsons Method",
+      "kanal": "kick.com/tjr",
+      "hook": "tjr just discovered a new chart pattern: the 'buck tooth benny' 💀",
+      "ende": 30
+    },
+    {
+      "id": "clip_01M6PGA38DST3Y45N94DDR1E29",
+      "url": "https://clips.kick.com/clips/93/clip_01M6PGA38DST3Y45N94DDR1E29/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M6PGA38DST3Y45N94DDR1E29",
+      "titel": "traders working out",
+      "kanal": "kick.com/tjr",
+      "hook": "when day traders try to work out 😭",
+      "ende": 30
+    }
+  ]
 }

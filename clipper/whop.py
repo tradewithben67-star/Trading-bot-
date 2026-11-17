@@ -795,8 +795,10 @@ def clips_schneiden(momente: list[dict], k: dict, ausgabe: Path) -> list[dict]:
                         quelle = Path(tmp) / f"hoch{zusatz}.mp4"
                         cfg = {"untertitel": untertitel, "sprache": k["sprache"],
                                "whisper_modell": os.environ.get("WHOP_WHISPER", "small")}
-                        kanal = m["kanal"] if "twitch.tv" in m["url"] else \
-                            f"{'YouTube' if m['youtube'] else 'Quelle'}: {m['kanal'] or k['person']}"
+                        if "twitch.tv" in m["url"] or "." in (m["kanal"] or ""):
+                            kanal = m["kanal"]
+                        else:
+                            kanal = f"{'YouTube' if m['youtube'] else 'Source'}: {m['kanal'] or k['person']}"
                         hochformat(roh, quelle, m["titel"], kanal, cfg, k["max_sekunden"])
                     exportieren(quelle, ausgabe / name, fmt, k["max_sekunden"])
                     dateien.append((name, untertitel))

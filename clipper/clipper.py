@@ -188,7 +188,7 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Titel,DejaVu Sans,{lay.titel_groesse},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{HOEHE - lay.titel_unten},1
 Style: Kanal,DejaVu Sans,44,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,1,8,40,40,{lay.kanal_oben},1
-Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,{sub_ausr},50,50,{sub_rand},1
+Style: Sub,DejaVu Sans,{lay.sub_groesse},&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,{sub_ausr},50,50,{sub_rand},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -230,13 +230,14 @@ def filter_bauen(lay) -> str:
 def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
                max_sek: float, feste_cam=None) -> str:
     dauer = min(dauer_von(quelle), max_sek)
-    lay = layout.waehlen(quelle, feste_cam)
+    lay = layout.waehlen(quelle, feste_cam, cfg.get("randlos", False))
     print(f"  Layout: {lay.art}", flush=True)
     happen = []
     if cfg.get("untertitel", True):
         try:
             happen = in_happen(woerter_erkennen(quelle, cfg.get("whisper_modell", "small"),
-                                                cfg.get("sprache", "de")))
+                                                cfg.get("sprache", "de")),
+                               max_woerter=cfg.get("woerter_pro_untertitel", 3))
         except Exception as e:
             print(f"  Untertitel uebersprungen: {e}", flush=True)
     with tempfile.TemporaryDirectory() as tmp:

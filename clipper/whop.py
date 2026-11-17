@@ -749,6 +749,31 @@ def groesse(datei: Path) -> tuple[int, int]:
         return 0, 0
 
 
+def hat_ton(datei: Path) -> bool:
+    r = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries",
+                        "stream=index", "-of", "csv=p=0", str(datei)], capture_output=True, text=True)
+    return bool(r.stdout.strip())
+
+
+def hoehepunkt_vorne(roh: Path, a: float, b: float, ziel: Path) -> Path:
+    """Cold Open: erst der Hoehepunkt (Sekunde a bis b), dann der ganze Clip von vorne."""
+    if hat_ton(roh):
+        fc = (f"[0:v]split[v1][v2];[0:a]asplit[a1][a2];"
+              f"[v1]trim={a:.2f}:{b:.2f},setpts=PTS-STARTPTS[t];"
+              f"[a1]atrim={a:.2f}:{b:.2f},asetpts=PTS-STARTPTS[ta];"
+              f"[v2]setpts=PTS-STARTPTS[g];[a2]asetpts=PTS-STARTPTS[ga];"
+              f"[t][ta][g][ga]concat=n=2:v=1:a=1[v][a]")
+        karte = ["-map", "[v]", "-map", "[a]", "-c:a", "aac", "-b:a", "192k"]
+    else:
+        fc = (f"[0:v]split[v1][v2];[v1]trim={a:.2f}:{b:.2f},setpts=PTS-STARTPTS[t];"
+              f"[v2]setpts=PTS-STARTPTS[g];[t][g]concat=n=2:v=1:a=0[v]")
+        karte = ["-map", "[v]"]
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(roh), "-filter_complex", fc,
+                    *karte, "-c:v", "libx264", "-preset", "veryfast", "-crf", "18", str(ziel)],
+                   check=True)
+    return ziel
+
+
 def exportieren(quelle: Path, ziel: Path, fmt: str, max_dauer: float) -> None:
     if fmt == "webm":
         codec = ["-c:v", "libvpx-vp9", "-crf", "32", "-b:v", "0", "-row-mt", "1",
@@ -787,6 +812,12 @@ def clips_schneiden(momente: list[dict], k: dict, ausgabe: Path) -> list[dict]:
         try:
             with tempfile.TemporaryDirectory() as tmp:
                 roh = abschnitt_laden(m["url"], m["start"], m["ende"], Path(tmp) / "roh")
+                max_len = k["max_sekunden"]
+                if m.get("teaser"):
+                    a, b = (float(x) for x in m["teaser"])
+                    roh = hoehepunkt_vorne(roh, a, b, Path(tmp) / "mit_hoehepunkt.mp4")
+                    max_len += b - a
+                    log(f"  Cold Open: Sekunde {a:g}-{b:g} vorne")
                 for zusatz, untertitel in varianten:
                     name = f"{basis}{zusatz}.{fmt}"
                     quelle = roh
@@ -794,13 +825,15 @@ def clips_schneiden(momente: list[dict], k: dict, ausgabe: Path) -> list[dict]:
                         from clipper import hochformat
                         quelle = Path(tmp) / f"hoch{zusatz}.mp4"
                         cfg = {"untertitel": untertitel, "sprache": k["sprache"],
-                               "whisper_modell": os.environ.get("WHOP_WHISPER", "small")}
+                               "whisper_modell": os.environ.get("WHOP_WHISPER", "small"),
+                               "randlos": k.get("randlos", True),
+                               "woerter_pro_untertitel": k.get("woerter_pro_untertitel", 1)}
                         if "twitch.tv" in m["url"] or "." in (m["kanal"] or ""):
                             kanal = m["kanal"]
                         else:
                             kanal = f"{'YouTube' if m['youtube'] else 'Source'}: {m['kanal'] or k['person']}"
-                        hochformat(roh, quelle, m["titel"], kanal, cfg, k["max_sekunden"])
-                    exportieren(quelle, ausgabe / name, fmt, k["max_sekunden"])
+                        hochformat(roh, quelle, m["titel"], kanal, cfg, max_len)
+                    exportieren(quelle, ausgabe / name, fmt, max_len)
                     dateien.append((name, untertitel))
         except Exception as e:
             log(f"  Fehler: {str(e)[:300]}")
@@ -983,7 +1016,7 @@ def auswahl_momente(auswahl: list[dict], k: dict) -> list[dict]:
                     "titel": x["hook"], "warum": x.get("warum", ""), "punkte": 10,
                     "video": x.get("titel", x["hook"]), "kanal": x.get("kanal", ""),
                     "youtube": "youtube.com" in x["url"],
-                    "quelle_link": x.get("link", x["url"])})
+                    "quelle_link": x.get("link", x["url"]), "teaser": x.get("teaser")})
     return out
 
 
@@ -1023,9 +1056,10 @@ def main() -> int:
         a.hashtags = a.hashtags or j.get("hashtags", "")
         a.credit = a.credit or j.get("credit", "")
         a.nur_transkripte = a.nur_transkripte or j.get("nur_transkripte", False)
+        stil = {x: j[x] for x in ("randlos", "woerter_pro_untertitel") if x in j}
         auswahl = j.get("auswahl") or []
     else:
-        auswahl = []
+        auswahl, stil = [], {}
     text, bilder, extra = a.text, list(a.bild), {}
     if a.kriterien:
         text += "\n" + a.kriterien.read_text(encoding="utf-8")
@@ -1040,6 +1074,7 @@ def main() -> int:
         k["anzahl"] = a.anzahl or int(extra["anzahl"].strip())
     if a.quelle or extra.get("quellen"):
         k["quellen"] = a.quelle or extra["quellen"]
+    k.update(stil)
     k["beide_varianten"] = a.beide_varianten
     k["hashtags"], k["credit"] = a.hashtags, a.credit
     if a.beide_varianten:

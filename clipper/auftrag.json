@@ -19,7 +19,24 @@
       "titel": "TJR BENDS 100k POKEMON CARD",
       "kanal": "kick.com/tjr",
       "hook": "he accidentally bent a $100,000 pokemon card 😭",
-      "ende": 44.5
+      "ende": 44.5,
+      "teaser": [
+        17,
+        23
+      ]
+    },
+    {
+      "id": "clip_01M75Z27CE4KE56X21GJFQJS51",
+      "url": "https://clips.kick.com/clips/da/clip_01M75Z27CE4KE56X21GJFQJS51/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M75Z27CE4KE56X21GJFQJS51",
+      "titel": "TJR loses 210k on a bank holiday",
+      "kanal": "kick.com/tjr",
+      "hook": "he lost $210,000 because he wanted to have fun on a bank holiday 😭",
+      "ende": 34,
+      "teaser": [
+        11.5,
+        18
+      ]
     },
     {
       "id": "clip_01M5SFDWQECYDAPN4PJA7C7CGC",
@@ -28,25 +45,11 @@
       "titel": "crashing out",
       "kanal": "kick.com/tjr",
       "hook": "tjr crashes out after missing the perfect short 😭",
-      "ende": 23
-    },
-    {
-      "id": "clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
-      "url": "https://clips.kick.com/clips/6b/clip_01M7DD7SRZH4BDCW43P9DHDBQZ/playlist.m3u8",
-      "link": "https://kick.com/tjr/clips/clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
-      "titel": "gains",
-      "kanal": "kick.com/tjr",
-      "hook": "he showed off his gym progress… then someone asked if he has scoliosis 💀",
-      "ende": 34
-    },
-    {
-      "id": "clip_01M6RSGGE8WS3PGGBHVBPJ2P65",
-      "url": "https://clips.kick.com/clips/d7/clip_01M6RSGGE8WS3PGGBHVBPJ2P65/playlist.m3u8",
-      "link": "https://kick.com/tjr/clips/clip_01M6RSGGE8WS3PGGBHVBPJ2P65",
-      "titel": "deink shi",
-      "kanal": "kick.com/tjr",
-      "hook": "losing the challenge meant drinking THIS 🤢",
-      "ende": 44.5
+      "ende": 23,
+      "teaser": [
+        2,
+        9
+      ]
     },
     {
       "id": "clip_01M5PJ3H6CMQQ3K3H13NMAS175",
@@ -55,7 +58,26 @@
       "titel": "BART SIMPSON STRATEGY",
       "kanal": "kick.com/tjr",
       "hook": "tjr's 'pool of blood' take profit strategy is something else 💀",
-      "ende": 44.5
+      "ende": 44.5,
+      "teaser": [
+        20,
+        27
+      ]
+    },
+    {
+      "id": "clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
+      "url": "https://clips.kick.com/clips/6b/clip_01M7DD7SRZH4BDCW43P9DHDBQZ/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
+      "titel": "gains",
+      "kanal": "kick.com/tjr",
+      "hook": "he showed off his gym progress… then someone asked if he has scoliosis 💀",
+      "ende": 34,
+      "teaser": [
+        16.5,
+        20
+      ]
     }
-  ]
+  ],
+  "randlos": true,
+  "woerter_pro_untertitel": 1
 }

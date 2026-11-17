@@ -1,0 +1,83 @@
+{
+  "person": "TJR",
+  "text": "Find TJR footage (vlogs, livestreams). Pick the funniest standalone moments: crazy reactions, ridiculous purchases, roasts, chat interactions, fails. Cut 20 to 45 second clips, vertical 9:16, MP4. TJR must be the main focus, not a guest. Each clip must be funny or shocking without extra context.",
+  "quellen": [
+    "https://kick.com/tjr",
+    "https://www.youtube.com/@TJRTrades/videos",
+    "https://www.youtube.com/@TRichesTrades/videos"
+  ],
+  "anzahl": 5,
+  "beide_varianten": true,
+  "hashtags": "#tjr #tjrtrades #trading #daytrading #fyp #viral",
+  "credit": "@TJRTrades",
+  "nur_transkripte": false,
+  "auswahl": [
+    {
+      "id": "clip_01M7ASB100Y7CHWDP0ZHYCWV99",
+      "url": "https://clips.kick.com/clips/36/clip_01M7ASB100Y7CHWDP0ZHYCWV99/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M7ASB100Y7CHWDP0ZHYCWV99",
+      "titel": "TJR BENDS 100k POKEMON CARD",
+      "kanal": "kick.com/tjr",
+      "hook": "he accidentally bent a $100,000 pokemon card 😭",
+      "ende": 44.5,
+      "teaser": [
+        17,
+        23
+      ]
+    },
+    {
+      "id": "clip_01M75Z27CE4KE56X21GJFQJS51",
+      "url": "https://clips.kick.com/clips/da/clip_01M75Z27CE4KE56X21GJFQJS51/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M75Z27CE4KE56X21GJFQJS51",
+      "titel": "TJR loses 210k on a bank holiday",
+      "kanal": "kick.com/tjr",
+      "hook": "he lost $210,000 because he wanted to have fun on a bank holiday 😭",
+      "ende": 34,
+      "teaser": [
+        11.5,
+        18
+      ]
+    },
+    {
+      "id": "clip_01M5SFDWQECYDAPN4PJA7C7CGC",
+      "url": "https://clips.kick.com/clips/11/clip_01M5SFDWQECYDAPN4PJA7C7CGC/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M5SFDWQECYDAPN4PJA7C7CGC",
+      "titel": "crashing out",
+      "kanal": "kick.com/tjr",
+      "hook": "tjr crashes out after missing the perfect short 😭",
+      "ende": 23,
+      "teaser": [
+        2,
+        9
+      ]
+    },
+    {
+      "id": "clip_01M5PJ3H6CMQQ3K3H13NMAS175",
+      "url": "https://clips.kick.com/clips/b6/clip_01M5PJ3H6CMQQ3K3H13NMAS175/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M5PJ3H6CMQQ3K3H13NMAS175",
+      "titel": "BART SIMPSON STRATEGY",
+      "kanal": "kick.com/tjr",
+      "hook": "tjr's 'pool of blood' take profit strategy is something else 💀",
+      "ende": 44.5,
+      "teaser": [
+        20,
+        27
+      ]
+    },
+    {
+      "id": "clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
+      "url": "https://clips.kick.com/clips/6b/clip_01M7DD7SRZH4BDCW43P9DHDBQZ/playlist.m3u8",
+      "link": "https://kick.com/tjr/clips/clip_01M7DD7SRZH4BDCW43P9DHDBQZ",
+      "titel": "gains",
+      "kanal": "kick.com/tjr",
+      "hook": "he showed off his gym progress… then someone asked if he has scoliosis 💀",
+      "ende": 34,
+      "teaser": [
+        16.5,
+        20
+      ]
+    }
+  ],
+  "randlos": true,
+  "woerter_pro_untertitel": 1
+}

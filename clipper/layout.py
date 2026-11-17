@@ -39,6 +39,7 @@ class Layout:
     kanal_oben: int       # y der Oberkante von "twitch.tv/..."
     sub_mitte: bool       # True: Untertitel mittig auf sub_y (an der Naht)
     sub_y: int
+    sub_groesse: int = 86
 
 
 def _gerade(v: float) -> int:
@@ -193,15 +194,73 @@ def _feste_cam(w, h, box) -> Layout:
     return _facecam_layout(w, h, (x + bw / 2, y + bh / 2 - 0.05 * bh, bw / 3.4, 0.0, 0.0))
 
 
-def waehlen(quelle: Path, feste_cam=None) -> Layout:
+# --------------------------------------------------------------------------
+# Randlos: das ganze Hochformat ist Bild, kein unscharfer Rand, keine Balken.
+# Gesicht oben, Spiel darunter; Untertitel Wort fuer Wort an der Naht.
+# --------------------------------------------------------------------------
+
+CAM_H = 820               # Hoehe des Gesichts-Streifens oben
+TITEL_RANDLOS = dict(titel_unten=250, titel_groesse=60, kanal_oben=HOEHE - 70,
+                     sub_groesse=100)
+
+
+def _randlos_cam(w, h, cx, cy, fw, streuung, ox=0, ow=BREITE) -> Feld:
+    bw = min(max(fw * w * 2.7, (streuung + 1.8 * fw) * w, 0.16 * w), 0.45 * w) * ow / BREITE
+    bh = bw * CAM_H / ow
+    if bh > h:
+        bh, bw = h, h * ow / CAM_H
+    x = min(max(cx * w - bw / 2, 0), w - bw)
+    y = min(max(cy * h - bh * 0.45, 0), h - bh)
+    return Feld(_gerade(x), _gerade(y), _gerade(bw), _gerade(bh), 0, CAM_H, ox=ox, ow=ow)
+
+
+def _randlos_spiel(w, h) -> Feld:
+    spiel_h = HOEHE - CAM_H
+    gw = min(w, _gerade(h * BREITE / spiel_h))
+    gh = min(h, _gerade(gw * spiel_h / BREITE))
+    return Feld((w - gw) // 2, (h - gh) // 2, gw, gh, CAM_H, spiel_h)
+
+
+def _randlos_ganz(w, h, mitte_x=0.5) -> Feld:
+    """Ein 9:16-Ausschnitt ueber die volle Hoehe."""
+    cw = min(w, _gerade(h * BREITE / HOEHE))
+    x = int(min(max(mitte_x * w - cw / 2, 0), w - cw))
+    return Feld(x, 0, cw, h, 0, HOEHE)
+
+
+def randlos_waehlen(w, h, bilder) -> Layout:
+    cams = _facecam(bilder) if bilder else []
+    if len(cams) == 2:
+        halb = BREITE // 2
+        felder = [_randlos_cam(w, h, c[0], c[1], c[2], c[4], ox=i * halb, ow=halb)
+                  for i, c in enumerate(sorted(cams, key=lambda c: c[0]))]
+        return Layout("randlos-zwei-cams", felder + [_randlos_spiel(w, h)],
+                      sub_mitte=True, sub_y=CAM_H, **TITEL_RANDLOS)
+    if cams:
+        cx, cy, fw, _, streuung = cams[0]
+        return Layout("randlos-facecam", [_randlos_cam(w, h, cx, cy, fw, streuung),
+                                          _randlos_spiel(w, h)],
+                      sub_mitte=True, sub_y=CAM_H, **TITEL_RANDLOS)
+    gesichter = [g for b in bilder for g in b] if bilder else []
+    if bilder and sum(1 for b in bilder if b) >= 0.4 * len(bilder):
+        mitte = statistics.median(g[0] for g in gesichter)
+        return Layout("randlos-zoom", [_randlos_ganz(w, h, mitte)],
+                      sub_mitte=True, sub_y=int(HOEHE * 0.62), **TITEL_RANDLOS)
+    return Layout("randlos-mitte", [_randlos_ganz(w, h)],
+                  sub_mitte=True, sub_y=int(HOEHE * 0.62), **TITEL_RANDLOS)
+
+
+def waehlen(quelle: Path, feste_cam=None, randlos: bool = False) -> Layout:
     w, h = groesse_von(quelle)
-    if feste_cam:
+    if feste_cam and not randlos:
         return _feste_cam(w, h, feste_cam)
     try:
         bilder = gesichter_finden(quelle)
     except Exception as e:
         print(f"  Gesichtserkennung fehlgeschlagen ({e}), Standard-Layout", flush=True)
-        return standard(w, h)
+        return randlos_waehlen(w, h, []) if randlos else standard(w, h)
+    if randlos:
+        return randlos_waehlen(w, h, bilder)
     if not bilder:
         return standard(w, h)
     cams = _facecam(bilder)

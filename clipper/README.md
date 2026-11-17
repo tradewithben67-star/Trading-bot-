@@ -1,5 +1,8 @@
 # Clip-Fabrik
 
+> **Neu: Whop-Aufträge.** Kriterien einer Clipping-Kampagne einfügen, fertige Clips
+> bekommen → [WHOP.md](WHOP.md)
+
 Macht durchgehend (alle 30 Minuten) TikTok-Clips von **18 deutschen
 Streamern** (Rohat, Trymacs, Zarbex, Eligella, Papaplatte, gTasty, LetsHugo,
 Gleggmire, CoachLim, MontanaBlack, NoWay, BastiGHG, HandOfBlood, Tolkin,

@@ -1,0 +1,75 @@
+name: Material-Clips
+
+# Laeuft, sobald clipper/material.json geaendert und gepusht wird.
+# Aufgaben: erkunden (Protokoll), laden (-> Release), schneiden (-> Release + Telegram).
+on:
+  push:
+    paths:
+      - clipper/material.json
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: material
+  cancel-in-progress: false
+
+jobs:
+  material:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Werkzeuge installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core jq
+          pip install -q requests
+
+      - name: Auftrag lesen
+        run: |
+          echo "AUFGABE=$(jq -r .aufgabe clipper/material.json)" >> "$GITHUB_ENV"
+          echo "RELEASE=$(jq -r '.release // empty' clipper/material.json)" >> "$GITHUB_ENV"
+
+      - name: Vorhandenes Material holen (fuer schneiden)
+        if: env.AUFGABE == 'schneiden'
+        run: |
+          mkdir -p clipper/material_ausgabe
+          gh release download "$RELEASE" -D clipper/material_ausgabe --clobber
+          gh release download clip-state -p telegram_chat.txt -D clipper/state --clobber || true
+
+      - name: Ausfuehren
+        run: python clipper/material.py clipper/material.json
+
+      - name: Material als Release ablegen
+        if: env.AUFGABE == 'laden'
+        run: |
+          cd clipper/material_ausgabe
+          gh release view "$RELEASE" >/dev/null 2>&1 || \
+            gh release create "$RELEASE" --target "$GITHUB_SHA" --title "Material: $RELEASE" \
+              --notes "Heruntergeladenes Kampagnen-Material mit Uebersichtsbildern." --latest=false
+          gh release upload "$RELEASE" * --clobber
+
+      - name: Clips als Release ablegen
+        if: env.AUFGABE == 'schneiden'
+        run: |
+          cd clipper/material_ausgabe/clips
+          tag="clips-${RELEASE}-$(date -u +%m%d-%H%M)"
+          gh release create "$tag" *.mp4 *.txt --target "$GITHUB_SHA" --latest=false \
+            --title "Clips $RELEASE $(date -u +%d.%m.%Y)" --notes "Fertige Clips aus $RELEASE."
+          echo "https://github.com/${{ github.repository }}/releases/tag/$tag"
+
+      - name: An Telegram schicken
+        if: env.AUFGABE == 'schneiden'
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.CLIPS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.CLIPS_TELEGRAM_CHAT_ID }}
+        run: python clipper/telegram_senden.py clipper/material_ausgabe/clips clipper/state/telegram_chat.txt

@@ -164,6 +164,17 @@ def _ass_text(t: str) -> str:
     return t.replace("\\", "/").replace("{", "(").replace("}", ")").replace("\n", " ").strip()
 
 
+def _ohne_emoji(text: str) -> str:
+    """Die Schrift im Video kann keine Emojis (sie erscheinen als Kaestchen)."""
+    text = re.sub(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", text)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
+
+def _kanal_text(kanal: str) -> str:
+    """Twitch-Login -> twitch.tv/login; alles andere (z.B. YouTube-Kanalname) bleibt, wie es ist."""
+    return kanal if re.search(r"[^A-Za-z0-9_]", kanal) else f"twitch.tv/{kanal}"
+
+
 def ass_schreiben(pfad: Path, dauer: float, titel: str, kanal: str, happen, lay) -> None:
     sub_ausr, sub_rand = (5, 0) if lay.sub_mitte else (8, lay.sub_y)
     kopf = f"""[Script Info]
@@ -177,14 +188,14 @@ ScaledBorderAndShadow: yes
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
 Style: Titel,DejaVu Sans,{lay.titel_groesse},&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,6,2,2,60,60,{HOEHE - lay.titel_unten},1
 Style: Kanal,DejaVu Sans,44,&H00FFFFFF,&H00FFFFFF,&H00000000,&H64000000,-1,0,0,0,100,100,0,0,1,4,1,8,40,40,{lay.kanal_oben},1
-Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,{sub_ausr},50,50,{sub_rand},1
+Style: Sub,DejaVu Sans,{lay.sub_groesse},&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,100,100,0,0,1,7,3,{sub_ausr},50,50,{sub_rand},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ende = _ass_zeit(dauer + 1)
-    zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(titel)}",
-              f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,twitch.tv/{_ass_text(kanal)}"]
+    zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(_ohne_emoji(titel))}",
+              f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,{_ass_text(_kanal_text(kanal))}"]
     pos = rf"\pos({BREITE // 2},{lay.sub_y})" if lay.sub_mitte else ""
     for start, stop, text in happen:
         pop = r"{\fscx80\fscy80\t(0,90,\fscx105\fscy105)\t(90,160,\fscx100\fscy100)" + pos + "}"
@@ -219,13 +230,14 @@ def filter_bauen(lay) -> str:
 def hochformat(quelle: Path, ziel: Path, titel: str, kanal: str, cfg: dict,
                max_sek: float, feste_cam=None) -> str:
     dauer = min(dauer_von(quelle), max_sek)
-    lay = layout.waehlen(quelle, feste_cam)
+    lay = layout.waehlen(quelle, feste_cam, cfg.get("randlos", False))
     print(f"  Layout: {lay.art}", flush=True)
     happen = []
     if cfg.get("untertitel", True):
         try:
             happen = in_happen(woerter_erkennen(quelle, cfg.get("whisper_modell", "small"),
-                                                cfg.get("sprache", "de")))
+                                                cfg.get("sprache", "de")),
+                               max_woerter=cfg.get("woerter_pro_untertitel", 3))
         except Exception as e:
             print(f"  Untertitel uebersprungen: {e}", flush=True)
     with tempfile.TemporaryDirectory() as tmp:

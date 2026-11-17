@@ -1,0 +1,39 @@
+name: Whop-Auftrag
+description: Kriterien einer Clipping-Kampagne einfügen – die Clips werden automatisch gesucht und geschnitten.
+title: "[Whop] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Füg den Text der Kampagne ein und/oder hänge die Screenshots an (einfach ins Feld ziehen
+        oder auf dem Handy über das Bild-Symbol). Nach ca. 10–20 Minuten steht hier unten ein
+        Kommentar mit dem Download-Link und dem fertigen Text für Whop.
+  - type: textarea
+    id: kriterien
+    attributes:
+      label: Kriterien
+      description: Text der Kampagne und/oder Screenshots
+      placeholder: "What you'll do: 1. Find … footage … 30 to 60 second clip …"
+    validations:
+      required: true
+  - type: input
+    id: person
+    attributes:
+      label: Streamer / Person
+      description: Optional – sonst wird der Name aus den Kriterien gelesen
+      placeholder: Shane Gillis
+  - type: textarea
+    id: quellen
+    attributes:
+      label: Bestimmte Streams oder Videos
+      description: |
+        Optional. Ein Link pro Zeile: ein Twitch-/YouTube-/Kick-Kanal (dann werden die
+        letzten Streams durchsucht) oder ein einzelnes Video bzw. ein einzelner Stream.
+        Leer = selbst auf YouTube suchen.
+      placeholder: https://www.twitch.tv/papaplatte
+  - type: input
+    id: anzahl
+    attributes:
+      label: Anzahl Clips
+      description: Optional – sonst aus den Kriterien
+      placeholder: "5"

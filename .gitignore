@@ -7,3 +7,4 @@ bot/.env
 *.png
 clipper/ausgabe/
 clipper/state/
+clipper/whop_ausgabe/

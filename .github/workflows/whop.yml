@@ -1,0 +1,154 @@
+name: Whop-Clips
+
+# Startet von allein, sobald ein Issue mit dem Titel "[Whop] ..." eroeffnet wird
+# (Vorlage "Whop-Auftrag"). Neu starten: im Issue "nochmal" kommentieren.
+# Oder von Hand: Actions -> "Whop-Clips" -> "Run workflow".
+on:
+  issues:
+    types: [opened]
+  issue_comment:
+    types: [created]
+  workflow_dispatch:
+    inputs:
+      kriterien:
+        description: "Text der Kampagne (einfuegen)"
+        required: false
+      person:
+        description: "Streamer / Person"
+        required: false
+      quellen:
+        description: "Kanal-/Video-Links, mit Leerzeichen getrennt (optional)"
+        required: false
+      anzahl:
+        description: "Anzahl Clips (optional)"
+        required: false
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: whop-${{ github.event.issue.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  clips:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && startsWith(github.event.issue.title, '[Whop]')) ||
+      (github.event_name == 'issue_comment' && startsWith(github.event.issue.title, '[Whop]') &&
+       github.event.comment.user.login == github.repository_owner &&
+       contains(github.event.comment.body, 'nochmal'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      GH_TOKEN: ${{ github.token }}
+      NR: ${{ github.event.issue.number }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bescheid geben
+        if: env.NR != ''
+        run: gh issue comment "$NR" --body "⏳ Bin dran – suche Material und schneide die Clips. Dauert ca. 10–20 Minuten. ([Fortschritt](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}))"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Werkzeuge installieren
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq ffmpeg fonts-dejavu-core
+          pip install -q -r clipper/requirements.txt
+
+      - name: Spracherkennungs-Modell aus dem Cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          key: whisper-whop-v1
+
+      - name: Schon verwendete Stellen holen
+        run: gh release download clip-state -p whop_benutzt.json -p telegram_chat.txt -D clipper/state --clobber || echo "noch keine Liste"
+
+      - name: Clips suchen und schneiden
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          TWITCH_CLIENT_ID: ${{ secrets.TWITCH_CLIENT_ID }}
+          TWITCH_CLIENT_SECRET: ${{ secrets.TWITCH_CLIENT_SECRET }}
+          YOUTUBE_COOKIES: ${{ secrets.YOUTUBE_COOKIES }}
+          IN_KRITERIEN: ${{ inputs.kriterien }}
+          IN_PERSON: ${{ inputs.person }}
+          IN_QUELLEN: ${{ inputs.quellen }}
+          IN_ANZAHL: ${{ inputs.anzahl }}
+        run: |
+          if [ -n "$YOUTUBE_COOKIES" ]; then
+            printf '%s\n' "$YOUTUBE_COOKIES" > "$RUNNER_TEMP/cookies.txt"
+            export YTDLP_COOKIES_DATEI="$RUNNER_TEMP/cookies.txt"
+          fi
+          args=()
+          if [ -n "$NR" ]; then args+=(--issue "$NR"); fi
+          if [ -n "$IN_KRITERIEN" ]; then args+=(--text "$IN_KRITERIEN"); fi
+          if [ -n "$IN_PERSON" ]; then args+=(--person "$IN_PERSON"); fi
+          if [ -n "$IN_ANZAHL" ]; then args+=(--anzahl "$IN_ANZAHL"); fi
+          for q in $IN_QUELLEN; do args+=(--quelle "$q"); done
+          python clipper/whop.py "${args[@]}" || echo "FEHLER=1" >> "$GITHUB_ENV"
+
+      - name: Clips als Release ablegen
+        if: env.FEHLER != '1'
+        run: |
+          cd clipper/whop_ausgabe
+          tag="whop-${NR:-run-$GITHUB_RUN_ID}-$(date -u +%m%d-%H%M)"
+          shopt -s nullglob
+          dateien=(clip_*.mp4 clip_*.mov clip_*.webm)
+          {
+            echo 'Zum Einreichen: Clip antippen → laden → „In Dateien sichern“. Bei Whop über „Bilder oder Videos hochladen“ auswählen.'
+            echo
+            echo '```'
+            cat einreichung.txt
+            echo '```'
+          } > "$RUNNER_TEMP/notizen.md"
+          gh release create "$tag" "${dateien[@]}" alle_clips.zip einreichung.txt \
+            --target "$GITHUB_SHA" --latest=false \
+            --title "Whop ${NR:+#$NR }$(date -u +%d.%m.%Y)" \
+            --notes-file "$RUNNER_TEMP/notizen.md"
+          echo "TAG=$tag" >> "$GITHUB_ENV"
+
+      - name: Ergebnis ins Issue schreiben
+        if: always() && env.NR != ''
+        run: |
+          f=clipper/whop_ausgabe/kommentar.md
+          if [ -n "$TAG" ]; then
+            url="${{ github.server_url }}/${{ github.repository }}/releases/tag/$TAG"
+            {
+              echo "✅ **Fertig!** Clips zum Herunterladen: $url"
+              echo
+              echo "Auf dem iPhone: Link öffnen → Clip antippen → teilen → **In Dateien sichern**. Bei Whop dann **Bilder oder Videos hochladen** → Durchsuchen."
+              echo
+              echo '```'
+              cat "$f"
+              echo '```'
+              echo
+              echo "Neue Runde mit anderen Clips: hier \`nochmal\` kommentieren."
+            } > body.md
+          elif [ -f "$f" ]; then
+            cp "$f" body.md
+          else
+            echo "❌ Etwas ist schiefgelaufen. Details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" > body.md
+          fi
+          gh issue comment "$NR" --body-file body.md
+
+      - name: An Telegram schicken (falls eingerichtet)
+        if: env.TAG != ''
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.CLIPS_TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.CLIPS_TELEGRAM_CHAT_ID }}
+        run: python clipper/telegram_senden.py clipper/whop_ausgabe clipper/state/telegram_chat.txt
+
+      - name: Verwendete Stellen merken
+        if: env.TAG != ''
+        run: |
+          [ -f clipper/state/whop_benutzt.json ] || exit 0
+          gh release view clip-state >/dev/null 2>&1 || \
+            gh release create clip-state --target "$GITHUB_SHA" --title "Clip-Liste (nicht loeschen)" \
+              --notes "Merkt sich, welche Clips schon gemacht wurden." --latest=false
+          gh release upload clip-state clipper/state/whop_benutzt.json --clobber

@@ -164,6 +164,11 @@ def _ass_text(t: str) -> str:
     return t.replace("\\", "/").replace("{", "(").replace("}", ")").replace("\n", " ").strip()
 
 
+def _kanal_text(kanal: str) -> str:
+    """Twitch-Login -> twitch.tv/login; alles andere (z.B. YouTube-Kanalname) bleibt, wie es ist."""
+    return kanal if re.search(r"[^A-Za-z0-9_]", kanal) else f"twitch.tv/{kanal}"
+
+
 def ass_schreiben(pfad: Path, dauer: float, titel: str, kanal: str, happen, lay) -> None:
     sub_ausr, sub_rand = (5, 0) if lay.sub_mitte else (8, lay.sub_y)
     kopf = f"""[Script Info]
@@ -184,7 +189,7 @@ Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ende = _ass_zeit(dauer + 1)
     zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(titel)}",
-              f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,twitch.tv/{_ass_text(kanal)}"]
+              f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,{_ass_text(_kanal_text(kanal))}"]
     pos = rf"\pos({BREITE // 2},{lay.sub_y})" if lay.sub_mitte else ""
     for start, stop, text in happen:
         pop = r"{\fscx80\fscy80\t(0,90,\fscx105\fscy105)\t(90,160,\fscx100\fscy100)" + pos + "}"

@@ -73,10 +73,15 @@ for c in liste:
     text = video.with_suffix(".txt").read_text(encoding="utf-8")[:1000]
     for versuch in range(3):
         with video.open("rb") as f:
-            r = requests.post(f"{api}/sendVideo", timeout=300,
-                              data={"chat_id": cid, "caption": text, "supports_streaming": "true",
-                                    "width": 1080, "height": 1920},
-                              files={"video": (video.name, f, "video/mp4")})
+            if video.suffix == ".mp4":
+                r = requests.post(f"{api}/sendVideo", timeout=300,
+                                  data={"chat_id": cid, "caption": text, "supports_streaming": "true",
+                                        "width": c.get("breite", 1080), "height": c.get("hoehe", 1920)},
+                                  files={"video": (video.name, f, "video/mp4")})
+            else:  # MOV/WebM als Datei, damit Telegram nichts umwandelt
+                r = requests.post(f"{api}/sendDocument", timeout=300,
+                                  data={"chat_id": cid, "caption": text},
+                                  files={"document": (video.name, f)})
         if r.status_code != 429:
             break
         # Telegram bremst: so lange warten, wie es sagt

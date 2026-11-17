@@ -243,6 +243,8 @@ def link_aufloesen(url: str, max_videos: int) -> list[dict]:
     u = url.strip()
     kanal_yt = re.match(r"https?://(www\.)?youtube\.com/(@[^/?#]+|c/[^/?#]+|channel/[^/?#]+)/?$", u)
     kanal_tw = re.match(r"https?://(www\.)?twitch\.tv/([A-Za-z0-9_]+)/?$", u)
+    if re.match(r"https?://(www\.)?kick\.com/[A-Za-z0-9_-]+/?$", u):
+        return []  # Kick-Kanal: es werden die Clips genommen (kick_clips)
     if kanal_yt:
         u = u.rstrip("/") + "/streams"
     elif kanal_tw and kanal_tw[2] not in ("videos", "directory"):
@@ -589,11 +591,60 @@ def twitch_clips(k: dict, alte: list[dict]) -> list[dict]:
     return out
 
 
+def _kick_json(url: str) -> dict:
+    import requests
+    r = requests.get(url, timeout=30, headers={"Accept": "application/json"})
+    if r.status_code != 200:
+        raise RuntimeError(f"HTTP {r.status_code}")
+    return r.json()
+
+
+def kick_clips(k: dict, alte: list[dict]) -> list[dict]:
+    """Bei Kick-Kanaelen: die meistgesehenen Clips (erst 7 Tage, dann 30 Tage)."""
+    out = []
+    for link in k["quellen"]:
+        m = re.match(r"https?://(www\.)?kick\.com/([A-Za-z0-9_-]+)/?$", link.strip())
+        if not m:
+            continue
+        login = m[2]
+        clips, gesehen = [], set()
+        for zeitraum in ("week", "month"):
+            try:
+                daten = _kick_json(f"https://kick.com/api/v2/channels/{login}/clips"
+                                   f"?sort=view&time={zeitraum}")
+            except Exception as e:
+                log(f"Kick-Clips von {login} ({zeitraum}) nicht ladbar: {e}")
+                continue
+            for c in daten.get("clips") or []:
+                if c.get("id") not in gesehen:
+                    gesehen.add(c.get("id"))
+                    clips.append(c)
+        clips = [c for c in clips if (c.get("duration") or 0) >= k["min_sekunden"] - 0.5
+                 and (c.get("video_url") or c.get("clip_url"))]
+        clips.sort(key=lambda c: -(c.get("views") or c.get("view_count") or 0))
+        log(f"Kick {login}: {len(clips)} Clips mit passender Laenge")
+        for rang, c in enumerate(clips[: k["anzahl"] * 2]):
+            titel = (c.get("title") or "").strip()
+            if len(titel) < 12:
+                titel = f"{k['person'] or login} on stream: {titel or 'no way'}"
+            aufrufe = c.get("views") or c.get("view_count") or 0
+            moment = {"id": str(c["id"]), "url": c.get("video_url") or c.get("clip_url"),
+                      "start": 0.0, "ende": float(min(c["duration"], k["max_sekunden"] - 0.5)),
+                      "titel": titel, "warum": f"{aufrufe} Aufrufe auf Kick",
+                      "punkte": 9 if rang < 3 else 8, "video": c.get("title") or titel,
+                      "kanal": f"kick.com/{login}", "youtube": False,
+                      "quelle_link": f"https://kick.com/{login}/clips/{c['id']}"}
+            if not ueberlappt(moment, alte):
+                out.append(moment)
+    return out
+
+
 def momente_finden(kandidaten: list[dict], k: dict, benutzt: dict, max_pro_video: int,
                    max_videos: int, max_stream_stunden: float) -> list[dict]:
     gesucht = k["anzahl"]
     alte = [{"id": vid, "start": a, "ende": b} for vid, l in benutzt.items() for a, b in l]
-    gefunden: list[dict] = twitch_clips(k, alte)
+    gefunden: list[dict] = twitch_clips(k, alte) + kick_clips(k, alte)
+    youtube_gesperrt = False
     geprueft = 0
     for c in kandidaten:
         if geprueft >= max_videos:
@@ -601,8 +652,15 @@ def momente_finden(kandidaten: list[dict], k: dict, benutzt: dict, max_pro_video
         starke = [m for m in gefunden if m["punkte"] >= 7]
         if len(starke) >= gesucht * 2:
             break
+        if youtube_gesperrt and "youtube.com" in c["url"]:
+            continue
         log(f"\n[{geprueft + 1}] {c['titel'] or c['url']}")
-        v = video_lesen(c, k, max_stream_stunden)
+        try:
+            v = video_lesen(c, k, max_stream_stunden)
+        except YoutubeSperre:
+            log("  YouTube blockiert diesen Server – ueberspringe alle YouTube-Quellen")
+            youtube_gesperrt = True
+            continue
         geprueft += 1
         if not v or (not v["zeilen"] and not v["heatmap"]):
             log("  kein Transkript, ueberspringe")
@@ -620,6 +678,8 @@ def momente_finden(kandidaten: list[dict], k: dict, benutzt: dict, max_pro_video
                 continue
             gefunden.append(m)
             log(f"  {m['punkte']:>2}/10  {_mmss(m['start'])}-{_mmss(m['ende'])}  {m['titel']}")
+    if not gefunden and youtube_gesperrt:
+        raise YoutubeSperre("keine anderen Quellen")
     # Beste zuerst, hoechstens max_pro_video aus demselben Video
     gefunden.sort(key=lambda m: -m["punkte"])
     auswahl, je_video = [], {}
@@ -752,7 +812,7 @@ def clips_schneiden(momente: list[dict], k: dict, ausgabe: Path) -> list[dict]:
                 (ausgabe / name).unlink(missing_ok=True)
             continue
         w, h = groesse(ausgabe / dateien[0][0])
-        link = m["url"]
+        link = m.get("quelle_link") or m["url"]
         if m["youtube"]:
             link = re.sub(r"[&?]t=\d+s?", "", link)
             link += ("&" if "?" in link else "?") + f"t={int(m['start'])}s"

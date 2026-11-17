@@ -164,6 +164,12 @@ def _ass_text(t: str) -> str:
     return t.replace("\\", "/").replace("{", "(").replace("}", ")").replace("\n", " ").strip()
 
 
+def _ohne_emoji(text: str) -> str:
+    """Die Schrift im Video kann keine Emojis (sie erscheinen als Kaestchen)."""
+    text = re.sub(r"[\U0001F000-\U0001FAFF\u2600-\u27BF\uFE0F\u200D]", "", text)
+    return re.sub(r"\s{2,}", " ", text).strip()
+
+
 def _kanal_text(kanal: str) -> str:
     """Twitch-Login -> twitch.tv/login; alles andere (z.B. YouTube-Kanalname) bleibt, wie es ist."""
     return kanal if re.search(r"[^A-Za-z0-9_]", kanal) else f"twitch.tv/{kanal}"
@@ -188,7 +194,7 @@ Style: Sub,DejaVu Sans,86,&H0000F0FF,&H00FFFFFF,&H00000000,&H96000000,-1,0,0,0,1
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 """
     ende = _ass_zeit(dauer + 1)
-    zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(titel)}",
+    zeilen = [f"Dialogue: 1,0:00:00.00,{ende},Titel,,0,0,0,,{_ass_text(_ohne_emoji(titel))}",
               f"Dialogue: 1,0:00:00.00,{ende},Kanal,,0,0,0,,{_ass_text(_kanal_text(kanal))}"]
     pos = rf"\pos({BREITE // 2},{lay.sub_y})" if lay.sub_mitte else ""
     for start, stop, text in happen:

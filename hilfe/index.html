@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Wo hakt's?</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="Rechner, Pläne und Checklisten für konkrete Alltagsprobleme: Trading-Risiko, Abikasse, erste Wohnung, Lernplan, Bewerbung und Lern-Tools.">
+<meta name="description" content="Rechner, Pläne und Checklisten für Alltagsprobleme: Haushaltsgeld, Kosten teilen, Abos, Stromkosten, Fahrtkosten, Rezepte umrechnen, Sparziel, Wohnung, Lernen und Bewerbung.">
 <style>
 /* Layout: Karopapier-Kopf mit Suche, darunter ein Raster aus Problem-Kacheln.
    Jedes Thema öffnet eine eigene Ansicht: Formular links, Ergebnis rechts (am Handy untereinander). */
@@ -197,15 +197,35 @@ details .prose { margin-top: 10px; }
 
 /* Klassenkasse: Posten-Liste */
 .posten { display: grid; gap: 8px; }
-.posten-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.posten-row { display: grid; grid-template-columns: var(--cols, minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto); gap: 8px; align-items: center; }
 .posten-row button { font: inherit; width: 36px; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
 .posten-row button:hover { color: var(--bad); border-color: var(--bad); }
 .posten-head { font-size: .8rem; color: var(--ink-soft); font-weight: 600; }
 @media (max-width: 520px) {
-  .posten-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .posten-row { grid-template-columns: var(--cols-m, minmax(0, 1fr) minmax(0, 1fr) auto); }
   .posten-row .p-name { grid-column: 1 / -1; }
   .posten-head { display: none; }
 }
+
+/* Haushaltsbudget: Balken */
+.bar-wrap { position: relative; padding-block: 4px; }
+.bar { display: flex; height: 16px; border-radius: 99px; overflow: hidden; background: var(--line); }
+.bar span { height: 100%; }
+.s-need { background: var(--pen); }
+.s-want { background: var(--warn); }
+.s-save { background: var(--good); }
+.bar-wrap i { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--ink); }
+.legend { display: grid; gap: 4px; font-size: .88rem; }
+.legend > span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+
+/* Rezept */
+.rz { list-style: none; margin: 0; padding: 0; display: grid; }
+.rz li { display: grid; grid-template-columns: 96px minmax(0, 1fr); gap: 12px; padding: 7px 0; border-top: 1px solid var(--line); font-size: .95rem; }
+.rz b { font-variant-numeric: tabular-nums; text-align: right; }
+.rz .frei b { color: var(--ink-soft); font-weight: 500; }
+.transfers { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.transfers li { display: flex; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: 8px; background: var(--pen-soft); font-weight: 600; }
+.transfers li span:last-child { font-variant-numeric: tabular-nums; }
 
 /* Lernplan */
 .plan { list-style: none; margin: 0; padding: 0; display: grid; }
@@ -291,7 +311,7 @@ footer a { color: var(--ink-soft); }
   <div class="hero">
     <div class="wrap">
       <h1>Wo <mark>hakt's</mark>?</h1>
-      <p class="lead">Klick dein Problem an und bekomm ein Werkzeug, das es löst: einen Rechner, einen fertigen Plan oder eine Checkliste. Ohne Anmeldung, ohne Werbebanner, deine Eingaben bleiben auf deinem Gerät.</p>
+      <p class="lead">Kleine Probleme aus dem Alltag, schnell gelöst: Haushaltsgeld, Kosten teilen, Abos, Strom, Fahrt, Rezept, Lernen, Bewerbung. Klick an, wo es bei dir hakt, und bekomm einen Rechner, einen Plan oder eine Checkliste. Ohne Anmeldung, deine Eingaben bleiben auf deinem Gerät.</p>
       <div class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
         <input type="text" id="suche" placeholder="Beschreib dein Problem, z. B. „Klausur“, „Miete“, „Lots“" aria-label="Problem suchen" autocomplete="off">
@@ -745,6 +765,279 @@ Ebenen im Raum</textarea>
   </div>
 </section>
 
+<!-- ============ HAUSHALTSBUDGET ============ -->
+<section id="v-haushaltsgeld" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Geld &amp; Haushalt</span>
+      <h1>Wo bleibt mein Geld jeden Monat?</h1>
+      <p class="lead">Trag ein, was reinkommt und wofür es rausgeht. Der Rechner teilt alles nach der 50-30-20-Regel auf: höchstens die Hälfte für das Nötige, knapp ein Drittel für Wünsche, mindestens ein Fünftel zum Sparen.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Ein Haushalt mit einem Einkommen. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Was reinkommt</legend>
+          <div class="field">
+            <label for="hb-netto">Netto pro Monat (Lohn, Rente, Kindergeld …)</label>
+            <div class="suffix"><input type="text" inputmode="decimal" id="hb-netto" value="2.400" data-save data-geld><span>€</span></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Nötig (feste Kosten)</legend>
+          <div class="row three">
+            <div class="field"><label for="hb-miete">Miete warm</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-miete" value="780" data-save data-geld data-hb="need" data-label="Miete"><span>€</span></div></div>
+            <div class="field"><label for="hb-energie">Strom &amp; Gas</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-energie" value="85" data-save data-geld data-hb="need" data-label="Strom &amp; Gas"><span>€</span></div></div>
+            <div class="field"><label for="hb-versich">Versicherungen</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-versich" value="60" data-save data-geld data-hb="need" data-label="Versicherungen"><span>€</span></div></div>
+            <div class="field"><label for="hb-handy">Handy &amp; Internet</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-handy" value="45" data-save data-geld data-hb="need" data-label="Handy &amp; Internet"><span>€</span></div></div>
+            <div class="field"><label for="hb-essen">Lebensmittel &amp; Drogerie</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-essen" value="380" data-save data-geld data-hb="need" data-label="Lebensmittel"><span>€</span></div></div>
+            <div class="field"><label for="hb-mobil">Auto oder Ticket</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-mobil" value="140" data-save data-geld data-hb="need" data-label="Mobilität"><span>€</span></div></div>
+            <div class="field"><label for="hb-raten">Kredite &amp; Raten</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-raten" value="0" data-save data-geld data-hb="need" data-label="Raten"><span>€</span></div></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Wünsche (könnte man kürzen)</legend>
+          <div class="row three">
+            <div class="field"><label for="hb-auswaerts">Essen gehen &amp; Lieferdienst</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-auswaerts" value="130" data-save data-geld data-hb="want" data-label="Essen gehen"><span>€</span></div></div>
+            <div class="field"><label for="hb-freizeit">Freizeit &amp; Hobbys</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-freizeit" value="110" data-save data-geld data-hb="want" data-label="Freizeit"><span>€</span></div></div>
+            <div class="field"><label for="hb-kleidung">Kleidung</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-kleidung" value="70" data-save data-geld data-hb="want" data-label="Kleidung"><span>€</span></div></div>
+            <div class="field"><label for="hb-abos">Abos &amp; Streaming</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-abos" value="45" data-save data-geld data-hb="want" data-label="Abos"><span>€</span></div></div>
+            <div class="field"><label for="hb-sonst">Sonstiges</label><div class="suffix"><input type="text" inputmode="decimal" id="hb-sonst" value="90" data-save data-geld data-hb="want" data-label="Sonstiges"><span>€</span></div></div>
+          </div>
+          <span class="hint">Keine Ahnung, wie viel es ist? Schau dir die Kontoauszüge der letzten drei Monate an und nimm den Durchschnitt.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="hb-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Tagesgeldkonto oder Haushaltsbuch-App: <span class="ph">[Partnerlink eintragen]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KOSTEN TEILEN ============ -->
+<section id="v-kosten-teilen" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Geld &amp; Haushalt</span>
+      <h1>Wer schuldet wem wie viel?</h1>
+      <p class="lead">Für Urlaub, WG, Geburtstagsgeschenk oder Vereinsfeier: Jede Person trägt ein, was sie bezahlt hat. Der Rechner sagt, wer wem wie viel überweist, mit so wenigen Überweisungen wie möglich.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Ein Wochenende mit vier Leuten. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Wer ist dabei?</legend>
+          <div class="field">
+            <label for="kt-personen">Namen, mit Komma getrennt</label>
+            <input type="text" id="kt-personen" value="Anna, Ben, Can, Dana" data-save>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Wer hat was bezahlt?</legend>
+          <div id="kt-rows" class="posten"></div>
+          <div><button type="button" class="btn-ghost btn-small" id="kt-neu">+ Ausgabe hinzufügen</button></div>
+          <span class="hint">Alle Ausgaben werden gleichmäßig auf alle Personen verteilt.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite"><div id="kt-out"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOS ============ -->
+<section id="v-abos" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Geld &amp; Haushalt</span>
+      <h1>Welche Abos und Verträge kosten mich am meisten?</h1>
+      <p class="lead">Kleine Beträge summieren sich. Trag alles ein, was regelmäßig abgebucht wird, und wie oft du es wirklich nutzt. Du siehst die Kosten pro Jahr und was du durch Kündigen sparst.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Ein typischer Mix. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Deine Abos und Verträge</legend>
+          <div id="ab-rows" class="posten"></div>
+          <div><button type="button" class="btn-ghost btn-small" id="ab-neu">+ Abo hinzufügen</button></div>
+          <span class="hint">Tipp: Such in deinen Kontoauszügen und bei PayPal nach Abbuchungen, die jeden Monat gleich sind.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="ab-out"></div>
+        <details>
+          <summary>So kündigst du leichter</summary>
+          <div class="prose">
+            <p>Verträge, die seit dem 1. März 2022 abgeschlossen wurden, verlängern sich nach der Mindestlaufzeit nicht mehr um ein ganzes Jahr. Danach kannst du jederzeit mit höchstens einem Monat Frist kündigen.</p>
+            <p>Wer online einen Vertrag abschließen lässt, muss auch online einen Kündigungsbutton anbieten („Verträge hier kündigen“). Heb die Bestätigung auf.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ STROM ============ -->
+<section id="v-stromkosten" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Wohnen &amp; Energie</span>
+      <h1>Was kostet mich ein Gerät an Strom?</h1>
+      <p class="lead">Die Watt-Zahl steht auf dem Typenschild oder Netzteil. Mit deinem Strompreis siehst du, welches Gerät im Jahr am meisten kostet und wo sich Sparen lohnt.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Geräte in einer kleinen Wohnung. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Dein Strompreis</legend>
+          <div class="field">
+            <label for="st-preis">Arbeitspreis</label>
+            <div class="suffix"><input type="text" inputmode="decimal" id="st-preis" value="35" data-save><span>ct/kWh</span></div>
+            <span class="hint">Steht auf deiner Stromrechnung als „Arbeitspreis“.</span>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Geräte</legend>
+          <div id="st-rows" class="posten"></div>
+          <div><button type="button" class="btn-ghost btn-small" id="st-neu">+ Gerät hinzufügen</button></div>
+          <span class="hint">Kühlschrank, Gefriertruhe und Heizgeräte schalten sich selbst an und aus. Nimm bei denen lieber den Jahresverbrauch vom Energielabel: kWh ÷ 365 ÷ 24 × 1000 ergibt die Watt für 24 Stunden.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="st-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Strompreise vergleichen oder Messsteckdose: <span class="ph">[Partnerlink eintragen]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAHRTKOSTEN ============ -->
+<section id="v-fahrtkosten" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Unterwegs</span>
+      <h1>Was kostet die Fahrt und wie teilen wir sie auf?</h1>
+      <p class="lead">Für Fahrgemeinschaft, Ausflug oder Umzug: Strecke, Verbrauch und Preis eintragen und sehen, was jede Person beisteuern sollte.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Tagesausflug zu dritt. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Die Strecke</legend>
+          <div class="row">
+            <div class="field"><label for="fk-km">Strecke (einfach)</label><div class="suffix"><input type="text" inputmode="decimal" id="fk-km" value="120" data-save><span>km</span></div></div>
+            <div class="field"><label for="fk-personen">Personen im Auto</label><input type="text" inputmode="numeric" id="fk-personen" value="3" data-save></div>
+          </div>
+          <label class="toggle"><input type="checkbox" id="fk-rueck" data-save checked> Hin und zurück</label>
+        </fieldset>
+        <fieldset>
+          <legend>Das Auto</legend>
+          <div class="field">
+            <label for="fk-antrieb">Antrieb</label>
+            <select id="fk-antrieb" data-save>
+              <option value="sprit" selected>Benzin oder Diesel</option>
+              <option value="strom">Elektro</option>
+            </select>
+          </div>
+          <div class="row">
+            <div class="field"><label for="fk-verbrauch">Verbrauch</label><div class="suffix"><input type="text" inputmode="decimal" id="fk-verbrauch" value="6,5" data-save><span id="fk-v-unit">l/100 km</span></div></div>
+            <div class="field"><label for="fk-preis" id="fk-p-lbl">Preis pro Liter</label><div class="suffix"><input type="text" inputmode="decimal" id="fk-preis" value="1,75" data-save><span id="fk-p-unit">€/l</span></div></div>
+          </div>
+          <div class="field"><label for="fk-extra">Maut, Parken, Fähre</label><div class="suffix"><input type="text" inputmode="decimal" id="fk-extra" value="8" data-save data-geld><span>€</span></div></div>
+          <span class="hint" id="fk-hint">Den aktuellen Preis zeigt jede Tankstelle oder eine Tank-App.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite"><div id="fk-out"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ REZEPT ============ -->
+<section id="v-rezept" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Küche</span>
+      <h1>Rezept für mehr oder weniger Personen umrechnen</h1>
+      <p class="lead">Zutatenliste einfügen, Personenzahl ändern, fertig. Brüche wie ½ oder 1/4 versteht der Rechner, Eier werden aufgerundet.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Pfannkuchen. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Portionen</legend>
+          <div class="row">
+            <div class="field"><label for="rz-von">Rezept ist für</label><div class="suffix"><input type="text" inputmode="decimal" id="rz-von" value="4" data-save><span>Pers.</span></div></div>
+            <div class="field"><label for="rz-auf">Ich koche für</label><div class="suffix"><input type="text" inputmode="decimal" id="rz-auf" value="6" data-save><span>Pers.</span></div></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Zutaten</legend>
+          <div class="field">
+            <label for="rz-text">Eine Zutat pro Zeile, Menge vorne</label>
+<textarea id="rz-text" rows="9" data-save>250 g Mehl
+3 Eier
+500 ml Milch
+1/2 TL Salz
+1 EL Zucker
+1 Päckchen Vanillezucker
+1 Prise Zimt
+Butter zum Braten</textarea>
+          </div>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite"><div id="rz-out"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SPARZIEL ============ -->
+<section id="v-sparziel" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Geld &amp; Haushalt</span>
+      <h1>Wie lange muss ich sparen, bis ich mir das leisten kann?</h1>
+      <p class="lead">Für Urlaub, Führerschein, Fahrrad oder Notgroschen: Du siehst, wann du dein Ziel erreichst und wie viel du sparen musst, um es bis zu einem bestimmten Termin zu schaffen.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Sparen für einen Urlaub. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Dein Ziel</legend>
+          <div class="row">
+            <div class="field"><label for="sz-ziel">Das brauche ich</label><div class="suffix"><input type="text" inputmode="decimal" id="sz-ziel" value="2.500" data-save data-geld><span>€</span></div></div>
+            <div class="field"><label for="sz-schon">Das habe ich schon</label><div class="suffix"><input type="text" inputmode="decimal" id="sz-schon" value="300" data-save data-geld><span>€</span></div></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="sz-rate">Ich spare pro Monat</label><div class="suffix"><input type="text" inputmode="decimal" id="sz-rate" value="150" data-save data-geld><span>€</span></div></div>
+            <div class="field"><label for="sz-zins">Zinsen pro Jahr</label><div class="suffix"><input type="text" inputmode="decimal" id="sz-zins" value="2" data-save><span>%</span></div><span class="hint">Was dein Tagesgeld gerade bringt, 0 für das Sparschwein.</span></div>
+          </div>
+          <div class="field"><label for="sz-bis">Wunschtermin</label><input type="date" id="sz-bis" data-save></div>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="sz-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Tagesgeld mit guten Zinsen: <span class="ph">[Partnerlink eintragen]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============ IMPRESSUM ============ -->
 <section id="v-impressum" data-view hidden>
   <div class="wrap legal">
@@ -845,18 +1138,75 @@ Ebenen im Raum</textarea>
   document.addEventListener('click', e => {
     const b = e.target.closest('[data-copy]');
     if (b) copyFrom(b.dataset.copy, b);
+    const t = e.target.closest('[data-copytext]');
+    if (t) copyStr(COPY[t.dataset.copytext] || '', t);
   });
+  const COPY = {};
+  async function copyStr(text, btn) {
+    const old = btn.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Kopiert'; } catch (e) { btn.textContent = 'Kopieren nicht erlaubt'; }
+    setTimeout(() => { btn.textContent = old; }, 1800);
+  }
+
+  /* ---------- Listen mit Zeilen (Abos, Geräte, Ausgaben) ---------- */
+  const ROWLISTS = {};
+  const clone = x => JSON.parse(JSON.stringify(x));
+  function rowList(o) {
+    const el = document.getElementById(o.el);
+    const self = {
+      rows: store.get(o.key) || clone(o.defaults),
+      render() {
+        const head = `<div class="posten-row posten-head" style="--cols:${o.cols}" aria-hidden="true">${o.fields.map(f => `<span>${esc(f.label)}</span>`).join('')}<span></span></div>`;
+        el.innerHTML = head + self.rows.map((r, i) => `<div class="posten-row" style="--cols:${o.cols};--cols-m:${o.colsM}" data-i="${i}">` + o.fields.map(f => {
+          const id = `${o.key}-${f.k}-${i}`, aria = `aria-label="${esc(f.label)}, Zeile ${i + 1}"`;
+          if (f.type === 'select') {
+            const opts = typeof f.options === 'function' ? f.options() : f.options;
+            const list = opts.some(([v]) => v === r[f.k]) || !r[f.k] ? opts : opts.concat([[r[f.k], r[f.k] + ' (nicht in der Liste)']]);
+            return `<select id="${id}" ${aria} data-k="${f.k}"${f.cls ? ` class="${f.cls}"` : ''}>${list.map(([v, t]) => `<option value="${esc(v)}"${r[f.k] === v ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+          }
+          const inp = `<input type="text" id="${id}" ${aria} data-k="${f.k}" value="${esc(r[f.k] == null ? '' : r[f.k])}"${f.num ? ' inputmode="decimal"' : ''} placeholder="${esc(f.ph || f.label)}">`;
+          return f.suffix ? `<div class="suffix${f.cls ? ' ' + f.cls : ''}">${inp}<span>${f.suffix}</span></div>` : `<div${f.cls ? ` class="${f.cls}"` : ''}>${inp}</div>`;
+        }).join('') + `<button type="button" aria-label="Zeile ${i + 1} entfernen" data-del="${i}">×</button></div>`).join('');
+      },
+      reset() { self.rows = clone(o.defaults); store.set(o.key, null); self.render(); }
+    };
+    const upd = e => {
+      const row = e.target.closest('[data-i]'); if (!row || !e.target.dataset.k) return;
+      self.rows[+row.dataset.i][e.target.dataset.k] = e.target.value;
+      store.set(o.key, self.rows); o.onChange();
+    };
+    el.addEventListener('input', upd);
+    el.addEventListener('change', upd);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-del]'); if (!b) return;
+      self.rows.splice(+b.dataset.del, 1); store.set(o.key, self.rows); self.render(); o.onChange();
+    });
+    document.getElementById(o.add).addEventListener('click', () => {
+      self.rows.push(clone(o.blank)); store.set(o.key, self.rows); self.render(); o.onChange();
+      const f = el.querySelector(`[data-i="${self.rows.length - 1}"] input, [data-i="${self.rows.length - 1}"] select`); if (f) f.focus();
+    });
+    (ROWLISTS[o.sec] = ROWLISTS[o.sec] || []).push(self);
+    self.render();
+    return self;
+  }
 
   /* ---------- Themen ---------- */
-  const CATS = { trading: 'Trading', geld: 'Geld & Kasse', wohnen: 'Wohnen', lernen: 'Lernen', bewerbung: 'Bewerbung' };
+  const CATS = { geld: 'Geld & Haushalt', wohnen: 'Wohnen & Energie', unterwegs: 'Unterwegs', kueche: 'Küche', lernen: 'Lernen', bewerbung: 'Job & Bewerbung', trading: 'Trading' };
   const TOPICS = [
-    { id: 'positionsgroesse', cat: 'trading', frage: 'Wie viel darf ich pro Trade riskieren?', text: 'Positionsgröße aus Konto, Risiko und Stop-Loss. Für Gold, Forex, Aktien und Krypto.', typ: 'Rechner', dauer: '1 Min', tags: 'trading trade lot lots stop loss sl tp risiko position positionsgrösse gold xau forex devisen aktie aktien etf krypto bitcoin crv chance hebel broker' },
+    { id: 'haushaltsgeld', cat: 'geld', frage: 'Wo bleibt mein Geld jeden Monat?', text: 'Einnahmen und Ausgaben eintragen und nach der 50-30-20-Regel sehen, wo du kürzen kannst.', typ: 'Budgetrechner', dauer: '3 Min', tags: 'geld haushalt haushaltsbuch budget ausgaben einnahmen gehalt lohn rente sparen monatsende pleite knapp fixkosten 50 30 20' },
+    { id: 'kosten-teilen', cat: 'geld', frage: 'Wer schuldet wem wie viel?', text: 'Gemeinsame Ausgaben für Urlaub, WG oder Geschenk fair aufteilen, mit möglichst wenigen Überweisungen.', typ: 'Rechner', dauer: '2 Min', tags: 'kosten teilen aufteilen schulden urlaub reise wg geschenk freunde gruppe rechnung splitten überweisen ausgleichen' },
+    { id: 'abos', cat: 'geld', frage: 'Welche Abos und Verträge kosten mich am meisten?', text: 'Alle Abos auf einen Blick, Kosten pro Jahr und was Kündigen spart.', typ: 'Abo-Check', dauer: '3 Min', tags: 'abo abos vertrag verträge streaming fitnessstudio kündigen kündigung handyvertrag zeitschrift monatlich jährlich sparen' },
+    { id: 'stromkosten', cat: 'wohnen', frage: 'Was kostet mich ein Gerät an Strom?', text: 'Watt und Nutzungsdauer eintragen und sehen, welches Gerät im Jahr am meisten kostet.', typ: 'Rechner', dauer: '2 Min', tags: 'strom stromkosten energie kwh watt gerät geräte standby verbrauch nachzahlung stromrechnung sparen' },
+    { id: 'fahrtkosten', cat: 'unterwegs', frage: 'Was kostet die Fahrt und wie teilen wir sie auf?', text: 'Sprit- oder Ladekosten für eine Strecke, aufgeteilt auf alle Mitfahrenden.', typ: 'Rechner', dauer: '1 Min', tags: 'auto fahrt fahrtkosten sprit benzin diesel tanken elektro laden mitfahrer fahrgemeinschaft ausflug km kilometer' },
+    { id: 'rezept', cat: 'kueche', frage: 'Wie rechne ich ein Rezept auf mehr Personen um?', text: 'Zutatenliste einfügen, Personenzahl ändern, Mengen ablesen.', typ: 'Umrechner', dauer: '1 Min', tags: 'rezept kochen backen zutaten personen portionen umrechnen menge gramm küche' },
+    { id: 'sparziel', cat: 'geld', frage: 'Wie lange muss ich sparen, bis ich mir das leisten kann?', text: 'Sparziel, Rate und Zinsen eintragen und sehen, wann du es geschafft hast.', typ: 'Rechner', dauer: '1 Min', tags: 'sparen sparziel urlaub führerschein auto notgroschen zinsen tagesgeld rate wunsch leisten' },
     { id: 'klassenkasse', cat: 'geld', frage: 'Reicht unser Geld für Abiball oder Klassenfahrt?', text: 'Alle Kosten rein, Kasse gegenrechnen, Betrag pro Person und Monat sehen.', typ: 'Budgetplaner', dauer: '3 Min', tags: 'abi abikasse abiball abistreich abibuch abipulli klassenfahrt klassenkasse stufe jahrgang verein budget kosten pro person sammeln kuchenverkauf geld' },
     { id: 'auszug', cat: 'wohnen', frage: 'Kann ich mir die eigene Wohnung oder WG leisten?', text: 'Startkosten und Monatskosten für Ausbildung, Studium oder WG gegen dein Einkommen.', typ: 'Kostenrechner', dauer: '3 Min', tags: 'wg wohnung zimmer ausziehen auszug miete kaution studium studienstart ausbildung azubi umzug bafög bab kindergeld budget lebenshaltung geld kosten' },
     { id: 'lernplan', cat: 'lernen', frage: 'Ich schaffe meinen Stoff bis zur Prüfung nicht.', text: 'Themen und Datum eintragen, Lernplan mit eingebauten Wiederholungen bekommen.', typ: 'Plan-Generator', dauer: '2 Min', tags: 'lernen prüfung klausur test abi abitur abschlussprüfung lernplan zeitplan stress wiederholen zeit schaffen' },
     { id: 'lernmethode', cat: 'lernen', frage: 'Welche Lernmethode passt zu meinem Stoff?', text: 'Drei Fragen, eine Methode mit Anleitung für die nächste Stunde.', typ: 'Entscheidungshilfe', dauer: '1 Min', tags: 'lernmethode methode lernen karteikarten feynman pomodoro konzentration vergessen prokrastination anfangen ablenkung handy verstehen' },
     { id: 'bewerbung', cat: 'bewerbung', frage: 'Wie fange ich mit der Bewerbung an?', text: 'Checkliste Schritt für Schritt und ein Anschreiben-Gerüst, das du nur noch füllst.', typ: 'Guide + Vorlage', dauer: '10 Min', tags: 'bewerbung bewerben anschreiben lebenslauf ausbildung praktikum vorstellungsgespräch job nebenjob firma' },
-    { id: 'lerntools', cat: 'lernen', frage: 'Welches kostenlose Tool hilft mir beim Lernen?', text: 'Geprüfte Lern-Tools mit Filter, ehrlicher Kurzbewertung und dem jeweiligen Haken.', typ: 'Verzeichnis', dauer: '2 Min', tags: 'tool tools app apps kostenlos gratis karteikarten notizen mathe sprachen englisch übersetzen fokus timer verzeichnis' }
+    { id: 'lerntools', cat: 'lernen', frage: 'Welches kostenlose Tool hilft mir beim Lernen?', text: 'Geprüfte Lern-Tools mit Filter, ehrlicher Kurzbewertung und dem jeweiligen Haken.', typ: 'Verzeichnis', dauer: '2 Min', tags: 'tool tools app apps kostenlos gratis karteikarten notizen mathe sprachen englisch übersetzen fokus timer verzeichnis' },
+    { id: 'positionsgroesse', cat: 'trading', frage: 'Wie viel darf ich pro Trade riskieren?', text: 'Positionsgröße aus Konto, Risiko und Stop-Loss. Für Gold, Forex, Aktien und Krypto.', typ: 'Rechner', dauer: '1 Min', tags: 'trading trade lot lots stop loss sl tp risiko position positionsgrösse gold xau forex devisen aktie aktien etf krypto bitcoin crv chance hebel broker' }
   ];
 
   const fold = s => s.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
@@ -909,6 +1259,8 @@ Ebenen im Raum</textarea>
       else if (el.tagName === 'SELECT') $$('option', el).forEach(o => { o.selected = o.defaultSelected; });
       else el.value = el.defaultValue;
     });
+    (ROWLISTS[sec.id] || []).forEach(l => l.reset());
+    if (sec.id === 'v-fahrtkosten') fkUnits();
     if (sec.id === 'v-klassenkasse') { kkRows = KK_DEFAULT.map(r => Object.assign({}, r)); renderKK(); }
     store.set('f:' + sec.id, null);
     if (sec.id === 'v-klassenkasse') store.set('kk-posten', null);
@@ -1266,8 +1618,302 @@ Ebenen im Raum</textarea>
   $('#dir-chips').addEventListener('click', e => { const b = e.target.closest('[data-dc]'); if (!b) return; dirCat = b.dataset.dc; renderDir(); });
   $('#dir-frei').addEventListener('change', renderDir);
 
+  /* ---------- Haushaltsgeld (50-30-20) ---------- */
+  function calcHB() {
+    const out = $('#hb-out'), N = val('hb-netto');
+    if (!(N > 0)) { out.innerHTML = errBox(['Trag ein, wie viel netto im Monat reinkommt.']); return; }
+    const grp = g => $$(`[data-hb="${g}"]`).map(el => [el.dataset.label, parseNum(el.value, true) || 0]);
+    const need = grp('need'), want = grp('want');
+    const sn = need.reduce((s, x) => s + x[1], 0), sw = want.reduce((s, x) => s + x[1], 0);
+    const save = N - sn - sw, base = Math.max(N, sn + sw);
+    const w = x => (Math.max(0, x) / base * 100).toFixed(2) + '%';
+    const top = need.concat(want).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    let pill;
+    if (save < 0) pill = `<span class="pill bad">Jeden Monat ${euro(-save)} im Minus</span>`;
+    else if (save / N < 0.1) pill = '<span class="pill warn">Kaum Puffer</span>';
+    else if (save / N < 0.2) pill = '<span class="pill good">Solide</span>';
+    else pill = '<span class="pill good">Sehr gut aufgestellt</span>';
+    const tips = [];
+    if (sn / N > 0.5) tips.push(`Deine festen Kosten liegen bei ${pct(sn / N, 0)} statt höchstens 50 %. Am meisten bringen meist Versicherungen, Handyvertrag und Strom: vergleichen und wechseln.`);
+    if (sw / N > 0.3) tips.push(`Für Wünsche gehen ${pct(sw / N, 0)} drauf. Setz dir für den größten Posten ein festes Monatsbudget.`);
+    out.innerHTML = `
+      <div class="kicker">Übrig zum Sparen pro Monat</div>
+      <div class="big">${euro(save)} <small>${pct(save / N, 0)}</small></div>
+      <div>${pill}</div>
+      <div class="bar-wrap" aria-hidden="true"><div class="bar"><span class="s-need" style="width:${w(sn)}"></span><span class="s-want" style="width:${w(sw)}"></span><span class="s-save" style="width:${w(save)}"></span></div><i style="left:${(N * 0.5 / base * 100).toFixed(2)}%"></i><i style="left:${(N * 0.8 / base * 100).toFixed(2)}%"></i></div>
+      <div class="legend">
+        <span style="--c:var(--pen)">Nötig: ${euro(sn)} · ${pct(sn / N, 0)} <span class="hint">(Ziel höchstens 50 %)</span></span>
+        <span style="--c:var(--warn)">Wünsche: ${euro(sw)} · ${pct(sw / N, 0)} <span class="hint">(Ziel höchstens 30 %)</span></span>
+        <span style="--c:var(--good)">Sparen: ${euro(Math.max(0, save))} · ${pct(Math.max(0, save) / N, 0)} <span class="hint">(Ziel mindestens 20 %)</span></span>
+      </div>
+      ${tips.map(t => `<div class="box warn">${t}</div>`).join('')}
+      <p class="note">Größte Posten: ${top.map(t => `${esc(t[0])} ${euro(t[1])}`).join(', ')}.</p>
+      <p class="note">Tipp: Richte für den Tag nach dem Gehaltseingang einen Dauerauftrag aufs Sparkonto ein. Was gar nicht erst auf dem Girokonto liegt, wird auch nicht ausgegeben.</p>`;
+  }
+
+  /* ---------- Kosten teilen ---------- */
+  const ktPersons = () => {
+    const seen = new Set();
+    return $('#kt-personen').value.split(/[,;\n]/).map(s => s.trim()).filter(s => s && !seen.has(s.toLowerCase()) && seen.add(s.toLowerCase()));
+  };
+  const ktList = rowList({
+    sec: 'v-kosten-teilen', key: 'kt-rows', el: 'kt-rows', add: 'kt-neu',
+    cols: 'minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr) auto', colsM: 'minmax(0,1fr) minmax(0,1fr) auto',
+    fields: [
+      { k: 'wofuer', label: 'Wofür', cls: 'p-name' },
+      { k: 'wer', label: 'Bezahlt von', type: 'select', options: () => ktPersons().map(p => [p, p]) },
+      { k: 'betrag', label: 'Betrag', num: true, suffix: '€' }
+    ],
+    defaults: [
+      { wer: 'Anna', betrag: '480', wofuer: 'Ferienhaus' },
+      { wer: 'Ben', betrag: '96,40', wofuer: 'Einkauf' },
+      { wer: 'Can', betrag: '78', wofuer: 'Tanken' },
+      { wer: 'Anna', betrag: '52', wofuer: 'Pizza' }
+    ],
+    blank: { wer: '', betrag: '', wofuer: '' },
+    onChange: () => calcKT()
+  });
+  $('#kt-personen').addEventListener('input', () => ktList.render());
+  function calcKT() {
+    const out = $('#kt-out'), people = ktPersons();
+    const err = [];
+    if (people.length < 2) err.push('Trag mindestens zwei Namen ein, mit Komma getrennt.');
+    const lower = people.map(p => p.toLowerCase());
+    const paid = people.map(() => 0);
+    ktList.rows.forEach(r => {
+      const b = Math.round((parseNum(r.betrag, true) || 0) * 100);
+      if (!b) return;
+      const i = lower.indexOf(String(r.wer || '').toLowerCase());
+      if (i < 0) { err.push(`„${esc(r.wer || 'Ohne Namen')}“ hat ${euro(b / 100)} bezahlt, steht aber nicht in der Namensliste.`); return; }
+      paid[i] += b;
+    });
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const total = paid.reduce((s, x) => s + x, 0);
+    if (!total) { out.innerHTML = '<p class="note">Trag die erste Ausgabe ein.</p>'; return; }
+    const n = people.length, base = Math.floor(total / n), rest = total - base * n;
+    const share = people.map((_, i) => base + (i < rest ? 1 : 0));
+    const bal = paid.map((p, i) => p - share[i]);
+    const cred = bal.map((b, i) => [i, b]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+    const debt = bal.map((b, i) => [i, -b]).filter(x => x[1] > 0).sort((a, b) => b[1] - a[1]);
+    const tr = [];
+    let ci = 0, di = 0;
+    while (ci < cred.length && di < debt.length) {
+      const amt = Math.min(cred[ci][1], debt[di][1]);
+      if (amt > 0) tr.push([people[debt[di][0]], people[cred[ci][0]], amt]);
+      cred[ci][1] -= amt; debt[di][1] -= amt;
+      if (!cred[ci][1]) ci++;
+      if (!debt[di][1]) di++;
+    }
+    COPY.kt = 'Ausgleich:\n' + tr.map(([a, b, x]) => `${a} → ${b}: ${euro(x / 100)}`).join('\n');
+    out.innerHTML = `
+      <div class="kicker">So gleicht ihr aus</div>
+      ${tr.length ? `<ol class="transfers">${tr.map(([a, b, x]) => `<li><span>${esc(a)} → ${esc(b)}</span><span>${euro(x / 100)}</span></li>`).join('')}</ol>` : '<div class="box good">Alle haben gleich viel bezahlt. Niemand muss etwas überweisen.</div>'}
+      ${rows([['Ausgaben gesamt', euro(total / 100)], ['Anteil pro Person', euro(total / n / 100)]].concat(people.map((p, i) => [esc(p) + ` <span class="hint">hat ${euro(paid[i] / 100)} bezahlt</span>`, bal[i] >= 0 ? `bekommt ${euro(bal[i] / 100)}` : `zahlt ${euro(-bal[i] / 100)}`])))}
+      ${tr.length ? '<div class="example"><button type="button" class="btn" data-copytext="kt">Ergebnis kopieren</button><span class="note">zum Einfügen in den Gruppenchat</span></div>' : ''}`;
+  }
+
+  /* ---------- Abos ---------- */
+  const TAKT = { w: 52 / 12, m: 1, q: 1 / 3, j: 1 / 12 };
+  const abList = rowList({
+    sec: 'v-abos', key: 'ab-rows', el: 'ab-rows', add: 'ab-neu',
+    cols: 'minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto', colsM: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto',
+    fields: [
+      { k: 'name', label: 'Abo', cls: 'p-name' },
+      { k: 'preis', label: 'Preis', num: true, suffix: '€' },
+      { k: 'takt', label: 'alle', type: 'select', options: [['m', 'Monat'], ['j', 'Jahr'], ['q', 'Quartal'], ['w', 'Woche']] },
+      { k: 'nutzung', label: 'Nutze ich', type: 'select', options: [['oft', 'oft'], ['selten', 'selten'], ['nie', 'fast nie']] }
+    ],
+    defaults: [
+      { name: 'Video-Streaming', preis: '13,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Zweiter Streamingdienst', preis: '9,99', takt: 'm', nutzung: 'selten' },
+      { name: 'Musik-Streaming', preis: '11,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Fitnessstudio', preis: '34,90', takt: 'm', nutzung: 'selten' },
+      { name: 'Handyvertrag', preis: '24,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Cloud-Speicher', preis: '2,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Zeitschrift', preis: '89', takt: 'j', nutzung: 'nie' },
+      { name: 'Spiele-Abo', preis: '16,99', takt: 'm', nutzung: 'nie' }
+    ],
+    blank: { name: '', preis: '', takt: 'm', nutzung: 'oft' },
+    onChange: () => calcAB()
+  });
+  function calcAB() {
+    const out = $('#ab-out');
+    const items = abList.rows.map(r => ({ name: r.name || 'Ohne Namen', y: (parseNum(r.preis, true) || 0) * (TAKT[r.takt] || 1) * 12, u: r.nutzung })).filter(i => i.y > 0);
+    if (!items.length) { out.innerHTML = '<p class="note">Trag dein erstes Abo ein.</p>'; return; }
+    const year = items.reduce((s, i) => s + i.y, 0);
+    const spar = items.filter(i => i.u !== 'oft').reduce((s, i) => s + i.y, 0);
+    const pillFor = u => u === 'oft' ? '' : ` <span class="pill ${u === 'nie' ? 'bad' : 'warn'}">${u === 'nie' ? 'fast nie' : 'selten'}</span>`;
+    out.innerHTML = `
+      <div class="kicker">Deine Abos kosten im Jahr</div>
+      <div class="big">${euro(year)}</div>
+      ${rows([['Pro Monat', euro(year / 12)], ['Anzahl', items.length]])}
+      ${spar > 0 ? `<div class="box good">Kündigst du, was du selten oder fast nie nutzt, sparst du <strong>${euro(spar)} im Jahr</strong>.</div>` : '<div class="box good">Du nutzt alles oft. Prüf trotzdem einmal im Jahr, ob es günstigere Tarife gibt.</div>'}
+      ${rows(items.sort((a, b) => b.y - a.y).map(i => [esc(i.name) + pillFor(i.u), euro(i.y)]))}`;
+  }
+
+  /* ---------- Stromkosten ---------- */
+  const stList = rowList({
+    sec: 'v-stromkosten', key: 'st-rows', el: 'st-rows', add: 'st-neu',
+    cols: 'minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto', colsM: 'minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto',
+    fields: [
+      { k: 'name', label: 'Gerät', cls: 'p-name' },
+      { k: 'watt', label: 'Leistung', num: true, suffix: 'W' },
+      { k: 'std', label: 'Std. pro Tag', num: true, suffix: 'h' },
+      { k: 'tage', label: 'Tage pro Woche', num: true, suffix: 'T' }
+    ],
+    defaults: [
+      { name: 'Gaming-PC', watt: '300', std: '3', tage: '6' },
+      { name: 'Fernseher', watt: '90', std: '4', tage: '7' },
+      { name: 'Wäschetrockner', watt: '2200', std: '1,5', tage: '3' },
+      { name: 'Backofen', watt: '2500', std: '0,7', tage: '3' },
+      { name: 'WLAN-Router', watt: '10', std: '24', tage: '7' },
+      { name: 'Geräte im Standby', watt: '20', std: '20', tage: '7' }
+    ],
+    blank: { name: '', watt: '', std: '', tage: '7' },
+    onChange: () => calcST()
+  });
+  function calcST() {
+    const out = $('#st-out'), ct = val('st-preis');
+    if (!(ct > 0)) { out.innerHTML = errBox(['Trag deinen Strompreis in Cent pro Kilowattstunde ein.']); return; }
+    const items = stList.rows.map(r => {
+      const kwh = (parseNum(r.watt, true) || 0) / 1000 * (parseNum(r.std) || 0) * Math.min(7, parseNum(r.tage) || 0) * 52;
+      return { name: r.name || 'Ohne Namen', kwh, eur: kwh * ct / 100 };
+    }).filter(i => i.kwh > 0).sort((a, b) => b.eur - a.eur);
+    if (!items.length) { out.innerHTML = '<p class="note">Trag dein erstes Gerät ein.</p>'; return; }
+    const kwh = items.reduce((s, i) => s + i.kwh, 0), eur = kwh * ct / 100;
+    const sb = items.find(i => /standby/i.test(i.name));
+    out.innerHTML = `
+      <div class="kicker">Diese Geräte kosten im Jahr</div>
+      <div class="big">${euro(eur)}</div>
+      ${rows([['Pro Monat', euro(eur / 12)], ['Verbrauch im Jahr', fmt(kwh, 0) + ' kWh'], ['Teuerstes Gerät', esc(items[0].name)]])}
+      ${rows(items.map(i => [esc(i.name) + ` <span class="hint">${fmt(i.kwh, 0)} kWh</span>`, euro(i.eur)]))}
+      ${sb ? `<div class="box good">Standby allein kostet ${euro(sb.eur)} im Jahr. Eine Steckdosenleiste mit Schalter holt das meiste davon zurück.</div>` : ''}`;
+  }
+
+  /* ---------- Fahrtkosten ---------- */
+  const FK = { sprit: { v: '6,5', p: '1,75', vu: 'l/100 km', pu: '€/l', pl: 'Preis pro Liter', menge: 'l', hint: 'Den aktuellen Preis zeigt jede Tankstelle oder eine Tank-App.' },
+               strom: { v: '18', p: '0,39', vu: 'kWh/100 km', pu: '€/kWh', pl: 'Preis pro kWh', menge: 'kWh', hint: 'Laden zu Hause ist meist günstiger als an der Schnellladesäule. Den Preis findest du in deinem Stromvertrag oder in der Lade-App.' } };
+  function fkUnits() {
+    const m = FK[$('#fk-antrieb').value];
+    $('#fk-v-unit').textContent = m.vu; $('#fk-p-unit').textContent = m.pu; $('#fk-p-lbl').textContent = m.pl; $('#fk-hint').textContent = m.hint;
+  }
+  $('#fk-antrieb').addEventListener('change', () => {
+    const m = FK[$('#fk-antrieb').value];
+    $('#fk-verbrauch').value = m.v; $('#fk-preis').value = m.p; fkUnits();
+  });
+  function calcFK() {
+    const out = $('#fk-out'), m = FK[$('#fk-antrieb').value];
+    fkUnits();
+    const km1 = val('fk-km'), P = val('fk-personen'), v = val('fk-verbrauch'), p = val('fk-preis'), extra = val('fk-extra') || 0;
+    const err = [];
+    if (!(km1 > 0)) err.push('Wie lang ist die Strecke?');
+    if (!(P >= 1)) err.push('Wie viele Personen fahren mit?');
+    if (!(v > 0)) err.push('Trag den Verbrauch ein.');
+    if (!(p > 0)) err.push('Trag den Preis ein.');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const km = km1 * ($('#fk-rueck').checked ? 2 : 1), menge = km / 100 * v, energie = menge * p, total = energie + extra;
+    out.innerHTML = `
+      <div class="kicker">Jede Person zahlt</div>
+      <div class="big">${euro(total / P)}</div>
+      ${rows([['Strecke gesamt', fmt(km, 0) + ' km'], [m.menge === 'l' ? 'Sprit' : 'Strom', `${fmt(menge, 1)} ${m.menge} · ${euro(energie)}`], ['Maut, Parken, Fähre', euro(extra)], ['Gesamt', euro(total)], ['Pro Kilometer', euro(total / km)]])}
+      <p class="note">Gerechnet sind nur Energie und Nebenkosten. Wer das Auto stellt, trägt dazu Verschleiß, Versicherung und Wertverlust. Viele geben deshalb etwas mehr als den reinen Spritanteil.</p>`;
+  }
+
+  /* ---------- Rezept ---------- */
+  const FR = { '½': 0.5, '¼': 0.25, '¾': 0.75, '⅓': 1 / 3, '⅔': 2 / 3, '⅛': 0.125 };
+  function parseQty(line) {
+    let m;
+    if ((m = /^(\d+)\s+(\d+)\/(\d+)\s*(.*)$/.exec(line))) return [+m[1] + m[2] / m[3], m[4]];
+    if ((m = /^(\d+)\/(\d+)\s*(.*)$/.exec(line))) return [m[1] / m[2], m[3]];
+    if ((m = /^(\d+)\s*([½¼¾⅓⅔⅛])\s*(.*)$/.exec(line))) return [+m[1] + FR[m[2]], m[3]];
+    if ((m = /^([½¼¾⅓⅔⅛])\s*(.*)$/.exec(line))) return [FR[m[1]], m[2]];
+    if ((m = /^(\d+(?:[.,]\d+)?)\s*(.*)$/.exec(line))) return [+m[1].replace(',', '.'), m[2]];
+    return null;
+  }
+  function niceQty(q, rest) {
+    const unit = (rest.split(/\s+/)[0] || '').toLowerCase();
+    if (/^(g|ml)$/.test(unit)) return fmt(q >= 100 ? Math.round(q / 5) * 5 : q >= 10 ? Math.round(q) : q, 1);
+    if (/^(kg|l|cl|dl)$/.test(unit)) return fmt(q, 2);
+    if (/^(ei|eier|eigelb|eiweiß|eiweiss)$/.test(unit)) return String(Math.max(1, Math.ceil(q - 0.05)));
+    const r = Math.round(q * 4) / 4;
+    if (!r) return fmt(q, 2);
+    const w = Math.floor(r), f = { 0: '', 0.25: '¼', 0.5: '½', 0.75: '¾' }[r - w];
+    return (w ? String(w) : '') + f;
+  }
+  function calcRZ() {
+    const out = $('#rz-out'), von = val('rz-von'), auf = val('rz-auf');
+    const err = [];
+    if (!(von > 0)) err.push('Für wie viele Personen ist das Rezept?');
+    if (!(auf > 0)) err.push('Für wie viele Personen kochst du?');
+    const lines = $('#rz-text').value.split('\n').map(s => s.trim()).filter(Boolean);
+    if (!lines.length) err.push('Füg die Zutatenliste ein.');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const f = auf / von;
+    let eier = false;
+    const res = lines.map(l => {
+      const p = parseQty(l);
+      if (!p) return { q: 'nach Gefühl', rest: l, frei: true };
+      const [q, rest] = p;
+      if (/^(ei|eier|eigelb|eiweiß|eiweiss)\b/i.test(rest) && Math.abs(q * f - Math.round(q * f)) > 0.05) eier = true;
+      return { q: niceQty(q * f, rest), rest };
+    });
+    COPY.rz = `Für ${fmt(auf, 1)} Personen:\n` + res.map(r => (r.frei ? '' : r.q + ' ') + r.rest).join('\n');
+    out.innerHTML = `
+      <div class="kicker">Für ${fmt(auf, 1)} ${auf === 1 ? 'Person' : 'Personen'}</div>
+      <div class="big">× ${fmt(f, 2)}</div>
+      <ul class="rz">${res.map(r => `<li class="${r.frei ? 'frei' : ''}"><b>${esc(r.q)}</b><span>${esc(r.rest)}</span></li>`).join('')}</ul>
+      ${eier ? '<p class="note">Eier sind aufgerundet. Bei Teig etwas weniger Milch nehmen, wenn er zu flüssig wird.</p>' : ''}
+      <p class="note">Backzeit bleibt bei gleicher Form gleich. In einer größeren Form wird der Teig flacher und braucht eher weniger Zeit.</p>
+      <div class="example"><button type="button" class="btn" data-copytext="rz">Zutaten kopieren</button></div>`;
+  }
+
+  /* ---------- Sparziel ---------- */
+  (function () {
+    const t = new Date(), el = $('#sz-bis');
+    el.defaultValue = iso(new Date(t.getFullYear() + 1, t.getMonth(), 1));
+    if (!el.value) el.value = el.defaultValue;
+  })();
+  function calcSZ() {
+    const out = $('#sz-out'), Z = val('sz-ziel'), S = val('sz-schon') || 0, R = val('sz-rate') || 0, zins = val('sz-zins') || 0;
+    const err = [];
+    if (!(Z > 0)) err.push('Wie viel brauchst du?');
+    if (zins < 0 || zins > 20) err.push('Die Zinsen sollten zwischen 0 und 20 % liegen.');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const j = zins / 100 / 12;
+    const now = new Date();
+    const monthName = n => new Date(now.getFullYear(), now.getMonth() + n, 1).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+    let head;
+    if (S >= Z) head = `<div class="kicker">Ergebnis</div><div class="big">Geschafft.</div><div class="box good">Du hast schon genug gespart.</div>`;
+    else if (!(R > 0) && j === 0) head = `<div class="kicker">Ergebnis</div>${errBox(['Ohne monatliche Sparrate kommst du nicht ans Ziel.'])}`;
+    else {
+      let bal = S, n = 0;
+      while (bal < Z && n < 1200) { bal = bal * (1 + j) + R; n++; }
+      if (n >= 1200) head = `<div class="kicker">Ergebnis</div><div class="box bad">Mit dieser Rate dauert es über 100 Jahre. Erhöh die Sparrate.</div>`;
+      else {
+        const zinsen = bal - S - R * n;
+        head = `
+          <div class="kicker">Du hast es geschafft in</div>
+          <div class="big">${n} <small>${n === 1 ? 'Monat' : 'Monaten'}</small></div>
+          <div><span class="pill good">im ${monthName(n)}</span></div>
+          ${rows([['Selbst eingezahlt', euro(S + R * n)], ['Davon Zinsen', euro(Math.max(0, zinsen))], ['Kontostand dann', euro(bal)]])}`;
+      }
+    }
+    const bis = parseISO($('#sz-bis').value);
+    let wunsch = '';
+    if (bis && S < Z) {
+      const n2 = (bis.getFullYear() - now.getFullYear()) * 12 + (bis.getMonth() - now.getMonth());
+      if (n2 < 1) wunsch = '<p class="note">Der Wunschtermin liegt zu nah. Wähle einen Termin mindestens einen Monat entfernt.</p>';
+      else {
+        const g = Math.pow(1 + j, n2);
+        const need = j === 0 ? (Z - S) / n2 : (Z - S * g) * j / (g - 1);
+        wunsch = `<div class="box ${need <= R ? 'good' : 'warn'}">Bis ${bis.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' })} musst du <strong>${euro(Math.max(0, need))} pro Monat</strong> sparen${need <= R ? '. Das schaffst du mit deiner Rate.' : `, also ${euro(need - R)} mehr als jetzt.`}</div>`;
+      }
+    }
+    out.innerHTML = head + wunsch + '<p class="note">Zinsen ändern sich, gerechnet wird mit dem eingetragenen Satz. Zinserträge sind bis 1.000 € im Jahr pro Person steuerfrei, wenn du der Bank einen Freistellungsauftrag gibst.</p>';
+  }
+
   /* ---------- Verdrahtung ---------- */
-  const CALC = { 'v-positionsgroesse': calcPG, 'v-klassenkasse': calcKK, 'v-auszug': calcAZ, 'v-lernplan': calcLP, 'v-lernmethode': calcLM, 'v-bewerbung': calcBW };
+  const CALC = { 'v-haushaltsgeld': calcHB, 'v-kosten-teilen': calcKT, 'v-abos': calcAB, 'v-stromkosten': calcST, 'v-fahrtkosten': calcFK, 'v-rezept': calcRZ, 'v-sparziel': calcSZ, 'v-positionsgroesse': calcPG, 'v-klassenkasse': calcKK, 'v-auszug': calcAZ, 'v-lernplan': calcLP, 'v-lernmethode': calcLM, 'v-bewerbung': calcBW };
   $$('[data-tool]').forEach(sec => {
     loadTool(sec);
     const run = CALC[sec.id];
@@ -1284,7 +1930,7 @@ Ebenen im Raum</textarea>
     $('#geloescht').textContent = 'Gelöscht. Alle Rechner zeigen wieder die Beispielwerte.';
   });
 
-  renderChips(); renderTiles(); renderKK(); renderBW(); renderDir();
+  renderChips(); renderTiles(); renderKK(); renderBW(); renderDir(); ktList.render();
   Object.values(CALC).forEach(f => f());
 
   /* ---------- Ansichten über die Adresse ---------- */

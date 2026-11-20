@@ -1,12 +1,20 @@
 # Wo hakt's?
 
-Eine Website, auf der man sein Problem anklickt und ein Werkzeug bekommt, das es löst.
+Eine Website für den Alltag: Man klickt sein Problem an und bekommt ein Werkzeug, das es löst.
+Für alle, nicht nur für eine Zielgruppe: Geld und Haushalt, Wohnen und Energie, Unterwegs, Küche, Lernen, Job und Trading.
 Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine fremden Schriften.
 
 ## Themen
 
 | Adresse | Problem | Werkzeug |
 | --- | --- | --- |
+| `#haushaltsgeld` | Wo bleibt mein Geld jeden Monat? | Einnahmen und Ausgaben nach der 50-30-20-Regel, mit Balken und Spartipps |
+| `#kosten-teilen` | Wer schuldet wem wie viel? | Gruppenausgaben fair aufteilen, möglichst wenige Überweisungen, zum Kopieren |
+| `#abos` | Welche Abos und Verträge kosten mich am meisten? | Abo-Check: Kosten pro Jahr, Sparpotenzial, Hinweise zum Kündigen |
+| `#stromkosten` | Was kostet mich ein Gerät an Strom? | Geräte mit Watt und Nutzung, Kosten pro Jahr |
+| `#fahrtkosten` | Was kostet die Fahrt und wie teilen wir sie auf? | Sprit- oder Ladekosten pro Person |
+| `#rezept` | Wie rechne ich ein Rezept auf mehr Personen um? | Zutatenliste umrechnen, versteht Brüche, rundet Eier auf |
+| `#sparziel` | Wie lange muss ich sparen, bis ich mir das leisten kann? | Dauer bis zum Ziel mit Zinsen, nötige Rate bis zum Wunschtermin |
 | `#positionsgroesse` | Wie viel darf ich pro Trade riskieren? | Rechner für Gold, Forex, Aktien, Krypto: Lots/Stück, Verlust, CRV, nötige Trefferquote |
 | `#klassenkasse` | Reicht unser Geld für Abiball oder Klassenfahrt? | Budgetplaner mit eigenen Posten, Betrag pro Person und Monat |
 | `#auszug` | Kann ich mir die eigene Wohnung oder WG leisten? | Start- und Monatskosten gegen Einkommen, Notgroschen |
@@ -27,6 +35,8 @@ und lassen sich unter Datenschutz löschen.
 2. Im Skript in `TOPICS` einen Eintrag ergänzen (`id`, `cat`, `frage`, `text`, `typ`, `dauer`, `tags`).
 3. Eine Rechenfunktion schreiben und in `CALC` unter `'v-meinthema'` eintragen.
    Felder mit `data-save` werden automatisch gespeichert und mit „Beispiel wiederherstellen“ zurückgesetzt.
+4. Für Listen mit beliebig vielen Zeilen (wie Abos, Geräte, Ausgaben) gibt es `rowList({...})`;
+   die Abos zeigen, wie man es benutzt.
 
 ## Vor dem Veröffentlichen eintragen
 
@@ -51,6 +61,7 @@ Stand November 2026, einmal im Jahr prüfen:
 * Deutschlandticket 63 € (Feld `az-ticket`)
 * Rundfunkbeitrag 18,36 € pro Wohnung (Hinweis unter „Jeden Monat“)
 * Kindergeld 259 € (Feld `az-kindergeld`)
+* Beispielpreise für Strom (35 ct/kWh), Sprit (1,75 €/l) und Tagesgeld-Zinsen (2 %)
 * Preise und Haken im Verzeichnis (`TOOLS` im Skript)
 
 ## Ansehen

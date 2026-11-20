@@ -34,7 +34,7 @@ unten rechts führt eine Weiter-Zeile zum nächsten.
 | `media/` | Mediendateien, u. a. das Vorstellungsvideo |
 | `signals.json` | Die Signale für die Fassung auf dem eigenen Server |
 | `bot/` | Der Dauerläufer: der Handelsbot als lauffähiges Python-Programm |
-| `hilfe/` | **Wo hakt's?** Eigene Website: Problem anklicken, Rechner, Plan oder Checkliste bekommen ([mehr](hilfe/README.md)) |
+| `hilfe/` | **Wo hakt's?** Eigene Website für den Alltag: Problem anklicken, Rechner, Plan oder Checkliste bekommen ([mehr](hilfe/README.md)) |
 
 ## Signale (G)
 

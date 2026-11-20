@@ -1,38 +1,31 @@
 # Wo hakt's beim Kaufen?
 
-Eine Website rund um **Kaufsucht**. Die Startseite zeigt nur Karten auf weißem Grund, jede mit Symbol und kurzem Namen, ohne weiteren Text.
-Ein Klick auf eine Karte öffnet Tipps, Hintergründe und Wege zur Beratung.
-Dazu kommen Werkzeuge: Selbstcheck, Kassensturz-Rechner, Kauf-Bremse mit Warteliste,
-Kauftagebuch und Abo-Check.
+Eine Website rund um **Kaufsucht**. Die Startseite zeigt nur sechs Karten auf weißem Grund,
+jede mit Symbol und kurzem Namen. Alles Weitere erscheint erst nach dem Klick.
 
 Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine Werbung, keine fremden Schriften.
 
-## Karten
+## Die sechs Karten
 
-| Adresse | Bereich | Karte |
+| Adresse | Karte | Dahinter |
 | --- | --- | --- |
-| `#laden` | Wo ich kaufe | Ich kaufe im Laden mehr, als ich wollte. |
-| `#online` | Wo ich kaufe | Ich bestelle ständig online. |
-| `#social` | Wo ich kaufe | Ich kaufe, was ich auf Social Media sehe. |
-| `#rabatte` | Wo ich kaufe | Bei Sale und Rabatt kann ich nicht Nein sagen. |
-| `#apps` | Wo ich kaufe | Ich gebe Geld in Apps, Spielen und Abos aus. |
-| `#gefuehle` | Gefühle & Verhalten | Ich kaufe, wenn es mir schlecht geht. |
-| `#heimlich` | Gefühle & Verhalten | Ich verstecke Einkäufe vor anderen. |
-| `#horten` | Gefühle & Verhalten | Bei mir stapeln sich Dinge, die ich nie benutze. |
-| `#ratenkauf` | Geld & Schulden | Ich kaufe auf Rechnung, in Raten oder „später zahlen“. |
-| `#schulden` | Geld & Schulden | Ich habe den Überblick über meine Schulden verloren. |
-| `#abos` | Geld & Schulden | Abo-Check |
-| `#selbstcheck` | Werkzeuge | Selbstcheck mit 10 Aussagen (keine Diagnose) |
-| `#kassensturz` | Werkzeuge | Rechner: Einkommen, feste Kosten, Einkäufe, Schulden, Vorschlag für ein Kaufbudget |
-| `#kaufbremse` | Werkzeuge | Sechs Fragen vor dem Kauf, Arbeitszeit hinter dem Preis, Warteliste |
-| `#tagebuch` | Werkzeuge | Kauftagebuch mit Auswertung nach Gefühlen |
-| `#angehoerige` | Hilfe & Beratung | Jemand, der mir nahesteht, kauft zu viel. |
+| `#laden` | Einkaufen im Laden | Tipps, auch zu Sale und Rabatten |
+| `#online` | Online-Shopping | Tipps, auch zu Social Media, Apps und Spielen |
+| `#gefuehle` | Kaufen aus Frust | Tipps, auch zu Heimlichkeit und ungenutzten Sachen |
+| `#schulden` | Schulden & Raten | Tipps zu Ratenkauf, „später zahlen“, Dispo und Schuldnerberatung |
+| `#kassensturz` | Rechner | Einkommen, feste Kosten, Einkäufe, Schulden, Vorschlag für ein Kaufbudget |
 | `#hilfe` | Hilfe & Beratung | Beratungsstellen und Telefonnummern |
 
-Jede Tipp-Karte hat denselben Aufbau: „Kennst du das?“, „Warum das passiert“, „Was sofort hilft“,
+Nicht auf der Startseite, aber aus den Karten heraus verlinkt:
+`#selbstcheck` (10 Aussagen, keine Diagnose), `#kaufbremse` (Fragen vor dem Kauf, Warteliste),
+`#tagebuch` (Kauftagebuch), `#abos` (Abo-Check) und `#angehoerige` (Tipps für Angehörige).
+Ältere Adressen (`#rabatte`, `#social`, `#apps`, `#heimlich`, `#horten`, `#ratenkauf`) leiten auf die
+zusammengefasste Karte weiter.
+
+Jede Tipp-Seite hat denselben Aufbau: „Kennst du das?“, „Warum das passiert“, „Was sofort hilft“,
 „Was auf Dauer hilft“, ein Satz für den Moment und Links zu passenden Werkzeugen.
-Die Texte stehen im Skript im Feld `TOPICS`. Eine neue Karte ist ein neuer Eintrag dort
-(dazu ein Symbol in `ICONS`).
+Die Texte stehen im Skript im Feld `TOPICS`. Ob ein Eintrag auf der Startseite erscheint,
+bestimmt `start` (die Zahl ist die Reihenfolge).
 
 ## Hilfe-Kontakte (Stand November 2026, einmal im Jahr prüfen)
 

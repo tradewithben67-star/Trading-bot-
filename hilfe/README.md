@@ -1,6 +1,6 @@
 # Wo hakt's beim Kaufen?
 
-Eine Website rund um **Kaufsucht**. Auf der Startseite steht jeder Problembereich als Karte.
+Eine Website rund um **Kaufsucht**. Die Startseite zeigt nur Karten auf weißem Grund, jede mit Symbol und kurzem Namen, ohne weiteren Text.
 Ein Klick auf eine Karte öffnet Tipps, Hintergründe und Wege zur Beratung.
 Dazu kommen Werkzeuge: Selbstcheck, Kassensturz-Rechner, Kauf-Bremse mit Warteliste,
 Kauftagebuch und Abo-Check.

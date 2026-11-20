@@ -49,6 +49,7 @@ p { margin: 0; }
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ph { color: var(--warn); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; }
 
 /* Kopfzeile */
@@ -63,57 +64,37 @@ body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-a
 .top nav a:hover { color: var(--pen); }
 .top nav .help { color: var(--ink); font-weight: 600; }
 
-/* Start */
-.hero .wrap { padding-block: 56px 8px; display: grid; gap: 16px; }
-.eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--pen); }
-.hero h1 { font-size: clamp(2.2rem, 5.5vw, 3.5rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.05; }
-.hero .lead { font-size: 1.12rem; color: var(--ink-soft); max-width: 40rem; }
-.actions { display: flex; flex-wrap: wrap; gap: 10px; }
-.search { position: relative; max-width: 40rem; margin-top: 8px; }
-.search input[type="text"] {
-  width: 100%; font: inherit; font-size: 1.05rem; padding: 14px 16px 14px 46px;
-  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); box-shadow: var(--shadow-card);
-}
-.search input[type="text"]:focus { border-color: var(--pen); box-shadow: 0 0 0 4px var(--pen-soft); outline: none; }
-.search svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--ink-soft); fill: none; stroke-width: 2.2; }
-.chips { display: flex; flex-wrap: wrap; gap: 8px; }
-.chip { font: inherit; font-size: .88rem; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); }
-.chip:hover { color: var(--ink); border-color: #cfd4de; }
-.chip[aria-pressed="true"] { background: var(--ink); color: #ffffff; border-color: var(--ink); }
-.sos { font-size: .9rem; color: var(--ink-soft); }
-.sos a { color: var(--ink); font-weight: 650; text-decoration: none; white-space: nowrap; }
-
-.board { padding-block: 28px 12px; display: grid; gap: 18px; }
-.board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-.board-head h2 { font-size: 1rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); font-weight: 700; }
-.count { font-size: .9rem; color: var(--ink-soft); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 20px; }
+/* Start: nur Karten */
+body[data-page="start"] .top { display: none; }
+.start { padding-block: 40px 48px; }
+.tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
+@media (max-width: 760px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .start { padding-block: 20px 32px; } }
 .tile {
-  display: grid; grid-template-rows: auto 1fr auto; gap: 16px; min-width: 0;
-  padding: 22px; border: 1px solid var(--line); border-radius: var(--r);
+  display: flex; flex-direction: column; justify-content: space-between; gap: 28px; min-height: 172px; min-width: 0;
+  padding: 22px; border: 1px solid var(--line); border-radius: 18px;
   background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card);
   transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
 .tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: #d9dde6; }
 .tile:active { transform: translateY(-1px); }
-.tile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--tint, var(--pen-soft)); flex: none; }
 .ic svg { width: 22px; height: 22px; stroke: var(--tint-ink, var(--pen)); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.tile .cat { white-space: nowrap; font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--ink-soft); padding: 4px 9px; border-radius: 999px; background: var(--subtle); }
-.tile-body { display: grid; gap: 6px; align-content: start; }
-.tile h3 { font-size: 1.12rem; font-weight: 700; letter-spacing: -.012em; line-height: 1.25; }
-.tile p { color: var(--ink-soft); font-size: .93rem; line-height: 1.5; }
-.tile .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .84rem; color: var(--ink-soft); border-top: 1px solid var(--line); padding-top: 14px; }
-.tile .meta b { color: var(--ink); font-weight: 600; }
-.go { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--ink); transition: background .18s, color .18s, border-color .18s; }
+.tile .ic { width: 50px; height: 50px; border-radius: 14px; }
+.tile .ic svg { width: 25px; height: 25px; }
+.tile-foot { display: flex; align-items: flex-end; justify-content: space-between; gap: 10px; }
+.tile h2 { font-size: 1.08rem; font-weight: 700; letter-spacing: -.012em; line-height: 1.25; }
+.go { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--ink); flex: none; transition: background .18s, color .18s, border-color .18s; }
 .tile:hover .go { background: var(--ink); color: #ffffff; border-color: var(--ink); }
-.empty { padding: 22px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-soft); grid-column: 1 / -1; }
-
-.wish { padding-block: 28px 44px; }
-.wish-box { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 24px; border-radius: var(--r); background: var(--subtle); border: 1px solid var(--line); }
-.wish-box h2 { font-size: 1.2rem; margin-bottom: 4px; }
-.wish-box p { color: var(--ink-soft); }
-@media (max-width: 640px) { .wish-box { grid-template-columns: 1fr; } }
+.tile.wide { grid-column: 1 / -1; flex-direction: row; align-items: center; min-height: 0; gap: 16px; }
+.tile.wide .tile-foot { flex: 1; align-items: center; }
+.tile.wide p { color: var(--ink-soft); font-size: .92rem; margin-top: 2px; }
+@media (max-width: 760px) {
+  .tile { min-height: 150px; padding: 18px; gap: 20px; border-radius: 16px; }
+  .tile h2 { font-size: 1rem; }
+  .tile .ic { width: 44px; height: 44px; }
+  .tile .go { display: none; }
+  .tile.wide .go { display: grid; }
+}
 
 /* Detailansichten */
 .tool { padding-block: 26px 48px; display: grid; gap: 28px; }
@@ -298,43 +279,9 @@ footer a { color: var(--ink-soft); }
 
 <!-- ============ START ============ -->
 <section id="v-start" data-view>
-  <div class="hero">
-    <div class="wrap">
-      <span class="eyebrow">Hilfe bei Kaufsucht</span>
-      <h1>Wo hakt's beim Kaufen?</h1>
-      <p class="lead">Du kaufst mehr, als du willst oder dir leisten kannst? Damit bist du nicht allein. Wähl die Karte, die zu dir passt. Dahinter stehen Tipps, was sofort hilft, und wo du Beratung bekommst. Anonym und ohne Anmeldung.</p>
-      <div class="actions">
-        <a class="btn" href="#selbstcheck">Selbstcheck machen</a>
-        <a class="btn-ghost" href="#kassensturz">Einkommen und Ausgaben durchrechnen</a>
-      </div>
-      <div class="search">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
-        <input type="text" id="suche" placeholder="Wo hakt es? z. B. „online“, „Rabatt“, „Schulden“" aria-label="Thema suchen" autocomplete="off">
-      </div>
-      <div class="chips" id="chips" role="group" aria-label="Nach Bereich filtern"></div>
-    </div>
-  </div>
-
-  <div class="wrap board">
-    <div class="board-head">
-      <h2>Alle Themen</h2>
-      <span class="count" id="trefferzahl"></span>
-    </div>
+  <h1 class="sr-only">Wo hakt's beim Kaufen? Hilfe bei Kaufsucht</h1>
+  <div class="wrap start">
     <div class="tiles" id="tiles"></div>
-    <p class="sos">Du brauchst jetzt sofort jemanden zum Reden? Telefonseelsorge <a href="tel:08001110111">0800 111 0 111</a>, kostenlos, anonym und rund um die Uhr.</p>
-  </div>
-
-  <div class="wrap wish" id="wunsch">
-    <div class="wish-box">
-      <div>
-        <h2>Dir fehlt ein Thema?</h2>
-        <p>Schreib uns in einem Satz, wo es bei dir hakt. Daraus entstehen die nächsten Karten.</p>
-      </div>
-      <div class="example">
-        <span class="ph" id="kontakt-mail">[deine@mail.de]</span>
-        <button type="button" class="btn-ghost btn-small" data-copy="kontakt-mail">Adresse kopieren</button>
-      </div>
-    </div>
   </div>
 </section>
 
@@ -714,102 +661,88 @@ footer a { color: var(--ink-soft); }
   /* ---------- Inhalte ---------- */
   const CATS = { orte: 'Wo ich kaufe', gefuehle: 'Gefühle & Verhalten', geld: 'Geld & Schulden', werkzeuge: 'Werkzeuge', hilfe: 'Hilfe & Beratung' };
   const TOPICS = [
-    { id: 'laden', cat: 'orte', titel: 'Ich kaufe im Laden mehr, als ich wollte.', kurz: 'Shoppingtour, Drogerie, Möbelhaus: Du gehst mit einem Plan rein und kommst mit vollen Tüten raus.', typ: 'Tipps', dauer: '3 Min', tags: 'einkaufen laden geschäft shoppen bummeln innenstadt drogerie kasse tüten',
+    { id: 'laden', name: 'Einkaufen im Laden', cat: 'orte', titel: 'Ich kaufe im Laden mehr, als ich wollte.', kurz: 'Shoppingtour, Drogerie, Möbelhaus: Du gehst mit einem Plan rein und kommst mit vollen Tüten raus.', typ: 'Tipps', dauer: '3 Min', tags: 'einkaufen laden geschäft shoppen bummeln innenstadt drogerie kasse tüten',
       kennst: ['Du gehst „nur kurz schauen“ und kaufst trotzdem.', 'An der Kasse liegen Dinge im Korb, die nicht auf deiner Liste standen.', 'Bummeln ist dein Programm, wenn du Zeit hast oder schlecht drauf bist.', 'Zu Hause packst du Sachen aus und fragst dich, warum du sie gekauft hast.'],
       warum: 'Läden sind so gebaut, dass du länger bleibst und mehr mitnimmst: Musik, Licht, Duft, Sonderflächen am Eingang und Kleinkram an der Kasse. Schon die Vorfreude auf einen Kauf fühlt sich gut an. Je müder, gestresster oder hungriger du bist, desto schwächer ist die innere Bremse.',
       sofort: ['Geh nur mit Einkaufsliste los und kauf nur, was draufsteht.', 'Nimm Bargeld für genau diesen Einkauf mit. Karte und Handy-Bezahlung bleiben zu Hause.', 'Leg Dinge, die nicht auf der Liste stehen, zurück und schreib sie auf. Wenn du sie in einer Woche noch willst, kannst du wiederkommen.', 'Nimm einen Korb statt eines Wagens.', 'Verlass den Laden, sobald du merkst, dass du nur schaust, um dich besser zu fühlen.'],
       spaeter: ['Ersetz das Bummeln durch etwas anderes: Spaziergang, Sport, Treffen ohne Shopping.', 'Meide eine Zeit lang die Läden, in denen du am häufigsten zu viel kaufst, und nimm andere Wege.', 'Geh mit jemandem einkaufen, der von deinem Ziel weiß.', 'Schreib nach jedem Einkauf ins Kauftagebuch, wie du dich vorher gefühlt hast.'],
       moment: 'Ich darf es mir ansehen. Ich muss es nicht mitnehmen.', tools: ['kaufbremse', 'tagebuch', 'kassensturz'] },
-    { id: 'online', cat: 'orte', titel: 'Ich bestelle ständig online.', kurz: 'Ein Klick, und morgen ist das Paket da. Abends im Bett, in der Pause, beim Fernsehen.', typ: 'Tipps', dauer: '3 Min', tags: 'online shopping internet bestellen paket pakete warenkorb app shop klick lieferung retoure',
+    { id: 'online', name: 'Online-Shopping', cat: 'orte', titel: 'Ich bestelle ständig online.', kurz: 'Ein Klick, und morgen ist das Paket da. Abends im Bett, in der Pause, beim Fernsehen.', typ: 'Tipps', dauer: '3 Min', tags: 'online shopping internet bestellen paket pakete warenkorb app shop klick lieferung retoure',
       kennst: ['Du scrollst durch Shops, ohne etwas Bestimmtes zu suchen.', 'Im Warenkorb liegen ständig Dinge, die du „nur parkst“.', 'Fast jeden Tag kommt ein Paket, manchmal weißt du nicht mehr, was drin ist.', 'Rücksendungen bleiben liegen, bis die Frist vorbei ist.'],
       warum: 'Online fehlt fast jede natürliche Bremse: kein Weg, kein Bargeld, kein Gewicht in der Hand. Gespeicherte Bezahldaten machen aus einem Impuls in Sekunden eine Bestellung. Empfehlungen, Mails und Benachrichtigungen holen dich immer wieder zurück in den Shop.',
       sofort: ['Lösch gespeicherte Karten und Bezahldaten aus Shops und Browser. Jede Eingabe ist eine Sekunde zum Nachdenken.', 'Lösch Shop-Apps vom Handy und melde dich in den Shops ab.', 'Schalte Newsletter und Push-Mitteilungen von Shops ab.', 'Setz Wünsche auf die Warteliste der Kauf-Bremse statt in den Warenkorb.', 'Bestell nichts nach 22 Uhr. Müde bestellt man mehr.'],
       spaeter: ['Leg einen festen Bestelltag pro Monat fest und bestell nur mit Liste.', 'Ein Werbeblocker im Browser nimmt dir viele Anzeigen ab.', 'Erledige Rücksendungen innerhalb von zwei Tagen. Bei Online-Käufen hast du in der Regel 14 Tage Widerrufsrecht.', 'Lass Pakete nach Hause liefern statt an die Arbeit oder zu Nachbarn, damit nichts im Verborgenen bleibt.'],
       moment: 'Der Warenkorb läuft nicht weg. Ich schlafe eine Nacht darüber.', tools: ['kaufbremse', 'tagebuch', 'kassensturz'] },
-    { id: 'social', cat: 'orte', titel: 'Ich kaufe, was ich auf Social Media sehe.', kurz: 'Hauls, Rabattcodes, „Das musst du haben“: Influencer und Werbung zwischen den Videos.', typ: 'Tipps', dauer: '3 Min', tags: 'social media instagram tiktok youtube influencer haul rabattcode werbung trend creator',
+    { id: 'social', name: 'Social Media & Influencer', cat: 'orte', titel: 'Ich kaufe, was ich auf Social Media sehe.', kurz: 'Hauls, Rabattcodes, „Das musst du haben“: Influencer und Werbung zwischen den Videos.', typ: 'Tipps', dauer: '3 Min', tags: 'social media instagram tiktok youtube influencer haul rabattcode werbung trend creator',
       kennst: ['Du kaufst Produkte, weil sie gerade überall zu sehen sind.', 'Rabattcodes von Creators fühlen sich wie ein Geschenk an.', 'Du vergleichst dich mit Leuten, die ständig Neues zeigen.', 'Nach dem Scrollen hast du das Gefühl, dir fehlt etwas.'],
       warum: 'Viele Beiträge sind Werbung, auch wenn sie wie ein Tipp unter Freunden wirken. Creators verdienen oft an jedem Kauf über ihren Code. Trends wechseln schnell, damit immer etwas Neues fehlt. Der ständige Vergleich mit anderen macht unzufrieden, und Kaufen soll diese Lücke füllen.',
       sofort: ['Entfolge Accounts, nach denen du regelmäßig etwas kaufst. Du kannst ihnen später wieder folgen.', 'Frag dich: Hätte ich das gewollt, bevor ich das Video gesehen habe?', 'Achte auf „Anzeige“ oder „Werbung“ im Beitrag. Das ist Verkauf, kein Freundschaftstipp.', 'Stell dir in den Handy-Einstellungen ein tägliches Zeitlimit für die Apps ein.'],
       spaeter: ['Folge Accounts, die zu Reparieren, Second Hand oder Sparen inspirieren.', 'Kauf Trendprodukte grundsätzlich erst nach 30 Tagen. Viele Trends sind dann vorbei.', 'Sprich mit Freunden darüber, was ihr kauft und warum. Ehrlichkeit nimmt den Druck raus.'],
       moment: 'Das ist Werbung. Mir fehlt nichts.', tools: ['kaufbremse', 'tagebuch'] },
-    { id: 'rabatte', cat: 'orte', titel: 'Bei Sale und Rabatt kann ich nicht Nein sagen.', kurz: 'Black Friday, „nur heute“, Countdown-Uhren und „nur noch 2 auf Lager“.', typ: 'Tipps', dauer: '3 Min', tags: 'sale rabatt angebot schnäppchen black friday prozente reduziert countdown gutschein gratis versand',
+    { id: 'rabatte', name: 'Sale & Rabatte', cat: 'orte', titel: 'Bei Sale und Rabatt kann ich nicht Nein sagen.', kurz: 'Black Friday, „nur heute“, Countdown-Uhren und „nur noch 2 auf Lager“.', typ: 'Tipps', dauer: '3 Min', tags: 'sale rabatt angebot schnäppchen black friday prozente reduziert countdown gutschein gratis versand',
       kennst: ['Du kaufst, weil es reduziert ist, nicht weil du es brauchst.', 'Du rechnest dir aus, wie viel du „gespart“ hast.', 'Countdowns und knappe Bestände machen dich nervös.', 'Du legst etwas dazu, um den kostenlosen Versand zu bekommen.'],
       warum: 'Rabatte wecken die Angst, etwas zu verpassen. Shops setzen Countdowns, Lagerbestände und Streichpreise gezielt ein, damit du schnell entscheidest. Gespart hast du aber nur, wenn du das Ding ohnehin zum vollen Preis gekauft hättest. Alles andere ist ausgegebenes Geld.',
       sofort: ['Frag dich: Würde ich es auch zum vollen Preis kaufen? Wenn nicht, lass es.', 'Ignorier Countdowns. Fast jeder Sale kommt wieder.', 'Rechne nicht, was du sparst, sondern was du ausgibst.', 'Leg für kostenlosen Versand nichts dazu. Die Versandkosten sind fast immer günstiger als ein zusätzlicher Artikel.'],
       spaeter: ['Melde dich von Newslettern ab, die vor allem Rabatte ankündigen.', 'Plane Sale-Tage wie den Black Friday vorher: Liste und Budget festlegen, alles andere ignorieren.', 'Überweis das Geld, das du nicht ausgegeben hast, direkt aufs Sparkonto. Dann ist die Ersparnis echt.'],
       moment: 'Der beste Rabatt ist, es gar nicht zu kaufen.', tools: ['kaufbremse', 'kassensturz'] },
-    { id: 'apps', cat: 'orte', titel: 'Ich gebe Geld in Apps, Spielen und Abos aus.', kurz: 'In-App-Käufe, Lootboxen, Battle Pass und Probe-Abos, die einfach weiterlaufen.', typ: 'Tipps', dauer: '3 Min', tags: 'app apps spiele games in-app lootbox battle pass abo abos probeabo handy streaming',
+    { id: 'apps', name: 'Apps, Spiele & In-App-Käufe', cat: 'orte', titel: 'Ich gebe Geld in Apps, Spielen und Abos aus.', kurz: 'In-App-Käufe, Lootboxen, Battle Pass und Probe-Abos, die einfach weiterlaufen.', typ: 'Tipps', dauer: '3 Min', tags: 'app apps spiele games in-app lootbox battle pass abo abos probeabo handy streaming',
       kennst: ['Kleine Beträge von 0,99 € bis 9,99 € summieren sich, ohne dass du es merkst.', 'Du kaufst Spielwährung oder Kisten mit Zufallsinhalt.', 'Probe-Abos laufen weiter, weil du das Kündigen vergisst.', 'Auf der Handyrechnung oder im Konto stehen Beträge, die du nicht zuordnen kannst.'],
       warum: 'Spielwährungen verschleiern, wie viel echtes Geld du ausgibst. Zufallsbelohnungen funktionieren ähnlich wie Glücksspiel. Abos sind darauf gebaut, dass man sie vergisst. Und weil jeder einzelne Betrag klein ist, fühlt er sich harmlos an.',
       sofort: ['Stell im App-Store ein, dass jeder Kauf mit Passwort bestätigt werden muss.', 'Entfern die Zahlungsmethode aus dem App-Store oder nutz nur Guthabenkarten mit festem Betrag.', 'Lass bei deinem Mobilfunkanbieter eine Drittanbietersperre einrichten. Dann kann nichts mehr über die Handyrechnung abgebucht werden.', 'Mach den Abo-Check und kündige, was du selten nutzt.'],
       spaeter: ['Schau einmal im Monat in die Kaufhistorie deines App-Stores.', 'Trag Probe-Abos sofort mit Kündigungsdatum in den Kalender ein.', 'Lösch eine Zeit lang Spiele, die dich ständig zum Kaufen drängen.'],
       moment: 'Das ist echtes Geld, keine Spielwährung.', tools: ['abos', 'kassensturz', 'tagebuch'] },
-    { id: 'gefuehle', cat: 'gefuehle', titel: 'Ich kaufe, wenn es mir schlecht geht.', kurz: 'Stress, Traurigkeit, Langeweile, Einsamkeit oder Wut: Kaufen fühlt sich kurz wie eine Lösung an.', typ: 'Tipps', dauer: '4 Min', tags: 'gefühle stress traurig frust frustkauf langeweile einsam wut belohnung depression kick gut fühlen', krise: true,
+    { id: 'gefuehle', name: 'Kaufen aus Frust', cat: 'gefuehle', titel: 'Ich kaufe, wenn es mir schlecht geht.', kurz: 'Stress, Traurigkeit, Langeweile, Einsamkeit oder Wut: Kaufen fühlt sich kurz wie eine Lösung an.', typ: 'Tipps', dauer: '4 Min', tags: 'gefühle stress traurig frust frustkauf langeweile einsam wut belohnung depression kick gut fühlen', krise: true,
       kennst: ['Nach einem schlechten Tag landest du im Shop.', 'Beim Kaufen fühlst du dich kurz besser, danach leer oder schuldig.', 'Manchmal weißt du hinterher kaum noch, was du gekauft hast.', 'Du belohnst dich mit Einkäufen, auch für Kleinigkeiten.'],
       warum: 'Kaufen sorgt für einen kurzen Glücksmoment. Wird es das wichtigste Mittel, um schlechte Gefühle auszuhalten, braucht man diesen Moment immer öfter. Das eigentliche Problem, etwa Stress, Einsamkeit oder eine depressive Phase, bleibt bestehen und wird durch Schulden und Scham oft größer.',
       sofort: ['Halt kurz an und benenne das Gefühl: „Ich bin gerade gestresst“ oder „Ich bin einsam“.', 'Warte 20 Minuten. Starke Kaufimpulse werden fast immer schwächer, wenn man sie aushält.', 'Tu in der Zeit etwas für den Körper: rausgehen, kaltes Wasser ins Gesicht, jemanden anrufen.', 'Schreib dir fünf Dinge auf, die dir guttun und nichts kosten, und hol die Liste raus, wenn der Impuls kommt.'],
       spaeter: ['Führ das Kauftagebuch. Nach ein paar Wochen siehst du, welche Gefühle bei dir zum Kaufen führen.', 'Sprich mit einer Suchtberatung oder in einer Psychotherapie darüber. Gute Erfahrungen gibt es mit Verhaltenstherapie.', 'Wenn du dich oft niedergeschlagen, leer oder hoffnungslos fühlst, lass das ärztlich abklären. Das ist behandelbar.'],
       moment: 'Das Gefühl geht vorbei, auch wenn ich nichts kaufe.', tools: ['tagebuch', 'kaufbremse', 'hilfe'] },
-    { id: 'heimlich', cat: 'gefuehle', titel: 'Ich verstecke Einkäufe vor anderen.', kurz: 'Pakete an die Arbeit, Kassenzettel weg, Preise kleiner reden.', typ: 'Tipps', dauer: '3 Min', tags: 'heimlich verstecken lügen scham partner familie kassenzettel konto geheim',
+    { id: 'heimlich', name: 'Heimlich kaufen', cat: 'gefuehle', titel: 'Ich verstecke Einkäufe vor anderen.', kurz: 'Pakete an die Arbeit, Kassenzettel weg, Preise kleiner reden.', typ: 'Tipps', dauer: '3 Min', tags: 'heimlich verstecken lügen scham partner familie kassenzettel konto geheim',
       kennst: ['Du packst Einkäufe aus, wenn niemand zu Hause ist.', 'Du sagst „Das hatte ich schon lange“ über neue Sachen.', 'Es gibt ein Konto oder eine Karte, von der niemand weiß.', 'Du hast Angst, dass jemand deine Kontoauszüge sieht.'],
       warum: 'Heimlichkeit ist ein deutliches Zeichen, dass das Kaufen mehr Raum einnimmt, als dir lieb ist. Scham sorgt dafür, dass man es versteckt, und das Verstecken macht die Scham größer. So bleibt man mit dem Problem allein.',
       sofort: ['Such dir eine Person, der du vertraust, und erzähl ihr davon. Ein Satz reicht: „Ich kaufe mehr, als mir guttut.“', 'Lass Pakete wieder nach Hause liefern.', 'Schreib alle Konten, Karten und Zahlungsdienste auf einen Zettel, auch die, von denen niemand weiß.'],
       spaeter: ['Geh die Kontoauszüge zusammen mit jemandem durch, dem du vertraust.', 'Eine Suchtberatung hilft auch dabei, das Gespräch mit Partnerin, Partner oder Familie vorzubereiten.', 'In Selbsthilfegruppen muss niemand etwas verstecken.'],
       moment: 'Ich habe ein Problem, und Probleme kann man lösen.', tools: ['hilfe', 'kassensturz'] },
-    { id: 'horten', cat: 'gefuehle', titel: 'Bei mir stapeln sich Dinge, die ich nie benutze.', kurz: 'Kleidung mit Etikett, ungeöffnete Pakete, fünfmal das Gleiche in anderer Farbe.', typ: 'Tipps', dauer: '3 Min', tags: 'horten sammeln stapeln ungeöffnet etikett schrank voll aufräumen doppelt',
+    { id: 'horten', name: 'Zu viele Sachen', cat: 'gefuehle', titel: 'Bei mir stapeln sich Dinge, die ich nie benutze.', kurz: 'Kleidung mit Etikett, ungeöffnete Pakete, fünfmal das Gleiche in anderer Farbe.', typ: 'Tipps', dauer: '3 Min', tags: 'horten sammeln stapeln ungeöffnet etikett schrank voll aufräumen doppelt',
       kennst: ['Im Schrank hängen Sachen, an denen noch das Etikett ist.', 'Es stehen Pakete herum, die du nie geöffnet hast.', 'Du kaufst Dinge doppelt, weil du vergessen hast, dass du sie schon hast.', 'Der Platz wird knapp, und Aufräumen fühlt sich unmöglich an.'],
       warum: 'Bei Kaufsucht geht es oft ums Kaufen selbst, nicht um die Sache. Der gute Moment ist an der Kasse oder beim Klick vorbei. Deshalb bleiben Dinge ungenutzt liegen, und der Stapel erinnert ständig an Geld, das weg ist.',
       sofort: ['Fang mit einer Ecke an, nicht mit der ganzen Wohnung. Ein Fach reicht für heute.', 'Schick zurück, was noch geht. Bei Online-Käufen hast du in der Regel 14 Tage Widerrufsrecht.', 'Fotografier, was du schon hast, und schau dir die Fotos an, bevor du etwas Neues kaufst.'],
       spaeter: ['Für jedes neue Teil geht ein altes: verkaufen, verschenken, spenden.', 'Steck das Geld aus Verkäufen in deine Schulden oder aufs Sparkonto.', 'Wenn die Wohnung kaum noch nutzbar ist, sprich mit einer Beratungsstelle. Dafür gibt es Unterstützung.'],
       moment: 'Ich habe genug.', tools: ['kaufbremse', 'tagebuch'] },
-    { id: 'ratenkauf', cat: 'geld', titel: 'Ich kaufe auf Rechnung, in Raten oder „später zahlen“.', kurz: 'Heute bestellen, in 30 Tagen zahlen, in kleinen Raten abstottern, bis alles gleichzeitig fällig wird.', typ: 'Tipps', dauer: '3 Min', tags: 'rechnung raten ratenkauf später zahlen buy now pay later mahnung kredit finanzierung',
+    { id: 'ratenkauf', name: 'Ratenkauf & „später zahlen“', cat: 'geld', titel: 'Ich kaufe auf Rechnung, in Raten oder „später zahlen“.', kurz: 'Heute bestellen, in 30 Tagen zahlen, in kleinen Raten abstottern, bis alles gleichzeitig fällig wird.', typ: 'Tipps', dauer: '3 Min', tags: 'rechnung raten ratenkauf später zahlen buy now pay later mahnung kredit finanzierung',
       kennst: ['Du hast mehrere offene Rechnungen bei verschiedenen Anbietern.', 'Du bezahlst alte Einkäufe, während schon neue dazukommen.', 'Mahnungen oder Zahlungserinnerungen kommen häufiger.', 'Du weißt nicht genau, wie viel du insgesamt noch zahlen musst.'],
       warum: '„Später zahlen“ trennt das Kaufen vom Bezahlen. Der Kauf fühlt sich kostenlos an, die Rechnung kommt, wenn der gute Moment längst vorbei ist. Viele kleine Raten wirken harmlos, zusammen können sie einen großen Teil des Einkommens fressen. Wer nicht pünktlich zahlt, bekommt Mahngebühren und riskiert einen negativen Schufa-Eintrag.',
       sofort: ['Mach heute eine Liste aller offenen Rechnungen und Raten: Anbieter, Betrag, Fälligkeit.', 'Trag die Summe im Kassensturz bei den Schulden ein.', 'Kauf nichts mehr auf Rechnung oder Raten, bis die Liste leer ist. Was du nicht sofort bezahlen kannst, kannst du dir gerade nicht leisten.', 'Entfern „später bezahlen“ als Zahlungsart aus deinen Konten, wo das geht.'],
       spaeter: ['Zahl zuerst die Rechnungen, bei denen Mahngebühren oder Inkasso drohen.', 'Wenn du die Raten nicht mehr schaffst, sprich früh mit dem Anbieter und mit einer Schuldnerberatung. Je früher, desto mehr Möglichkeiten gibt es.', 'Stell auf Bargeld oder eine Debitkarte um. Dann kannst du nur ausgeben, was wirklich da ist.'],
       moment: 'Wenn ich es heute nicht bezahlen kann, kaufe ich es heute nicht.', tools: ['kassensturz', 'kaufbremse', 'hilfe'] },
-    { id: 'schulden', cat: 'geld', titel: 'Ich habe den Überblick über meine Schulden verloren.', kurz: 'Dispo im Minus, Mahnungen ungeöffnet, Angst vor dem Briefkasten.', typ: 'Tipps', dauer: '4 Min', tags: 'schulden dispo minus mahnung inkasso pfändung kredit überschuldung briefe schuldnerberatung p-konto',
+    { id: 'schulden', name: 'Schulden', cat: 'geld', titel: 'Ich habe den Überblick über meine Schulden verloren.', kurz: 'Dispo im Minus, Mahnungen ungeöffnet, Angst vor dem Briefkasten.', typ: 'Tipps', dauer: '4 Min', tags: 'schulden dispo minus mahnung inkasso pfändung kredit überschuldung briefe schuldnerberatung p-konto',
       kennst: ['Du öffnest Briefe von Banken oder Inkassobüros nicht mehr.', 'Der Dispo ist fast immer ausgeschöpft.', 'Du leihst dir Geld, um andere Schulden zu bezahlen.', 'Du schläfst schlecht, weil du an Geld denkst.'],
       warum: 'Schulden wachsen leise: Dispozinsen, Mahngebühren und Inkassokosten kommen jeden Monat dazu. Wer nicht hinschaut, verpasst Fristen und damit Möglichkeiten. Das ist kein persönliches Versagen, sondern ein Kreislauf, aus dem man mit Unterstützung herauskommt.',
       sofort: ['Öffne alle Briefe und leg sie in einen Ordner. Noch nichts lösen, nur sammeln.', 'Sichere zuerst das Wichtigste: Miete, Strom und Krankenversicherung haben Vorrang vor Ratenkäufen.', 'Unterschreib keine neuen Kredite oder Ratenvereinbarungen, bevor du mit einer Schuldnerberatung gesprochen hast.', 'Droht eine Kontopfändung: Deine Bank muss dein Girokonto auf Antrag in ein Pfändungsschutzkonto (P-Konto) umwandeln.'],
       spaeter: ['Melde dich bei einer anerkannten Schuldnerberatung, zum Beispiel bei der Verbraucherzentrale, Caritas, Diakonie, AWO oder deiner Gemeinde. Die Wartezeit kann lang sein, deshalb früh melden.', 'Vorsicht bei Anbietern, die schnelle Entschuldung gegen Gebühr versprechen. Seriöse Schuldnerberatung ist meist kostenlos.', 'Arbeite parallel am Kaufverhalten, sonst wachsen die Schulden nach.'],
       moment: 'Hinschauen ist der erste Schritt raus.', tools: ['kassensturz', 'hilfe'] },
-    { id: 'abos', cat: 'geld', titel: 'Welche Abos laufen bei mir eigentlich?', kurz: 'Alle Abos auf einen Blick, Kosten pro Jahr und was Kündigen spart.', typ: 'Abo-Check', dauer: '3 Min', tool: true, tags: 'abo abos vertrag verträge streaming fitnessstudio kündigen handyvertrag monatlich' },
-    { id: 'selbstcheck', cat: 'werkzeuge', titel: 'Ist mein Kaufverhalten noch im Rahmen?', kurz: 'Zehn Aussagen, zwei Minuten. Eine ehrliche Einschätzung, keine Diagnose.', typ: 'Selbstcheck', dauer: '2 Min', tool: true, tags: 'test selbsttest selbstcheck kaufsucht anzeichen symptome bin ich kaufsüchtig' },
-    { id: 'kassensturz', cat: 'werkzeuge', titel: 'Wie viel kann ich mir eigentlich leisten?', kurz: 'Einkommen, feste Kosten, Einkäufe und Schulden eintragen und sehen, was wirklich übrig bleibt.', typ: 'Rechner', dauer: '4 Min', tool: true, tags: 'rechner einkommen gehalt budget ausgaben kassensturz monat geld übrig schulden dispo' },
-    { id: 'kaufbremse', cat: 'werkzeuge', titel: 'Soll ich das jetzt kaufen?', kurz: 'Sechs Fragen vor dem Kauf, die Arbeitszeit hinter dem Preis und eine Warteliste für Wünsche.', typ: 'Kauf-Bremse', dauer: '1 Min', tool: true, tags: 'kaufen ja nein entscheidung warten warteliste impuls stunden arbeitszeit' },
-    { id: 'tagebuch', cat: 'werkzeuge', titel: 'Wann und warum kaufe ich?', kurz: 'Käufe mit dem Gefühl davor eintragen und erkennen, was dich zum Kaufen bringt.', typ: 'Kauftagebuch', dauer: '1 Min pro Kauf', tool: true, tags: 'tagebuch protokoll muster auslöser gefühl notieren' },
-    { id: 'angehoerige', cat: 'hilfe', titel: 'Jemand, der mir nahesteht, kauft zu viel.', kurz: 'Partnerin, Partner, Kind, Eltern oder Freunde: Du machst dir Sorgen und weißt nicht, wie du es ansprechen sollst.', typ: 'Tipps', dauer: '3 Min', tags: 'angehörige partner partnerin familie freund eltern kind ansprechen sorgen',
+    { id: 'abos', name: 'Abos & Verträge', cat: 'geld', titel: 'Welche Abos laufen bei mir eigentlich?', kurz: 'Alle Abos auf einen Blick, Kosten pro Jahr und was Kündigen spart.', typ: 'Abo-Check', dauer: '3 Min', tool: true, tags: 'abo abos vertrag verträge streaming fitnessstudio kündigen handyvertrag monatlich' },
+    { id: 'selbstcheck', name: 'Selbstcheck', cat: 'werkzeuge', titel: 'Ist mein Kaufverhalten noch im Rahmen?', kurz: 'Zehn Aussagen, zwei Minuten. Eine ehrliche Einschätzung, keine Diagnose.', typ: 'Selbstcheck', dauer: '2 Min', tool: true, tags: 'test selbsttest selbstcheck kaufsucht anzeichen symptome bin ich kaufsüchtig' },
+    { id: 'kassensturz', name: 'Einkommen & Ausgaben', cat: 'werkzeuge', titel: 'Wie viel kann ich mir eigentlich leisten?', kurz: 'Einkommen, feste Kosten, Einkäufe und Schulden eintragen und sehen, was wirklich übrig bleibt.', typ: 'Rechner', dauer: '4 Min', tool: true, tags: 'rechner einkommen gehalt budget ausgaben kassensturz monat geld übrig schulden dispo' },
+    { id: 'kaufbremse', name: 'Kauf-Bremse', cat: 'werkzeuge', titel: 'Soll ich das jetzt kaufen?', kurz: 'Sechs Fragen vor dem Kauf, die Arbeitszeit hinter dem Preis und eine Warteliste für Wünsche.', typ: 'Kauf-Bremse', dauer: '1 Min', tool: true, tags: 'kaufen ja nein entscheidung warten warteliste impuls stunden arbeitszeit' },
+    { id: 'tagebuch', name: 'Kauftagebuch', cat: 'werkzeuge', titel: 'Wann und warum kaufe ich?', kurz: 'Käufe mit dem Gefühl davor eintragen und erkennen, was dich zum Kaufen bringt.', typ: 'Kauftagebuch', dauer: '1 Min pro Kauf', tool: true, tags: 'tagebuch protokoll muster auslöser gefühl notieren' },
+    { id: 'angehoerige', name: 'Für Angehörige', cat: 'hilfe', titel: 'Jemand, der mir nahesteht, kauft zu viel.', kurz: 'Partnerin, Partner, Kind, Eltern oder Freunde: Du machst dir Sorgen und weißt nicht, wie du es ansprechen sollst.', typ: 'Tipps', dauer: '3 Min', tags: 'angehörige partner partnerin familie freund eltern kind ansprechen sorgen',
       kennst: ['Ständig kommen Pakete, und darüber wird nicht gesprochen.', 'Gemeinsames Geld reicht plötzlich nicht mehr.', 'Du entdeckst versteckte Einkäufe oder Rechnungen.', 'Du hast schon Schulden übernommen, damit es nicht eskaliert.'],
       warum: 'Kaufsucht betrifft fast immer auch die Menschen drumherum. Vorwürfe führen meist dazu, dass noch mehr versteckt wird. Hilfreicher ist ein ruhiges Gespräch über das, was du beobachtest, und über deine eigenen Grenzen.',
       sofort: ['Such einen ruhigen Moment, nicht direkt nach einem Streit oder einem neuen Paket.', 'Sprich von dir: „Ich mache mir Sorgen, weil …“ statt „Du kaufst schon wieder …“.', 'Biete Unterstützung an, zum Beispiel die Begleitung zum ersten Termin bei einer Beratungsstelle.', 'Übernimm keine Schulden und gib kein Geld, das wieder in Einkäufe fließen kann.'],
       spaeter: ['Schütz dein eigenes Geld: getrennte Konten, keine gemeinsamen Kredite ohne Klarheit.', 'Auch Angehörige können sich bei Suchtberatungsstellen beraten lassen, ohne dass die betroffene Person mitkommt.', 'Pass auf dich auf. Du kannst unterstützen, aber nicht für jemand anderen aufhören.'],
       moment: 'Ich kann unterstützen, aber ich muss es nicht allein lösen.', tools: ['hilfe'] },
-    { id: 'hilfe', cat: 'hilfe', titel: 'Wo bekomme ich Hilfe?', kurz: 'Suchtberatung, Selbsthilfe, Schuldnerberatung und Telefonnummern. Kostenlos und vertraulich.', typ: 'Kontakte', dauer: '2 Min', tool: true, tags: 'hilfe beratung beratungsstelle therapie selbsthilfe telefon nummer schuldnerberatung kontakt' }
+    { id: 'hilfe', name: 'Hilfe & Beratung', cat: 'hilfe', titel: 'Wo bekomme ich Hilfe?', kurz: 'Suchtberatung, Selbsthilfe, Schuldnerberatung und Telefonnummern. Kostenlos und vertraulich.', typ: 'Kontakte', dauer: '2 Min', tool: true, tags: 'hilfe beratung beratungsstelle therapie selbsthilfe telefon nummer schuldnerberatung kontakt' }
   ];
   const T = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 
-  /* ---------- Startseite: Karten ---------- */
-  const fold = s => s.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
-  let activeCat = 'alle';
-  function renderChips() {
-    const list = [['alle', 'Alle']].concat(Object.keys(CATS).map(k => [k, CATS[k]]));
-    $('#chips').innerHTML = list.map(([k, n]) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${k === activeCat}">${esc(n)}</button>`).join('');
-  }
+  /* ---------- Startseite: nur Karten ---------- */
   function renderTiles() {
-    const words = fold($('#suche').value).split(/\s+/).filter(Boolean);
-    const hits = TOPICS.filter(t => (activeCat === 'alle' || t.cat === activeCat) && words.every(w => fold([t.titel, t.kurz, t.tags, CATS[t.cat], t.typ].join(' ')).includes(w)));
-    $('#tiles').innerHTML = hits.length ? hits.map(t => `
-      <a class="tile" href="#${t.id}" data-c="${t.cat}">
-        <div class="tile-top">${icon(t.id)}<span class="cat">${esc(CATS[t.cat])}</span></div>
-        <div class="tile-body"><h3>${esc(t.titel)}</h3><p>${esc(t.kurz)}</p></div>
-        <div class="meta"><span><b>${esc(t.typ)}</b> · ${esc(t.dauer)}</span><span class="go" aria-hidden="true">→</span></div>
-      </a>`).join('')
-      : '<div class="empty">Dazu gibt es noch keine Karte. <a href="#hilfe">Hier findest du Beratung</a>, oder <a href="#wunsch">schreib uns</a>, was fehlt.</div>';
-    $('#trefferzahl').textContent = hits.length === 1 ? '1 Thema' : hits.length + ' Themen';
+    const card = t => `<a class="tile" href="#${t.id}" data-c="${t.cat}">${icon(t.id)}<div class="tile-foot"><h2>${esc(t.name)}</h2><span class="go" aria-hidden="true">→</span></div></a>`;
+    const h = T.hilfe;
+    $('#tiles').innerHTML = TOPICS.filter(t => t.id !== 'hilfe').map(card).join('') +
+      `<a class="tile wide" href="#hilfe" data-c="${h.cat}">${icon('hilfe')}<div class="tile-foot"><div><h2>${esc(h.name)}</h2><p>Beratungsstellen und Telefonnummern, kostenlos und vertraulich</p></div><span class="go" aria-hidden="true">→</span></div></a>`;
   }
-  $('#chips').addEventListener('click', e => { const b = e.target.closest('[data-cat]'); if (!b) return; activeCat = b.dataset.cat; renderChips(); renderTiles(); });
-  $('#suche').addEventListener('input', renderTiles);
 
   /* ---------- Ratgeber-Ansicht ---------- */
   const guides = TOPICS.filter(t => !t.tool);
@@ -1148,20 +1081,20 @@ footer a { color: var(--ink-soft); }
     sec.dataset.c = t.cat;
     const head = $('.tool-head', sec); if (head) head.insertAdjacentHTML('afterbegin', icon(t.id));
   });
-  renderChips(); renderTiles(); renderKBList();
+  renderTiles(); renderKBList();
   Object.values(CALC).forEach(f => f());
 
   /* ---------- Ansichten über die Adresse ---------- */
   let current = null;
   function route() {
     const h = location.hash.slice(1);
-    if (h === 'wunsch') { show('start'); $('#wunsch').scrollIntoView(); return; }
     const t = T[h];
     if (t && !t.tool) { renderGuide(t); show('thema', h, t.titel); return; }
     show(document.getElementById('v-' + h) ? h : 'start', h, t ? t.titel : ({ impressum: 'Impressum', datenschutz: 'Datenschutz' })[h]);
   }
   function show(view, key, name) {
     $$('[data-view]').forEach(s => { s.hidden = s.id !== 'v-' + view; });
+    document.body.dataset.page = view;
     document.title = view === 'start' ? "Wo hakt's beim Kaufen?" : `${name || ''} · Wo hakt's?`;
     const k = view === 'start' ? 'start' : (key || view);
     if (current !== null && current !== k) window.scrollTo(0, 0);

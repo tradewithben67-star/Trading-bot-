@@ -1,11 +1,13 @@
 # Wo hakt's beim Kaufen?
 
-Eine Website rund um **Kaufsucht**. Die Startseite zeigt nur sechs Karten auf weißem Grund,
-jede mit Symbol und kurzem Namen. Alles Weitere erscheint erst nach dem Klick.
+Eine Website rund um **Kaufsucht**. Die Startseite zeigt nur vier Karten auf weißem Grund,
+jede mit Symbol und kurzem Namen. Alles Weitere erscheint erst nach dem Klick: Tipps in einer
+ruhigen Spalte, am Ende jeder Seite die Wege zum Rechner und zu Hilfe & Beratung.
+„Zurück“ führt dorthin, wo man herkam.
 
 Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine Werbung, keine fremden Schriften.
 
-## Die sechs Karten
+## Die vier Karten
 
 | Adresse | Karte | Dahinter |
 | --- | --- | --- |
@@ -13,10 +15,9 @@ Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, kei
 | `#online` | Online-Shopping | Tipps, auch zu Social Media, Apps und Spielen |
 | `#gefuehle` | Kaufen aus Frust | Tipps, auch zu Heimlichkeit und ungenutzten Sachen |
 | `#schulden` | Schulden & Raten | Tipps zu Ratenkauf, „später zahlen“, Dispo und Schuldnerberatung |
-| `#kassensturz` | Rechner | Einkommen, feste Kosten, Einkäufe, Schulden, Vorschlag für ein Kaufbudget |
-| `#hilfe` | Hilfe & Beratung | Beratungsstellen und Telefonnummern |
 
-Nicht auf der Startseite, aber aus den Karten heraus verlinkt:
+Erst hinter den Karten erreichbar: `#kassensturz` (Rechner: Einkommen, feste Kosten, Einkäufe,
+Schulden, Vorschlag für ein Kaufbudget) und `#hilfe` (Beratungsstellen und Telefonnummern), außerdem
 `#selbstcheck` (10 Aussagen, keine Diagnose), `#kaufbremse` (Fragen vor dem Kauf, Warteliste),
 `#tagebuch` (Kauftagebuch), `#abos` (Abo-Check) und `#angehoerige` (Tipps für Angehörige).
 Ältere Adressen (`#rabatte`, `#social`, `#apps`, `#heimlich`, `#horten`, `#ratenkauf`) leiten auf die

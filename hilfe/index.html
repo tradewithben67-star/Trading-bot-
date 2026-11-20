@@ -48,23 +48,12 @@ p { margin: 0; }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .ph { color: var(--warn); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; }
 
-/* Kopfzeile */
-.top { border-bottom: 1px solid var(--line); background: var(--paper); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
 body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
-.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; font-weight: 800; font-size: 1.05rem; letter-spacing: -.02em; color: var(--ink); text-decoration: none; }
-.logo { width: 28px; height: 28px; border-radius: 8px; background: var(--ink); display: grid; place-items: center; }
-.logo svg { width: 16px; height: 16px; stroke: #ffffff; fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-.top nav { display: flex; gap: 18px; font-size: .92rem; }
-.top nav a { color: var(--ink-soft); text-decoration: none; }
-.top nav a:hover { color: var(--pen); }
-.top nav .help { color: var(--ink); font-weight: 600; }
 
 /* Start: nur Karten, mittig */
-body[data-page="start"] .top { display: none; }
-.start { min-height: calc(100vh - 64px); min-height: calc(100dvh - 64px); display: grid; align-content: center; padding-block: 48px; }
-.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; width: 100%; max-width: 920px; margin: 0 auto; }
-@media (max-width: 640px) { .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; } .start { padding-block: 24px; } }
+.start { min-height: calc(100vh - 60px); min-height: calc(100dvh - 60px); display: grid; align-content: center; padding-block: 48px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: 100%; max-width: 640px; margin: 0 auto; }
+@media (max-width: 640px) { .tiles { gap: 12px; } .start { padding-block: 24px; } }
 .tile {
   display: flex; flex-direction: column; justify-content: space-between; gap: 32px; min-height: 196px; min-width: 0;
   padding: 26px; border: 1px solid var(--line); border-radius: 20px;
@@ -85,13 +74,12 @@ body[data-page="start"] .top { display: none; }
 }
 
 /* Detailansichten */
-.tool { padding-block: 26px 48px; display: grid; gap: 28px; }
-.back { font-size: .92rem; text-decoration: none; color: var(--ink-soft); }
+.tool { padding-block: 28px 56px; display: grid; gap: 32px; }
+.back { font-size: .92rem; text-decoration: none; color: var(--ink-soft); justify-self: start; }
 .back:hover { color: var(--pen); }
 .tool-head { display: grid; gap: 10px; max-width: 46rem; }
-.tool-head .ic { width: 52px; height: 52px; border-radius: 14px; margin-bottom: 4px; }
-.tool-head .ic svg { width: 26px; height: 26px; }
-.tool-head .cat { font-size: .76rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--ink-soft); }
+.tool-head .ic, .phead .ic { width: 52px; height: 52px; border-radius: 15px; margin-bottom: 6px; }
+.tool-head .ic svg, .phead .ic svg { width: 26px; height: 26px; }
 .tool-head h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; }
 .tool-head .lead { color: var(--ink-soft); font-size: 1.06rem; }
 .tool-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 32px; align-items: start; }
@@ -100,26 +88,32 @@ body[data-page="start"] .top { display: none; }
 [data-view]:not([hidden]) { animation: viewIn .22s ease-out; }
 @keyframes viewIn { from { opacity: .4; transform: translateY(8px); } }
 
-/* Ratgeber-Inhalt */
-.guide { display: grid; gap: 30px; }
-.guide section { display: grid; gap: 12px; }
-.guide h2 { font-size: 1.2rem; font-weight: 750; letter-spacing: -.01em; }
-.guide p { color: var(--ink-soft); max-width: 65ch; }
-.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; max-width: 65ch; }
-.list li { display: grid; grid-template-columns: 24px minmax(0, 1fr); gap: 8px; }
-.list.signs li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--ink-soft); margin: 9px 0 0 6px; }
-.list.tips li::before { content: ""; width: 7px; height: 12px; border: solid var(--good); border-width: 0 2.4px 2.4px 0; transform: rotate(45deg); margin: 3px 0 0 7px; }
-.list.tips.later li::before { border-color: var(--pen); }
-.guide .sofort { padding: 20px; border-radius: var(--r); background: var(--good-bg); }
-.guide .sofort h2 { color: var(--good); }
-.guide .sofort .list li { color: var(--ink); }
-.next-nav { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; border-top: 1px solid var(--line); padding-top: 18px; font-size: .94rem; }
-.next-nav a { text-decoration: none; color: var(--ink); font-weight: 600; max-width: 48%; }
-.next-nav a span { display: block; font-size: .78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
-.next-nav a:hover { color: var(--pen); }
-.next-nav .nx { text-align: right; margin-left: auto; }
+/* Ratgeber und Hilfe: eine schmale Spalte */
+.wrap.page { max-width: 720px; padding-block: 28px 64px; display: grid; gap: 40px; }
+.phead { display: grid; gap: 12px; }
+.phead h1 { font-size: clamp(1.8rem, 4.4vw, 2.5rem); font-weight: 800; letter-spacing: -.03em; }
+.phead .lead { color: var(--ink-soft); font-size: 1.08rem; }
+.block { display: grid; gap: 14px; }
+.block h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -.01em; }
+.block > p { color: var(--ink-soft); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.list li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; }
+.list.signs li { color: var(--ink-soft); }
+.list.signs li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft); margin: 10px 0 0 6px; }
+.list.tips li::before { content: ""; width: 6px; height: 11px; border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); margin: 4px 0 0 7px; }
+.page .mantra { margin: 0; padding-block: 4px; font-size: clamp(1.25rem, 3vw, 1.5rem); font-weight: 700; letter-spacing: -.015em; line-height: 1.35; color: var(--ink); }
+.next2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .next2 { grid-template-columns: minmax(0, 1fr); } }
+.action { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card); transition: transform .18s ease, box-shadow .18s ease; }
+.action:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.action b { display: block; font-weight: 700; }
+.action small { display: block; color: var(--ink-soft); font-size: .86rem; }
+.more { font-size: .92rem; color: var(--ink-soft); }
+.more a { color: var(--ink); }
+.sos-line { padding: 14px 16px; border-radius: 12px; background: var(--subtle); font-size: .92rem; color: var(--ink-soft); }
+.sos-line a { color: var(--ink); font-weight: 700; text-decoration: none; white-space: nowrap; }
 
-.side { position: sticky; top: 76px; display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow-card); }
+.side { position: sticky; top: 24px; display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow-card); }
 @media (max-width: 860px) { .side { position: static; } }
 .kicker { font-size: .76rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-soft); font-weight: 700; }
 .mantra { margin: 0; font-size: 1.22rem; font-weight: 700; letter-spacing: -.012em; line-height: 1.35; color: var(--ink); }
@@ -230,13 +224,15 @@ details .prose { margin-top: 10px; }
 .wl .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
 @media (max-width: 560px) { .wl li { grid-template-columns: minmax(0, 1fr); } .wl .btns { justify-content: flex-start; } }
 
-/* Hilfe */
-.contacts { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 18px; }
-.contact { display: grid; gap: 8px; align-content: start; padding: 22px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); box-shadow: var(--shadow-card); min-width: 0; }
-.contact h3 { font-size: 1.08rem; }
-.contact p { font-size: .93rem; color: var(--ink-soft); }
-.contact .nr { font-size: 1.15rem; font-weight: 750; color: var(--ink); text-decoration: none; font-variant-numeric: tabular-nums; }
-.contact.urgent { border-color: #f3c4bf; background: #fffafa; }
+/* Hilfe: schlichte Liste */
+.contacts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.contacts li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.contacts h3 { font-size: 1.02rem; font-weight: 700; }
+.contacts p { color: var(--ink-soft); font-size: .92rem; margin-top: 3px; }
+.contacts a { font-weight: 650; text-decoration: none; color: var(--pen); white-space: nowrap; }
+.contacts a.nr { color: var(--ink); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.contacts li.urgent a.nr { color: var(--bad); }
+@media (max-width: 560px) { .contacts li { grid-template-columns: minmax(0, 1fr); } }
 
 /* Rechtliches */
 .legal { padding-block: 26px 48px; display: grid; gap: 18px; }
@@ -256,16 +252,6 @@ footer a:hover { color: var(--ink); }
 </head>
 <body>
 
-<header class="top">
-  <div class="wrap">
-    <a class="brand" href="#start"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path></svg></span>Wo hakt's?</a>
-    <nav aria-label="Hauptnavigation">
-      <a href="#start">Alle Themen</a>
-      <a href="#hilfe" class="help">Hilfe finden</a>
-    </nav>
-  </div>
-</header>
-
 <main>
 
 <!-- ============ START ============ -->
@@ -282,9 +268,8 @@ footer a:hover { color: var(--ink); }
 <!-- ============ SELBSTCHECK ============ -->
 <section id="v-selbstcheck" data-view data-tool hidden>
   <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <div class="tool-head">
-      <span class="cat">Werkzeuge</span>
       <h1>Ist mein Kaufverhalten noch im Rahmen?</h1>
       <p class="lead">Zehn Aussagen, zwei Minuten. Antworte so, wie es in den letzten sechs Monaten war. Das ist eine ehrliche Einschätzung für dich, keine Diagnose.</p>
     </div>
@@ -301,9 +286,8 @@ footer a:hover { color: var(--ink); }
 <!-- ============ KASSENSTURZ ============ -->
 <section id="v-kassensturz" data-view data-tool hidden>
   <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <div class="tool-head">
-      <span class="cat">Werkzeuge</span>
       <h1>Wie viel kann ich mir eigentlich leisten?</h1>
       <p class="lead">Trag ein, was jeden Monat reinkommt, was fest weggeht und was du für Einkäufe ausgibst. Dazu deine Schulden. Du siehst, was wirklich übrig bleibt, und bekommst einen Vorschlag für ein festes Kaufbudget.</p>
     </div>
@@ -361,9 +345,8 @@ footer a:hover { color: var(--ink); }
 <!-- ============ KAUF-BREMSE ============ -->
 <section id="v-kaufbremse" data-view data-tool hidden>
   <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <div class="tool-head">
-      <span class="cat">Werkzeuge</span>
       <h1>Soll ich das jetzt kaufen?</h1>
       <p class="lead">Bevor du bezahlst: Trag ein, was du kaufen willst, und beantworte sechs Fragen. Du siehst, wie viel Arbeitszeit im Preis steckt und wie lange du besser wartest. Wünsche kommen auf die Warteliste statt in den Warenkorb.</p>
     </div>
@@ -406,9 +389,8 @@ footer a:hover { color: var(--ink); }
 <!-- ============ KAUFTAGEBUCH ============ -->
 <section id="v-tagebuch" data-view data-tool hidden>
   <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <div class="tool-head">
-      <span class="cat">Werkzeuge</span>
       <h1>Wann und warum kaufe ich?</h1>
       <p class="lead">Trag jeden Kauf außerhalb des Nötigsten ein, mit dem Gefühl davor. Nach zwei, drei Wochen siehst du, welche Situationen dich zum Kaufen bringen. Das Tagebuch bleibt nur auf diesem Gerät.</p>
     </div>
@@ -429,9 +411,8 @@ footer a:hover { color: var(--ink); }
 <!-- ============ ABOS ============ -->
 <section id="v-abos" data-view data-tool hidden>
   <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <div class="tool-head">
-      <span class="cat">Geld &amp; Schulden</span>
       <h1>Welche Abos laufen bei mir eigentlich?</h1>
       <p class="lead">Kleine Beträge summieren sich. Trag alles ein, was regelmäßig abgebucht wird, und wie oft du es wirklich nutzt.</p>
     </div>
@@ -461,80 +442,34 @@ footer a:hover { color: var(--ink); }
 
 <!-- ============ HILFE ============ -->
 <section id="v-hilfe" data-view hidden>
-  <div class="wrap tool">
-    <a class="back" href="#start">← Alle Themen</a>
-    <div class="tool-head">
-      <span class="cat">Hilfe &amp; Beratung</span>
+  <div class="wrap page">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <header class="phead" id="hilfe-kopf">
       <h1>Wo bekomme ich Hilfe?</h1>
-      <p class="lead">Kaufsucht ist kein Charakterfehler, sondern ein Verhalten, das man mit Unterstützung ändern kann. Diese Stellen helfen kostenlos oder über die Krankenkasse, vertraulich und ohne Vorwürfe.</p>
-    </div>
-    <div class="lrows two" id="hilfe-links"></div>
-    <div class="contacts">
-      <article class="contact urgent">
-        <span class="kicker">Sofort reden</span>
-        <h3>Telefonseelsorge</h3>
-        <a class="nr" href="tel:08001110111">0800 111 0 111</a>
-        <p>Auch 0800 111 0 222 oder 116 123. Kostenlos, anonym, rund um die Uhr. Chat und Mail über die Website.</p>
-        <a href="https://www.telefonseelsorge.de" target="_blank" rel="noopener">telefonseelsorge.de ↗</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Vor Ort</span>
-        <h3>Suchtberatungsstelle</h3>
-        <p>Suchtberatungen helfen auch bei Kaufsucht, kostenlos und mit Schweigepflicht. Du brauchst keine Überweisung, und auch Angehörige können kommen. Die nächste Stelle findest du im Suchthilfeverzeichnis der Deutschen Hauptstelle für Suchtfragen.</p>
-        <a href="https://www.suchthilfeverzeichnis.de" target="_blank" rel="noopener">suchthilfeverzeichnis.de ↗</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Online</span>
-        <h3>Digitale Suchtberatung</h3>
-        <p>Beratung per Chat, Video oder Nachricht, ohne Wartezimmer. Gut, wenn dir der erste Schritt vor Ort schwerfällt.</p>
-        <a href="https://www.suchtberatung.digital" target="_blank" rel="noopener">suchtberatung.digital ↗</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Gemeinsam</span>
-        <h3>Selbsthilfegruppen</h3>
-        <p>Menschen, die das Gleiche kennen. Die Nationale Kontaktstelle NAKOS vermittelt Selbsthilfegruppen, auch die Anonymen Kaufsüchtigen.</p>
-        <a href="https://www.nakos.de" target="_blank" rel="noopener">nakos.de ↗</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Geld</span>
-        <h3>Schuldnerberatung</h3>
-        <p>Anerkannte Schuldnerberatung gibt es bei Verbraucherzentralen, Caritas, Diakonie, AWO, DRK und vielen Gemeinden, meist kostenlos. Die Wartezeit kann Wochen dauern, deshalb früh melden. Finger weg von Anbietern, die schnelle Entschuldung gegen Gebühr versprechen.</p>
-        <a href="https://www.caritas.de/schuldnerberatung" target="_blank" rel="noopener">Online-Schuldnerberatung der Caritas ↗</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Behandlung</span>
-        <h3>Psychotherapie</h3>
-        <p>Sprich mit deiner Hausärztin oder deinem Hausarzt. Einen Termin für ein psychotherapeutisches Erstgespräch vermittelt auch die Terminservicestelle.</p>
-        <a class="nr" href="tel:116117">116 117</a>
-      </article>
-      <article class="contact">
-        <span class="kicker">Für junge Menschen</span>
-        <h3>Nummer gegen Kummer</h3>
-        <a class="nr" href="tel:116111">116 111</a>
-        <p>Für Kinder und Jugendliche, kostenlos und anonym, montags bis samstags von 14 bis 20 Uhr.</p>
-      </article>
-      <article class="contact">
-        <span class="kicker">Notfall</span>
-        <h3>Akute Gefahr</h3>
-        <a class="nr" href="tel:112">112</a>
-        <p>Wenn du dir oder anderen etwas antun könntest, ruf den Notruf oder geh in die nächste Klinik.</p>
-      </article>
-    </div>
-    <div class="panel">
-      <h2>Wie läuft ein erstes Gespräch bei der Suchtberatung?</h2>
-      <div class="prose">
-        <p>Du rufst an oder schreibst eine Mail und bekommst einen Termin. Im ersten Gespräch erzählst du, was dich beschäftigt, nur so viel, wie du möchtest. Niemand verlangt, dass du sofort aufhörst oder dich festlegst.</p>
-        <p>Gemeinsam überlegt ihr, was als Nächstes hilft: weitere Gespräche, eine Gruppe, eine Schuldnerberatung oder eine Therapie. Die Beratung unterliegt der Schweigepflicht, auch gegenüber Arbeitgeber und Familie.</p>
-        <p>Ein Satz für den Anruf: „Ich glaube, ich kaufe zu viel, und möchte darüber sprechen.“</p>
-      </div>
-    </div>
+      <p class="lead">Kaufsucht ist kein Charakterfehler. Diese Stellen helfen kostenlos oder über die Krankenkasse, vertraulich und ohne Vorwürfe.</p>
+    </header>
+    <ul class="contacts">
+      <li class="urgent"><div><h3>Telefonseelsorge</h3><p>Sofort mit jemandem reden. Kostenlos, anonym, rund um die Uhr. Auch 0800 111 0 222 oder 116 123.</p></div><a class="nr" href="tel:08001110111">0800 111 0 111</a></li>
+      <li><div><h3>Suchtberatung vor Ort</h3><p>Hilft auch bei Kaufsucht. Kostenlos, mit Schweigepflicht, ohne Überweisung. Auch Angehörige können kommen.</p></div><a href="https://www.suchthilfeverzeichnis.de" target="_blank" rel="noopener">Stelle finden ↗</a></li>
+      <li><div><h3>Online-Suchtberatung</h3><p>Per Chat, Video oder Nachricht, ohne Wartezimmer.</p></div><a href="https://www.suchtberatung.digital" target="_blank" rel="noopener">suchtberatung.digital ↗</a></li>
+      <li><div><h3>Selbsthilfegruppen</h3><p>Die Kontaktstelle NAKOS vermittelt Gruppen, auch die Anonymen Kaufsüchtigen.</p></div><a href="https://www.nakos.de" target="_blank" rel="noopener">nakos.de ↗</a></li>
+      <li><div><h3>Schuldnerberatung</h3><p>Meist kostenlos bei Verbraucherzentrale, Caritas, Diakonie, AWO, DRK oder der Gemeinde. Früh melden, die Wartezeit kann lang sein. Finger weg von Entschuldung gegen Gebühr.</p></div><a href="https://www.caritas.de/schuldnerberatung" target="_blank" rel="noopener">Online-Beratung ↗</a></li>
+      <li><div><h3>Psychotherapie</h3><p>Über die Hausarztpraxis oder die Terminservicestelle, die ein Erstgespräch vermittelt.</p></div><a class="nr" href="tel:116117">116 117</a></li>
+      <li><div><h3>Nummer gegen Kummer</h3><p>Für Kinder und Jugendliche, montags bis samstags von 14 bis 20 Uhr.</p></div><a class="nr" href="tel:116111">116 111</a></li>
+      <li><div><h3>Notruf</h3><p>Bei akuter Gefahr für dich oder andere.</p></div><a class="nr" href="tel:112">112</a></li>
+    </ul>
+    <section class="block">
+      <h2>So läuft das erste Gespräch</h2>
+      <p>Du rufst an oder schreibst und bekommst einen Termin. Du erzählst nur so viel, wie du möchtest. Niemand verlangt, dass du sofort aufhörst. Gemeinsam überlegt ihr, was als Nächstes hilft. Ein Satz für den Anruf: „Ich glaube, ich kaufe zu viel, und möchte darüber sprechen.“</p>
+    </section>
+    <p class="more">Auch hilfreich: <a href="#selbstcheck">Selbstcheck</a> · <a href="#angehoerige">Tipps für Angehörige</a></p>
   </div>
 </section>
 
 <!-- ============ IMPRESSUM ============ -->
 <section id="v-impressum" data-view hidden>
   <div class="wrap legal">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <h1>Impressum</h1>
     <div class="prose">
       <h2>Angaben gemäß § 5 DDG</h2>
@@ -558,7 +493,7 @@ footer a:hover { color: var(--ink); }
 <!-- ============ DATENSCHUTZ ============ -->
 <section id="v-datenschutz" data-view hidden>
   <div class="wrap legal">
-    <a class="back" href="#start">← Alle Themen</a>
+    <a class="back" href="#start" data-back>← Zurück</a>
     <h1>Datenschutz</h1>
     <div class="prose">
       <h2>Wer ist verantwortlich?</h2>
@@ -676,8 +611,8 @@ footer a:hover { color: var(--ink); }
       sofort: ['Öffne alle Briefe und leg sie in einen Ordner. Noch nichts lösen, nur sammeln.', 'Schreib alle offenen Rechnungen und Raten auf und trag die Summe im Rechner ein.', 'Kauf nichts mehr auf Rechnung oder Raten. Was du nicht sofort bezahlen kannst, kannst du dir gerade nicht leisten.', 'Sichere zuerst das Wichtigste: Miete, Strom und Krankenversicherung haben Vorrang.', 'Droht eine Kontopfändung: Deine Bank muss dein Girokonto auf Antrag in ein Pfändungsschutzkonto (P-Konto) umwandeln.'],
       spaeter: ['Melde dich früh bei einer anerkannten Schuldnerberatung, zum Beispiel bei Verbraucherzentrale, Caritas, Diakonie, AWO oder deiner Gemeinde. Sie ist meist kostenlos.', 'Unterschreib keine neuen Kredite oder Ratenvereinbarungen, bevor du dort gesprochen hast.', 'Vorsicht bei Anbietern, die schnelle Entschuldung gegen Gebühr versprechen.', 'Kündige Abos, die du selten nutzt, und stell auf Bargeld oder eine Debitkarte um.'],
       moment: 'Hinschauen ist der erste Schritt raus.', tools: ['kassensturz', 'abos', 'hilfe'] },
-    { id: 'kassensturz', start: 5, name: 'Rechner', cat: 'werkzeuge', titel: 'Wie viel kann ich mir eigentlich leisten?', typ: 'Rechner', tool: true },
-    { id: 'hilfe', start: 6, name: 'Hilfe & Beratung', cat: 'hilfe', titel: 'Wo bekomme ich Hilfe?', typ: 'Kontakte', tool: true },
+    { id: 'kassensturz', name: 'Rechner', cat: 'werkzeuge', titel: 'Wie viel kann ich mir eigentlich leisten?', typ: 'Rechner', tool: true },
+    { id: 'hilfe', name: 'Hilfe & Beratung', cat: 'hilfe', titel: 'Wo bekomme ich Hilfe?', typ: 'Kontakte', tool: true },
     { id: 'angehoerige', name: 'Für Angehörige', cat: 'hilfe', titel: 'Jemand, der mir nahesteht, kauft zu viel.', kurz: 'Partnerin, Partner, Kind, Eltern oder Freunde: Du machst dir Sorgen und weißt nicht, wie du es ansprechen sollst.', typ: 'Tipps',
       kennst: ['Ständig kommen Pakete, und darüber wird nicht gesprochen.', 'Gemeinsames Geld reicht plötzlich nicht mehr.', 'Du entdeckst versteckte Einkäufe oder Rechnungen.', 'Du hast schon Schulden übernommen, damit es nicht eskaliert.'],
       warum: 'Kaufsucht betrifft fast immer auch die Menschen drumherum. Vorwürfe führen meist dazu, dass noch mehr versteckt wird. Hilfreicher ist ein ruhiges Gespräch über das, was du beobachtest, und über deine eigenen Grenzen.',
@@ -693,44 +628,36 @@ footer a:hover { color: var(--ink); }
   const ALIAS = { rabatte: 'laden', social: 'online', apps: 'online', heimlich: 'gefuehle', horten: 'gefuehle', ratenkauf: 'schulden' };
   const T = Object.fromEntries(TOPICS.map(t => [t.id, t]));
 
-  /* ---------- Startseite: sechs Karten ---------- */
+  /* ---------- Startseite: vier Karten ---------- */
   function renderTiles() {
     $('#tiles').innerHTML = TOPICS.filter(t => t.start).sort((a, b) => a.start - b.start)
       .map(t => `<a class="tile" href="#${t.id}" data-c="${t.cat}">${icon(t.id)}<h2>${esc(t.name)}</h2></a>`).join('');
-    $('#hilfe-links').innerHTML = ['selbstcheck', 'angehoerige'].map(id => T[id]).map(x => `<a class="lrow" href="#${x.id}" data-c="${x.cat}">${icon(x.id)}<span>${esc(x.name)}<small>${esc(x.titel)}</small></span></a>`).join('');
   }
 
   /* ---------- Ratgeber-Ansicht ---------- */
-  const guides = TOPICS.filter(t => !t.tool);
   function renderGuide(t) {
-    const i = guides.indexOf(t), prev = guides[i - 1], next = guides[i + 1];
-    const toolLinks = (t.tools || []).map(id => T[id]).filter(Boolean).map(x => `<a class="lrow" href="#${x.id}" data-c="${x.cat}">${icon(x.id)}<span>${esc(x.typ)}<small>${esc(x.titel)}</small></span></a>`).join('');
+    const extra = (t.tools || []).filter(id => id !== 'kassensturz' && id !== 'hilfe').map(id => T[id]).filter(Boolean);
+    const li = arr => arr.map(x => `<li>${esc(x)}</li>`).join('');
     const sec = $('#v-thema');
     sec.dataset.c = t.cat;
     sec.innerHTML = `
-      <div class="wrap tool">
-        <a class="back" href="#start">← Alle Themen</a>
-        <div class="tool-head">${icon(t.id)}<span class="cat">${esc(CATS[t.cat])}</span><h1>${esc(t.titel)}</h1><p class="lead">${esc(t.kurz)}</p></div>
-        <div class="tool-grid">
-          <article class="guide">
-            <section><h2>Kennst du das?</h2><ul class="list signs">${t.kennst.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
-            <section><h2>Warum das passiert</h2><p>${esc(t.warum)}</p></section>
-            <section class="sofort"><h2>Was sofort hilft</h2><ul class="list tips">${t.sofort.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
-            <section><h2>Was auf Dauer hilft</h2><ul class="list tips later">${t.spaeter.map(x => `<li>${esc(x)}</li>`).join('')}</ul></section>
-            <nav class="next-nav" aria-label="Weitere Themen">
-              ${prev ? `<a href="#${prev.id}"><span>← Vorheriges Thema</span>${esc(prev.titel)}</a>` : ''}
-              ${next ? `<a class="nx" href="#${next.id}"><span>Nächstes Thema →</span>${esc(next.titel)}</a>` : ''}
-            </nav>
-          </article>
-          <aside class="side">
-            <span class="kicker">Ein Satz für den Moment</span>
-            <p class="mantra">„${esc(t.moment)}“</p>
-            <hr class="divider">
-            ${toolLinks ? `<span class="kicker">Das hilft dir weiter</span><div class="lrows">${toolLinks}</div><hr class="divider">` : ''}
-            ${t.krise ? '<div class="box bad">Geht es dir richtig schlecht? Die Telefonseelsorge ist kostenlos und rund um die Uhr da: <strong>0800 111 0 111</strong></div>' : ''}
-            <div class="box plain">Allein kommst du nicht weiter? Suchtberatungsstellen helfen auch bei Kaufsucht, kostenlos und vertraulich. <a href="#hilfe">Beratung finden →</a></div>
-          </aside>
-        </div>
+      <div class="wrap page">
+        <a class="back" href="#start" data-back>← Zurück</a>
+        <header class="phead">${icon(t.id)}<h1>${esc(t.titel)}</h1><p class="lead">${esc(t.kurz)}</p></header>
+        <section class="block"><h2>Kennst du das?</h2><ul class="list signs">${li(t.kennst)}</ul></section>
+        <section class="block"><h2>Warum das passiert</h2><p>${esc(t.warum)}</p></section>
+        <section class="block"><h2>Was sofort hilft</h2><ul class="list tips">${li(t.sofort)}</ul></section>
+        <p class="mantra">„${esc(t.moment)}“</p>
+        <section class="block"><h2>Was auf Dauer hilft</h2><ul class="list tips">${li(t.spaeter)}</ul></section>
+        <section class="block">
+          <h2>Nächster Schritt</h2>
+          <div class="next2">
+            <a class="action" href="#kassensturz" data-c="werkzeuge">${icon('kassensturz')}<span><b>Rechner</b><small>Einkommen und Ausgaben durchrechnen</small></span></a>
+            <a class="action" href="#hilfe" data-c="hilfe">${icon('hilfe')}<span><b>Hilfe &amp; Beratung</b><small>Kostenlos und vertraulich</small></span></a>
+          </div>
+          ${extra.length ? `<p class="more">Auch hilfreich: ${extra.map(x => `<a href="#${x.id}">${esc(x.name)}</a>`).join(' · ')}</p>` : ''}
+        </section>
+        ${t.krise ? '<p class="sos-line">Geht es dir gerade richtig schlecht? Die Telefonseelsorge ist kostenlos und rund um die Uhr da: <a href="tel:08001110111">0800 111 0 111</a></p>' : ''}
       </div>`;
   }
 
@@ -854,7 +781,6 @@ footer a:hover { color: var(--ink); }
     if (rest < 0) pill = `<span class="pill bad">Jeden Monat ${euro(-rest)} im Minus</span>`;
     else if (kaufAnteil > 0.2 || rest < E * 0.05) pill = '<span class="pill warn">Knapp</span>';
     else pill = '<span class="pill good">Im grünen Bereich</span>';
-    const top = $$('[data-ks="kauf"]').map(el => [el.dataset.label, parseNum(el.value, true) || 0]).sort((a, b) => b[1] - a[1]).filter(x => x[1] > 0).slice(0, 2);
     const halb = rest + K / 2;
     const monate = debt > 0 && halb > 0 ? Math.ceil(debt / halb) : null;
     let budget = Math.max(0, Math.min(E * 0.3, (E - F) - E * 0.2));
@@ -872,7 +798,6 @@ footer a:hover { color: var(--ink); }
       ${rows([
         ['Einkäufe aufs Jahr', euro(K * 12)],
         ['Einkäufe in fünf Jahren', euro(K * 60)],
-        top.length ? ['Größte Kaufposten', top.map(t => esc(t[0])).join(', ')] : null,
         ['Schulden gesamt', euro(debt)],
         dispo > 0 && zins > 0 ? ['Dispozinsen pro Jahr', euro(zinsJahr)] : null
       ])}
@@ -1035,15 +960,26 @@ footer a:hover { color: var(--ink); }
   TOPICS.filter(t => t.tool).forEach(t => {
     const sec = document.getElementById('v-' + t.id); if (!sec) return;
     sec.dataset.c = t.cat;
-    const head = $('.tool-head', sec); if (head) head.insertAdjacentHTML('afterbegin', icon(t.id));
+    const head = $('.tool-head, .phead', sec); if (head) head.insertAdjacentHTML('afterbegin', icon(t.id));
   });
   renderTiles(); renderKBList();
   Object.values(CALC).forEach(f => f());
 
   /* ---------- Ansichten über die Adresse ---------- */
   let current = null;
+  const trail = [];
+  function track(k) {
+    if (k === 'start') { trail.length = 0; trail.push('start'); return; }
+    if (trail.length > 1 && trail[trail.length - 2] === k) trail.pop();
+    else if (trail[trail.length - 1] !== k) trail.push(k);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-back]'); if (!b) return;
+    if (trail.length > 1) { e.preventDefault(); location.hash = trail[trail.length - 2]; }
+  });
   function route() {
     const h0 = location.hash.slice(1), h = ALIAS[h0] || h0;
+    track(document.getElementById('v-' + h) || T[h] ? h : 'start');
     const t = T[h];
     if (t && !t.tool) { renderGuide(t); show('thema', h, t.titel); return; }
     show(document.getElementById('v-' + h) ? h : 'start', h, t ? t.titel : ({ impressum: 'Impressum', datenschutz: 'Datenschutz' })[h]);

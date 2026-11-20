@@ -234,6 +234,65 @@ details .prose { margin-top: 10px; }
 .contacts li.urgent a.nr { color: var(--bad); }
 @media (max-width: 560px) { .contacts li { grid-template-columns: minmax(0, 1fr); } }
 
+/* Interaktive Teile */
+.list.tips li { grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; }
+.plan-btn { font: inherit; font-size: .78rem; font-weight: 650; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
+.plan-btn:hover { border-color: var(--ink); color: var(--ink); }
+.plan-btn[aria-pressed="true"] { background: var(--good-bg); color: var(--good); border-color: transparent; }
+.picks { display: grid; gap: 8px; }
+.pick { font: inherit; text-align: left; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color .15s, background .15s; }
+.pick:hover { border-color: #c9cfda; }
+.pick .bx { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid #c6ccd8; margin-top: 2px; display: grid; place-items: center; }
+.pick[aria-pressed="true"] { border-color: var(--ink); background: var(--subtle); }
+.pick[aria-pressed="true"] .bx { background: var(--ink); border-color: var(--ink); }
+.pick[aria-pressed="true"] .bx::after { content: ""; width: 4px; height: 8px; border: solid #ffffff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+.fb { font-size: .94rem; color: var(--ink); font-weight: 600; min-height: 1px; }
+.fb:empty { display: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .88rem; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); }
+.chip:hover { color: var(--ink); border-color: #c9cfda; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.widget { gap: 16px; }
+.widget h2 { font-size: 1.2rem; font-weight: 700; letter-spacing: -.01em; }
+.kreis { display: grid; gap: 12px; }
+.kreis-steps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.kstep { font: inherit; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-soft); font-size: .88rem; font-weight: 600; cursor: pointer; }
+.kstep b { width: 22px; height: 22px; border-radius: 50%; background: var(--subtle); display: grid; place-items: center; font-size: .75rem; color: var(--ink); }
+.kstep[aria-pressed="true"] { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.kstep[aria-pressed="true"] b { background: rgba(255, 255, 255, .18); color: #ffffff; }
+.karrow { color: var(--ink-soft); font-size: .9rem; }
+.kdetail { padding: 16px 18px; border-radius: 12px; background: var(--subtle); display: grid; gap: 6px; font-size: .95rem; }
+.kdetail .exit { color: var(--good); font-weight: 600; }
+.timer { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.ring { --p: 0; width: 132px; height: 132px; border-radius: 50%; background: conic-gradient(var(--ink) calc(var(--p) * 1%), var(--line) 0); display: grid; place-items: center; flex: none; }
+.ring span { width: 116px; height: 116px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.timer-side { flex: 1 1 240px; display: grid; gap: 12px; min-width: 0; }
+.idea { font-size: 1.02rem; font-weight: 600; color: var(--ink); }
+.faq { gap: 0; }
+.faq h2 { margin-bottom: 8px; }
+.faq details { border-top: 1px solid var(--line); padding: 14px 0; }
+.faq details:last-of-type { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; color: var(--ink-soft); font-size: 1.25rem; line-height: 1; }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { margin-top: 8px; color: var(--ink-soft); max-width: 65ch; }
+.prio { margin: 0; padding-left: 22px; display: grid; gap: 12px; }
+.prio li { padding-left: 4px; }
+.prio .ptop { display: flex; justify-content: space-between; gap: 12px; font-weight: 650; }
+.prio .ptop span:last-child { font-variant-numeric: tabular-nums; }
+.prio small { display: block; color: var(--ink-soft); font-size: .88rem; margin-top: 2px; }
+.brief { display: grid; gap: 12px; margin-top: 12px; }
+.out-text { min-height: 230px; font-size: .9rem; background: var(--subtle); }
+.whatif { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+.plan-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.plan-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.plan-list input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ink); }
+.plan-list li.done label { color: var(--ink-soft); text-decoration: line-through; }
+.plan-list .x { font: inherit; border: 0; background: none; color: var(--ink-soft); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 2px 6px; }
+.plan-list .x:hover { color: var(--bad); }
+
 /* Rechtliches */
 .legal { padding-block: 26px 48px; display: grid; gap: 18px; }
 .legal h1 { font-size: clamp(1.8rem, 4.6vw, 2.5rem); font-weight: 800; letter-spacing: -.03em; }
@@ -264,6 +323,9 @@ footer a:hover { color: var(--ink); }
 
 <!-- ============ RATGEBER (wird je nach Karte gefüllt) ============ -->
 <section id="v-thema" data-view hidden></section>
+
+<!-- ============ MEIN PLAN (wird per Skript gefüllt) ============ -->
+<section id="v-plan" data-view hidden></section>
 
 <!-- ============ SELBSTCHECK ============ -->
 <section id="v-selbstcheck" data-view data-tool hidden>
@@ -337,7 +399,14 @@ footer a:hover { color: var(--ink); }
           </div>
         </fieldset>
       </form>
-      <div class="side" aria-live="polite"><div id="ks-out" style="display:grid;gap:16px"></div></div>
+      <div class="side">
+        <div id="ks-out" style="display:grid;gap:16px" aria-live="polite"></div>
+        <div class="whatif" id="ks-whatif">
+          <label for="ks-reduce" class="lbl">Was wäre, wenn du weniger kaufst? Um <span id="ks-reduce-v">50 %</span> weniger:</label>
+          <input type="range" id="ks-reduce" min="0" max="100" step="10" value="50">
+          <div id="ks-whatif-out" aria-live="polite"></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
@@ -462,7 +531,7 @@ footer a:hover { color: var(--ink); }
       <h2>So läuft das erste Gespräch</h2>
       <p>Du rufst an oder schreibst und bekommst einen Termin. Du erzählst nur so viel, wie du möchtest. Niemand verlangt, dass du sofort aufhörst. Gemeinsam überlegt ihr, was als Nächstes hilft. Ein Satz für den Anruf: „Ich glaube, ich kaufe zu viel, und möchte darüber sprechen.“</p>
     </section>
-    <p class="more">Auch hilfreich: <a href="#selbstcheck">Selbstcheck</a> · <a href="#angehoerige">Tipps für Angehörige</a></p>
+    <p class="more">Auch hilfreich: <a href="#selbstcheck">Selbstcheck</a> · <a href="#angehoerige">Tipps für Angehörige</a> · <a href="#plan">Mein Plan</a></p>
   </div>
 </section>
 
@@ -503,7 +572,7 @@ footer a:hover { color: var(--ink); }
       <h2>Keine Cookies, kein Tracking</h2>
       <p>Die Seite setzt keine Cookies, nutzt keine Analyse-Werkzeuge, zeigt keine Werbung und lädt keine Schriften oder Skripte von fremden Servern.</p>
       <h2>Deine Eingaben bleiben auf deinem Gerät</h2>
-      <p>Antworten im Selbstcheck, Zahlen im Rechner, dein Kauftagebuch und deine Warteliste speichert die Seite nur im lokalen Speicher deines Browsers (localStorage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns oder andere übertragen. Wer dein Gerät benutzt, kann sie aber sehen. Du kannst alles jederzeit löschen:</p>
+      <p>Antworten im Selbstcheck, Zahlen in den Rechnern, dein Plan, dein Kauftagebuch, deine Warteliste und deine Schuldenliste speichert die Seite nur im lokalen Speicher deines Browsers (localStorage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns oder andere übertragen. Wer dein Gerät benutzt, kann sie aber sehen. Du kannst alles jederzeit löschen:</p>
       <div class="example"><button type="button" class="btn-ghost" id="loeschen">Alle gespeicherten Eingaben löschen</button><span id="geloescht" class="note"></span></div>
       <h2>Externe Links</h2>
       <p>Klickst du auf einen Link zu einer Beratungsstelle oder einer anderen Seite, verlässt du dieses Angebot. Ab dann gilt die Datenschutzerklärung des jeweiligen Anbieters.</p>
@@ -561,6 +630,12 @@ footer a:hover { color: var(--ink); }
     setTimeout(() => { btn.textContent = old; }, 1800);
   }
   document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyFrom(b.dataset.copy, b); });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-copyval]'); if (!b) return;
+    const el = document.getElementById(b.dataset.copyval), old = b.textContent;
+    try { await navigator.clipboard.writeText(el.value); b.textContent = 'Kopiert'; } catch (err) { el.focus(); el.select(); b.textContent = 'Markiert, jetzt kopieren'; }
+    setTimeout(() => { b.textContent = old; }, 1800);
+  });
 
   /* ---------- Symbole ---------- */
   const ICONS = {
@@ -582,6 +657,7 @@ footer a:hover { color: var(--ink); }
     abos: '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path><path d="M9 15.5l2 2 4-4"></path>',
     hilfe: '<circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5"></circle><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"></path>'
   };
+  ICONS.plan = '<path d="M10 6h10M10 12h10M10 18h10"></path><path d="M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2 2.3-2.2M4 18l1.2 1.2 2.3-2.2"></path>';
   const icon = id => `<span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[id] || ''}</svg></span>`;
 
   /* ---------- Inhalte ---------- */
@@ -634,31 +710,287 @@ footer a:hover { color: var(--ink); }
       .map(t => `<a class="tile" href="#${t.id}" data-c="${t.cat}">${icon(t.id)}<h2>${esc(t.name)}</h2></a>`).join('');
   }
 
+  /* ---------- Mehr Tiefe pro Thema: Fragen, Kreislauf, Mini-Werkzeuge ---------- */
+  const EXTRA = {
+    laden: { widget: 'sale', faq: [
+      ['Warum wirkt ein Rabatt so stark?', 'Der durchgestrichene Preis wirkt wie ein Anker: Daneben erscheint der neue Preis klein, auch wenn er für dich viel Geld ist. Dazu kommt die Angst, ein Angebot zu verpassen. Beides schaltet das ruhige Abwägen ab.'],
+      ['Hilft Bargeld wirklich?', 'Viele Menschen geben mit Bargeld weniger aus, weil sie das Geld weggehen sehen. Mit Karte oder Handy fühlt sich Bezahlen fast nach nichts an. Probier es vier Wochen lang aus und vergleich danach.'],
+      ['Kann ich Gekauftes im Laden zurückgeben?', 'Ein gesetzliches Rückgaberecht gibt es im Laden nicht, viele Geschäfte nehmen Ware aber freiwillig zurück. Frag nach und heb Kassenzettel auf. Was nicht zurückgeht, kannst du verkaufen und das Geld für Schulden oder Rücklagen nutzen.']
+    ] },
+    online: { widget: 'pakete', faq: [
+      ['Wie funktioniert das Widerrufsrecht?', 'Bei Online-Käufen kannst du in der Regel innerhalb von 14 Tagen nach Erhalt der Ware ohne Grund widerrufen. Ausnahmen gibt es zum Beispiel bei individuell angefertigter Ware oder geöffneten Hygieneartikeln. Die Rücksendekosten können bei dir liegen, wenn der Shop vorher darauf hingewiesen hat.'],
+      ['Was ist eine Drittanbietersperre?', 'Damit kann niemand mehr Beträge über deine Handyrechnung abbuchen, zum Beispiel für Abos oder In-App-Käufe. Du beantragst sie bei deinem Mobilfunkanbieter, online, telefonisch oder per Brief.'],
+      ['Woran erkenne ich Werbung auf Social Media?', 'Bezahlte Beiträge müssen gekennzeichnet sein, oft steht „Anzeige“, „Werbung“ oder „Bezahlte Partnerschaft“ dabei. Auch Rabattcodes und Links zu Shops zeigen, dass jemand an deinem Kauf mitverdient.']
+    ] },
+    gefuehle: { widget: 'impuls', kreis: true, faq: [
+      ['Ist Kaufsucht eine richtige Krankheit?', 'Kaufsucht hat im Diagnosesystem keinen eigenen Namen, wird von Fachleuten aber als ernsthafte psychische Störung behandelt, meist als Störung der Impulskontrolle. Für dich zählt vor allem: Sie ist behandelbar, und Beratungsstellen helfen auch ohne Diagnose.'],
+      ['Wie wird Kaufsucht behandelt?', 'Am besten untersucht ist die kognitive Verhaltenstherapie, oft in Gruppen. Dort lernst du, Auslöser zu erkennen, Impulse auszuhalten und neue Wege für schwierige Gefühle zu finden. Häufig kommen Schuldnerberatung und Selbsthilfegruppe dazu.'],
+      ['Wann sollte ich mir Hilfe holen?', 'Wenn du es allein mehrmals nicht geschafft hast, wenn Schulden entstehen, wenn du Einkäufe versteckst oder wenn es dir seelisch schlecht geht. Ein erstes Gespräch bei einer Suchtberatung ist kostenlos und verpflichtet zu nichts.']
+    ] },
+    schulden: { widget: 'schuldenliste', faq: [
+      ['Was ist ein P-Konto?', 'Ein Pfändungsschutzkonto schützt jeden Monat einen Grundbetrag deines Guthabens vor Pfändung, damit du Miete und Lebensmittel zahlen kannst. Deine Bank muss ein bestehendes Girokonto auf Antrag umwandeln, auch wenn es im Minus ist, spätestens innerhalb von vier Geschäftstagen.'],
+      ['Was bedeutet ein Schufa-Eintrag?', 'Unbezahlte Forderungen können nach mehreren Mahnungen an die Schufa gemeldet werden. Das erschwert später zum Beispiel Mietverträge, Handyverträge und Kredite. Deshalb lohnt es sich, früh mit Gläubigern und einer Schuldnerberatung zu sprechen.'],
+      ['Was macht eine Schuldnerberatung genau?', 'Sie verschafft dir einen Überblick, prüft, ob Forderungen und Gebühren berechtigt sind, verhandelt mit Gläubigern über Raten oder Vergleiche und hilft beim P-Konto. Wenn nichts anderes mehr geht, begleitet sie dich auch durch eine Privatinsolvenz.']
+    ] },
+    angehoerige: { widget: 'gespraech', faq: [
+      ['Muss ich für die Schulden aufkommen?', 'Grundsätzlich haftest du nicht für Schulden anderer, wenn du nichts mitunterschrieben hast. Ausnahmen gibt es etwa bei gemeinsamen Verträgen, Bürgschaften oder bei Ehepaaren für Geschäfte des täglichen Lebensbedarfs. Lass dich im Zweifel von einer Schuldnerberatung beraten.'],
+      ['Was, wenn die Person nichts ändern will?', 'Du kannst niemanden zwingen. Du kannst aber deine Grenzen klar sagen, dein eigenes Geld schützen und dir selbst Unterstützung holen. Oft wirkt genau das mit der Zeit.'],
+      ['Wo bekomme ich selbst Hilfe?', 'Suchtberatungsstellen beraten auch Angehörige, kostenlos und vertraulich. Über NAKOS findest du außerdem Selbsthilfegruppen für Angehörige.']
+    ] }
+  };
+
+  const KREIS = [
+    ['Auslöser', 'Stress, Langeweile, ein Streit oder Werbung lösen ein unangenehmes Gefühl aus.', 'Hier aussteigen: Gefühl benennen und 20 Minuten warten.'],
+    ['Drang', 'Der Gedanke ans Kaufen wird stärker, alles andere tritt in den Hintergrund.', 'Hier aussteigen: Shop schließen, Handy weglegen, rausgehen.'],
+    ['Kauf', 'Beim Bezahlen kommt ein kurzer Kick, für einen Moment geht es besser.', 'Hier aussteigen: Bargeld statt Karte, Warteliste statt Warenkorb.'],
+    ['Reue', 'Danach kommen Schuldgefühle, Scham oder Leere. Oft wird der Kauf versteckt.', 'Hier aussteigen: Mit jemandem darüber reden statt verstecken.'],
+    ['Neues Tief', 'Geldsorgen und Scham drücken die Stimmung. Der nächste Auslöser kommt schneller.', 'Hier aussteigen: Hilfe holen. Eine Beratung unterbricht den Kreislauf.']
+  ];
+  const kreisHTML = () => `<div class="kreis"><p class="note">So läuft der Kreislauf oft ab. Tipp die Schritte an.</p><div class="kreis-steps">${KREIS.map(([n], i) => `<button type="button" class="kstep" data-k="${i}" aria-pressed="${i === 0}"><b>${i + 1}</b>${esc(n)}</button><span class="karrow" aria-hidden="true">${i < KREIS.length - 1 ? '→' : '↺'}</span>`).join('')}</div><div class="kdetail" id="kdetail" aria-live="polite"></div></div>`;
+  function showKreis(i) {
+    $$('.kstep').forEach((b, j) => b.setAttribute('aria-pressed', j === i));
+    const [n, d, x] = KREIS[i];
+    $('#kdetail').innerHTML = `<p><strong>${i + 1}. ${esc(n)}:</strong> ${esc(d)}</p><p class="exit">${esc(x)}</p>`;
+  }
+
+  const GEFS = [['gestresst', 'gestresst'], ['traurig', 'traurig'], ['gelangweilt', 'gelangweilt'], ['einsam', 'einsam'], ['wuetend', 'wütend'], ['aufgedreht', 'aufgedreht']];
+  const IDEEN = {
+    gestresst: ['Atme 4 Sekunden ein, halte 4 Sekunden, atme 6 Sekunden aus. Fünfmal.', 'Geh 10 Minuten raus, ohne Handy in der Hand.', 'Schreib in einer Zeile auf, was dich gerade stresst.', 'Trink ein Glas kaltes Wasser, langsam.'],
+    traurig: ['Schreib jemandem eine Nachricht. Nicht über Einkäufe, nur um zu reden.', 'Leg dir eine Decke um und mach Musik an, die dir guttut.', 'Schreib drei Sätze darüber, was dich traurig macht.', 'Geh eine Runde um den Block.'],
+    gelangweilt: ['Räum eine Schublade auf. Danach siehst du, was du schon hast.', 'Mach etwas mit den Händen: kochen, zeichnen, reparieren.', 'Such dir eine kostenlose Sache in deiner Nähe für heute.', 'Leg das Handy für 20 Minuten in einen anderen Raum.'],
+    einsam: ['Schreib einer Person, an die du lange nicht gedacht hast.', 'Geh an einen Ort mit Menschen: Park, Bibliothek, Café.', 'Wenn gerade niemand da ist: Die Telefonseelsorge hört zu, 0800 111 0 111.', 'Verabrede dich für diese Woche.'],
+    wuetend: ['Beweg dich kräftig: Treppen, schnelles Gehen, Liegestütze.', 'Schreib alles auf, was dich wütend macht, und zerreiß den Zettel.', 'Lass kaltes Wasser über die Handgelenke laufen.', 'Triff keine Entscheidung, bis die Wut abgeklungen ist.'],
+    aufgedreht: ['Erzähl jemandem, worüber du dich freust, statt es mit einem Kauf zu feiern.', 'Schreib auf, was heute gut war.', 'Überweis den Betrag, den du ausgeben wolltest, aufs Sparkonto.', 'Plane eine Belohnung, die nichts kostet.']
+  };
+  const DUR = 20 * 60 * 1000;
+  let timerIv = null, ideaOff = 0;
+  function tick() {
+    const tEl = document.getElementById('w-time');
+    if (!tEl) { clearInterval(timerIv); timerIv = null; return; }
+    const end = store.get('w:end'), left = end ? Math.max(0, end - Date.now()) : DUR;
+    tEl.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left % 60000 / 1000)).padStart(2, '0')}`;
+    $('#w-ring').style.setProperty('--p', ((DUR - left) / DUR * 100).toFixed(1));
+    const g = store.get('w:gef'), list = IDEEN[g];
+    let msg;
+    if (end && left === 0) msg = 'Geschafft: 20 Minuten ohne Kauf. Ist der Drang noch da? Dann noch eine Runde, oder ruf jemanden an.';
+    else if (!list) msg = 'Wähl oben ein Gefühl, dann bekommst du passende Ideen für die Pause.';
+    else msg = list[(Math.floor((DUR - left) / 240000) + ideaOff) % list.length];
+    $('#w-idea').textContent = msg;
+    const sb = $('#w-start');
+    sb.disabled = !!(end && left > 0);
+    sb.textContent = end && left > 0 ? 'Läuft …' : end ? 'Noch eine Runde' : 'Pause starten';
+    if (end && left === 0 && timerIv) { clearInterval(timerIv); timerIv = null; }
+  }
+  function startTimer() {
+    clearInterval(timerIv); timerIv = null; tick();
+    const end = store.get('w:end');
+    if (end && end > Date.now()) timerIv = setInterval(tick, 1000);
+  }
+
+  const wv = (id, def) => { const v = store.get('w:' + id); return v == null ? def : v; };
+  const SL_ART = [['existenz', 'Miete / Strom'], ['inkasso', 'Mahnung / Inkasso'], ['raten', 'Raten / Rechnung'], ['dispo', 'Dispo / Kredit'], ['privat', 'Privat']];
+  const PRIO = {
+    existenz: [1, 'Zuerst', 'Sichert Wohnung, Strom und Versicherungsschutz.'],
+    inkasso: [2, 'Bald', 'Hier wachsen Gebühren am schnellsten. Prüf, ob Forderung und Kosten berechtigt sind, bevor du zahlst.'],
+    raten: [3, 'Danach', 'Ruf den Anbieter an und frag nach einer Ratenpause oder kleineren Raten.'],
+    dispo: [4, 'Danach', 'Teuer, aber ohne akuten Druck. Schritt für Schritt abbauen.'],
+    privat: [5, 'Offen ansprechen', 'Sprich mit der Person und vereinbart einen Plan, den du wirklich schaffst.']
+  };
+  let slList = null;
+  const field = (id, label, def, suffix, attrs = '') => `<div class="field"><label for="${id}">${label}</label>${suffix ? `<div class="suffix"><input type="text" id="${id}" value="${esc(wv(id, def))}" data-w ${attrs}><span>${suffix}</span></div>` : `<input type="text" id="${id}" value="${esc(wv(id, def))}" data-w ${attrs}>`}</div>`;
+  const select = (id, label, opts) => `<div class="field"><label for="${id}">${label}</label><select id="${id}" data-w>${opts.map((o, i) => `<option${wv(id, opts[0]) === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`;
+
+  const WIDGETS = {
+    sale: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Sale-Check</h2><p class="note">Ist das wirklich ein Schnäppchen?</p>
+        <div class="row">${field('w-alt', 'Ursprünglicher Preis', '80', '€', 'inputmode="decimal"')}${field('w-neu', 'Sale-Preis', '49,99', '€', 'inputmode="decimal"')}</div>
+        <div class="field"><span class="lbl">Hättest du es auch zum vollen Preis gekauft?</span><div class="seg" role="radiogroup"><label><input type="radio" name="w-voll" value="ja" data-w${wv('w-voll', 'nein') === 'ja' ? ' checked' : ''}>Ja</label><label><input type="radio" name="w-voll" value="nein" data-w${wv('w-voll', 'nein') === 'nein' ? ' checked' : ''}>Nein</label></div></div>
+        <div id="w-out" aria-live="polite"></div>`,
+      calc() {
+        const alt = val('w-alt'), neu = val('w-neu'), voll = ($('input[name="w-voll"]:checked') || {}).value, out = $('#w-out');
+        if (!(alt > 0) || !(neu > 0)) { out.innerHTML = '<p class="note">Trag beide Preise ein.</p>'; return; }
+        if (neu >= alt) { out.innerHTML = '<div class="box warn">Der Sale-Preis ist nicht günstiger als der ursprüngliche. Das ist kein Angebot.</div>'; return; }
+        const rab = 1 - neu / alt;
+        out.innerHTML = voll === 'ja'
+          ? `<div class="box good">Das Schild sagt ${pct(rab)} Rabatt, und du hättest es sowieso gekauft. Dann sparst du wirklich <strong>${euro(alt - neu)}</strong>. Kauf es, wenn es in dein Budget passt.</div>`
+          : `<div class="box warn">Das Schild sagt <strong>${pct(rab)} gespart</strong>. In Wahrheit gibst du <strong>${euro(neu)}</strong> aus, die du ohne Sale nicht ausgegeben hättest. Lässt du es liegen, sparst du ${euro(neu)}.</div>`;
+      }
+    },
+    pakete: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Paket-Rechner</h2><p class="note">Was deine Bestellungen im Jahr kosten.</p>
+        <div class="field"><label for="w-pw">Pakete pro Woche: <b id="w-pw-v"></b></label><input type="range" id="w-pw" min="0" max="15" step="1" value="${esc(wv('w-pw', '4'))}" data-w></div>
+        ${field('w-wert', 'Durchschnittlicher Wert pro Paket', '35', '€', 'inputmode="decimal"')}
+        <div class="field"><label for="w-ret">Davon schickst du zurück: <b id="w-ret-v"></b></label><input type="range" id="w-ret" min="0" max="100" step="10" value="${esc(wv('w-ret', '30'))}" data-w></div>
+        <div id="w-out" aria-live="polite"></div>`,
+      calc() {
+        const pw = +$('#w-pw').value, ret = +$('#w-ret').value / 100, wert = val('w-wert') || 0;
+        $('#w-pw-v').textContent = pw; $('#w-ret-v').textContent = Math.round(ret * 100) + ' %';
+        const jahr = pw * 52, behalten = jahr * (1 - ret), summe = behalten * wert;
+        $('#w-out').innerHTML = rows([['Pakete im Jahr', fmt(jahr, 0)], ['Davon behalten', fmt(behalten, 0)], ['Ausgegeben im Jahr', euro(summe)], ['Pro Monat', euro(summe / 12)]]) +
+          (pw >= 2 ? `<div class="box plain" style="margin-top:12px">Mit einem festen Bestelltag pro Monat wären es 12 Bestellungen im Jahr statt ${fmt(jahr, 0)} Pakete.</div>` : '');
+      }
+    },
+    impuls: {
+      html: () => `<span class="kicker">Für den Moment</span><h2>Impuls-Pause</h2><p class="note">Wähl, wie du dich gerade fühlst, und starte 20 Minuten Pause. Der Drang zu kaufen wird in dieser Zeit meist deutlich schwächer.</p>
+        <div class="chips">${GEFS.map(([k, l]) => `<button type="button" class="chip" data-gef="${k}" aria-pressed="${store.get('w:gef') === k}">${l}</button>`).join('')}</div>
+        <div class="timer"><div class="ring" id="w-ring"><span id="w-time">20:00</span></div>
+          <div class="timer-side"><p class="idea" id="w-idea" aria-live="polite"></p><div class="actions"><button type="button" class="btn" id="w-start">Pause starten</button><button type="button" class="btn-ghost" id="w-next">Andere Idee</button><button type="button" class="btn-ghost" id="w-reset">Zurücksetzen</button></div></div></div>`,
+      click(e) {
+        const g = e.target.closest('[data-gef]');
+        if (g) { store.set('w:gef', g.dataset.gef); $$('[data-gef]').forEach(b => b.setAttribute('aria-pressed', b === g)); ideaOff = 0; tick(); return; }
+        if (e.target.id === 'w-start') { store.set('w:end', Date.now() + DUR); ideaOff = 0; startTimer(); }
+        else if (e.target.id === 'w-reset') { store.set('w:end', null); startTimer(); }
+        else if (e.target.id === 'w-next') { ideaOff++; tick(); }
+      },
+      wire() { startTimer(); },
+      calc() { tick(); }
+    },
+    schuldenliste: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Deine Schulden auf einen Blick</h2><p class="note">Trag alle offenen Beträge ein. Du bekommst eine Reihenfolge, in der du sie angehen solltest. Die Liste bleibt nur auf diesem Gerät.</p>
+        <div class="example"><span class="tag">Beispiel</span><button type="button" class="btn-ghost btn-small" id="w-sl-leeren">Liste leeren</button></div>
+        <div id="w-sl" class="posten"></div>
+        <div><button type="button" class="btn-ghost btn-small" id="w-sl-neu">+ Eintrag</button></div>
+        <div id="w-out" aria-live="polite"></div>
+        <details><summary>Brief-Vorlage: Ratenzahlung anfragen</summary>
+          <div class="brief">
+            <div class="row">${field('w-b-an', 'An wen?', 'Modehaus Beispiel GmbH', '')}${field('w-b-az', 'Kunden- oder Aktenzeichen', '', '')}</div>
+            <div class="row">${field('w-b-rate', 'Monatliche Rate', '25', '€', 'inputmode="decimal"')}${field('w-b-name', 'Dein Name', '', '')}</div>
+            <textarea class="out-text" id="w-b-text" readonly aria-label="Fertiger Brief"></textarea>
+            <div class="example"><button type="button" class="btn" data-copyval="w-b-text">Brief kopieren</button><span class="note">Biete nur eine Rate an, die du jeden Monat sicher zahlen kannst. Bei mehreren Gläubigern zuerst zur Schuldnerberatung.</span></div>
+          </div>
+        </details>`,
+      wire() {
+        slList = rowList({
+          sec: 'none', key: 'sl-rows', el: 'w-sl', add: 'w-sl-neu',
+          cols: 'minmax(0,1.4fr) minmax(0,.9fr) minmax(0,1.3fr) auto',
+          fields: [{ k: 'name', label: 'Wem schuldest du es?', cls: 'p-name' }, { k: 'betrag', label: 'Betrag', num: true, suffix: '€' }, { k: 'art', label: 'Art', type: 'select', options: SL_ART }],
+          defaults: [
+            { name: 'Online-Shop, später zahlen', betrag: '340', art: 'raten' },
+            { name: 'Modehaus, zweite Mahnung', betrag: '189', art: 'inkasso' },
+            { name: 'Dispo Girokonto', betrag: '1.200', art: 'dispo' },
+            { name: 'Stromnachzahlung', betrag: '210', art: 'existenz' }
+          ],
+          blank: { name: '', betrag: '', art: 'raten' },
+          empty: 'Noch keine Einträge.',
+          onChange: () => WIDGETS.schuldenliste.calc()
+        });
+        $('#w-sl-leeren').onclick = () => { slList.clear(); WIDGETS.schuldenliste.calc(); };
+      },
+      calc() {
+        if (!slList) return;
+        const items = slList.rows.map(r => ({ n: r.name || 'Ohne Namen', b: parseNum(r.betrag, true) || 0, a: r.art })).filter(i => i.b > 0)
+          .sort((x, y) => (PRIO[x.a] || [9])[0] - (PRIO[y.a] || [9])[0]);
+        const total = items.reduce((sum, i) => sum + i.b, 0);
+        $('#w-out').innerHTML = items.length
+          ? `<div style="display:grid;gap:12px"><div class="big">${euro(total)} <small>offen</small></div><span class="kicker">In dieser Reihenfolge angehen</span><ol class="prio">${items.map(i => { const pr = PRIO[i.a] || [9, 'Danach', '']; return `<li><div class="ptop"><span>${esc(i.n)}</span><span>${euro(i.b)}</span></div><small><b>${pr[1]}:</b> ${esc(pr[2])}</small></li>`; }).join('')}</ol></div>`
+          : '<p class="note">Trag deinen ersten offenen Betrag ein.</p>';
+        const an = $('#w-b-an').value.trim() || '[Gläubiger]', az = $('#w-b-az').value.trim() || '[Kunden- oder Aktenzeichen]', rate = val('w-b-rate'), name = $('#w-b-name').value.trim() || '[Dein Name]';
+        $('#w-b-text').value = `An: ${an}\nBetreff: Bitte um Ratenzahlung, ${az}\n\nSehr geehrte Damen und Herren,\n\ndie offene Forderung kann ich derzeit nicht auf einmal bezahlen. Ich möchte sie aber begleichen und biete Ihnen eine monatliche Rate von ${rate > 0 ? euro(rate) : '[Betrag]'} an, beginnend zum nächsten Monatsersten.\n\nBitte bestätigen Sie mir die Ratenzahlung schriftlich und sehen Sie in dieser Zeit von weiteren Mahnungen und Gebühren ab.\n\nMit freundlichen Grüßen\n${name}`;
+      }
+    },
+    gespraech: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Gesprächsstarter</h2><p class="note">Ein ruhiger erster Satz macht es leichter. Füll die Lücken, der Text entsteht darunter.</p>
+        <div class="field"><label for="w-g-beob">Was ist dir aufgefallen?</label><textarea id="w-g-beob" rows="2" data-w>${esc(wv('w-g-beob', 'in letzter Zeit fast jeden Tag Pakete kommen und du danach oft still bist'))}</textarea></div>
+        <div class="row">${select('w-g-gef', 'Wie geht es dir damit?', ['mache mir Sorgen', 'bin verunsichert', 'bin traurig', 'fühle mich ausgeschlossen'])}${select('w-g-wunsch', 'Was wünschst du dir?', ['dass wir offen darüber reden können', 'dass wir uns gemeinsam Unterstützung holen', 'dass wir uns zusammen einen Überblick über unser Geld verschaffen', 'dass du mit einer Beratungsstelle sprichst'])}</div>
+        <textarea class="out-text" id="w-g-text" readonly aria-label="Dein Gesprächsstarter" style="min-height:120px"></textarea>
+        <div class="example"><button type="button" class="btn" data-copyval="w-g-text">Text kopieren</button><span class="note">Sag es in einem ruhigen Moment, nicht direkt nach einem Streit.</span></div>`,
+      calc() {
+        const beob = $('#w-g-beob').value.trim().replace(/[.!]+$/, '') || '…';
+        $('#w-g-text').value = `Mir ist aufgefallen, dass ${beob}. Ich ${$('#w-g-gef').value}, weil du mir wichtig bist. Ich wünsche mir, ${$('#w-g-wunsch').value}. Ich bin für dich da, wenn du magst.`;
+      }
+    }
+  };
+
+  /* ---------- Mein Plan ---------- */
+  let plan = store.get('plan') || [];
+  const inPlan = (t, x) => plan.some(q => q.t === t && q.x === x);
+  function togglePlan(t, x) {
+    plan = inPlan(t, x) ? plan.filter(q => !(q.t === t && q.x === x)) : plan.concat([{ t, x, done: false }]);
+    store.set('plan', plan);
+  }
+  function renderPlan() {
+    const sec = $('#v-plan'), done = plan.filter(q => q.done).length;
+    const groups = TOPICS.filter(t => plan.some(q => q.t === t.id));
+    sec.innerHTML = `<div class="wrap page">
+      <a class="back" href="#start" data-back>← Zurück</a>
+      <header class="phead">${icon('plan')}<h1>Mein Plan</h1><p class="lead">Die Schritte, die du dir vorgenommen hast. Hak ab, was du geschafft hast. Der Plan bleibt nur auf diesem Gerät.</p></header>
+      ${plan.length ? `<div class="block"><span class="lbl">${done} von ${plan.length} erledigt</span><div class="progress" aria-hidden="true"><div style="width:${done / plan.length * 100}%"></div></div>${done === plan.length ? '<div class="box good">Alles erledigt. Stark. Nimm dir den nächsten Schritt vor, oder bleib bei dem, was dir hilft.</div>' : ''}</div>` +
+        groups.map(t => `<section class="block"><h2>${esc(t.name)}</h2><ul class="plan-list">${plan.map((q, i) => [q, i]).filter(([q]) => q.t === t.id).map(([q, i]) => `<li class="${q.done ? 'done' : ''}"><input type="checkbox" id="pl-${i}" data-pl="${i}"${q.done ? ' checked' : ''}><label for="pl-${i}">${esc(q.x)}</label><button type="button" class="x" data-pl-del="${i}" aria-label="Aus dem Plan nehmen">×</button></li>`).join('')}</ul></section>`).join('')
+        : `<div class="box plain">Noch nichts im Plan. Auf den Themenseiten kannst du Tipps mit „+ Plan“ hinzufügen.</div><div class="next2">${['laden', 'online', 'gefuehle', 'schulden'].map(id => `<a class="action" href="#${id}">${icon(id)}<span><b>${esc(T[id].name)}</b></span></a>`).join('')}</div>`}
+    </div>`;
+    sec.onchange = e => { const c = e.target.closest('[data-pl]'); if (!c) return; plan[+c.dataset.pl].done = c.checked; store.set('plan', plan); renderPlan(); };
+    sec.onclick = e => { const d = e.target.closest('[data-pl-del]'); if (!d) return; plan.splice(+d.dataset.plDel, 1); store.set('plan', plan); renderPlan(); };
+  }
+
   /* ---------- Ratgeber-Ansicht ---------- */
   function renderGuide(t) {
+    const ex = EXTRA[t.id] || {}, W = WIDGETS[ex.widget];
     const extra = (t.tools || []).filter(id => id !== 'kassensturz' && id !== 'hilfe').map(id => T[id]).filter(Boolean);
-    const li = arr => arr.map(x => `<li>${esc(x)}</li>`).join('');
+    const picked = store.get('k:' + t.id) || [];
+    const tipLi = arr => arr.map(x => { const on = inPlan(t.id, x); return `<li><span>${esc(x)}</span><button type="button" class="plan-btn" data-tip="${esc(x)}" aria-pressed="${on}">${on ? '✓ Im Plan' : '+ Plan'}</button></li>`; }).join('');
     const sec = $('#v-thema');
     sec.dataset.c = t.cat;
     sec.innerHTML = `
       <div class="wrap page">
         <a class="back" href="#start" data-back>← Zurück</a>
         <header class="phead">${icon(t.id)}<h1>${esc(t.titel)}</h1><p class="lead">${esc(t.kurz)}</p></header>
-        <section class="block"><h2>Kennst du das?</h2><ul class="list signs">${li(t.kennst)}</ul></section>
-        <section class="block"><h2>Warum das passiert</h2><p>${esc(t.warum)}</p></section>
-        <section class="block"><h2>Was sofort hilft</h2><ul class="list tips">${li(t.sofort)}</ul></section>
+        <section class="block"><h2>Kennst du das?</h2><p class="note">Tipp an, was auf dich zutrifft.</p>
+          <div class="picks">${t.kennst.map((x, i) => `<button type="button" class="pick" data-pick="${i}" aria-pressed="${picked.includes(i)}"><span class="bx"></span><span>${esc(x)}</span></button>`).join('')}</div>
+          <p class="fb" id="pick-fb" aria-live="polite"></p></section>
+        <section class="block"><h2>Warum das passiert</h2><p>${esc(t.warum)}</p>${ex.kreis ? kreisHTML() : ''}</section>
+        <section class="block"><h2>Was sofort hilft</h2><p class="note">Nimm dir mit „+ Plan“ vor, was du ausprobieren willst.</p><ul class="list tips">${tipLi(t.sofort)}</ul></section>
         <p class="mantra">„${esc(t.moment)}“</p>
-        <section class="block"><h2>Was auf Dauer hilft</h2><ul class="list tips">${li(t.spaeter)}</ul></section>
+        ${W ? `<section class="panel widget">${W.html()}</section>` : ''}
+        <section class="block"><h2>Was auf Dauer hilft</h2><ul class="list tips">${tipLi(t.spaeter)}</ul></section>
+        ${ex.faq ? `<section class="block faq"><h2>Gut zu wissen</h2>${ex.faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>` : ''}
         <section class="block">
           <h2>Nächster Schritt</h2>
           <div class="next2">
             <a class="action" href="#kassensturz" data-c="werkzeuge">${icon('kassensturz')}<span><b>Rechner</b><small>Einkommen und Ausgaben durchrechnen</small></span></a>
             <a class="action" href="#hilfe" data-c="hilfe">${icon('hilfe')}<span><b>Hilfe &amp; Beratung</b><small>Kostenlos und vertraulich</small></span></a>
           </div>
-          ${extra.length ? `<p class="more">Auch hilfreich: ${extra.map(x => `<a href="#${x.id}">${esc(x.name)}</a>`).join(' · ')}</p>` : ''}
+          <p class="more"><a href="#plan">Mein Plan (<span id="plan-count">${plan.length}</span>)</a>${extra.length ? ` · Auch hilfreich: ${extra.map(x => `<a href="#${x.id}">${esc(x.name)}</a>`).join(' · ')}` : ''}</p>
         </section>
         ${t.krise ? '<p class="sos-line">Geht es dir gerade richtig schlecht? Die Telefonseelsorge ist kostenlos und rund um die Uhr da: <a href="tel:08001110111">0800 111 0 111</a></p>' : ''}
       </div>`;
+
+    const n = t.kennst.length;
+    const fb = () => {
+      const k = $$('.pick[aria-pressed="true"]', sec).length;
+      $('#pick-fb').textContent = k === 0 ? '' : k <= 2
+        ? `${k} von ${n} kennst du. Die Tipps unten helfen dir, früh gegenzusteuern.`
+        : `${k} von ${n} kennst du gut. Fang mit einem Tipp aus „Was sofort hilft“ an und nimm ihn in deinen Plan.`;
+    };
+    fb();
+    if (ex.kreis) showKreis(0);
+    if (W && W.wire) W.wire();
+    if (W) W.calc();
+    sec.onclick = e => {
+      const pk = e.target.closest('.pick');
+      if (pk) {
+        pk.setAttribute('aria-pressed', pk.getAttribute('aria-pressed') !== 'true');
+        store.set('k:' + t.id, $$('.pick', sec).map((b, i) => b.getAttribute('aria-pressed') === 'true' ? i : -1).filter(i => i >= 0));
+        fb(); return;
+      }
+      const pb = e.target.closest('.plan-btn');
+      if (pb) {
+        togglePlan(t.id, pb.dataset.tip);
+        const on = inPlan(t.id, pb.dataset.tip);
+        pb.setAttribute('aria-pressed', on); pb.textContent = on ? '✓ Im Plan' : '+ Plan';
+        $('#plan-count').textContent = plan.length; return;
+      }
+      const ks = e.target.closest('.kstep');
+      if (ks) { showKreis(+ks.dataset.k); return; }
+      if (W && W.click) W.click(e);
+    };
+    const onW = e => {
+      if (!e.target.matches('[data-w]')) return;
+      const el = e.target;
+      store.set('w:' + (el.type === 'radio' ? el.name : el.id), el.value);
+      W.calc();
+    };
+    sec.oninput = W ? onW : null;
+    sec.onchange = W ? onW : null;
   }
 
   /* ---------- Speichern & Zurücksetzen ---------- */
@@ -767,11 +1099,22 @@ footer a:hover { color: var(--ink); }
   }
 
   /* ---------- Kassensturz ---------- */
+  let ksState = null;
+  function updateWhatIf() {
+    const box = $('#ks-whatif');
+    box.hidden = !ksState || !(ksState.K > 0);
+    if (box.hidden) return;
+    const r = +$('#ks-reduce').value / 100, { rest, K, debt } = ksState;
+    $('#ks-reduce-v').textContent = Math.round(r * 100) + ' %';
+    const neu = rest + K * r, monate = debt > 0 && neu > 0 ? Math.ceil(debt / neu) : null;
+    $('#ks-whatif-out').innerHTML = `<div class="box ${neu > 0 ? 'good' : 'warn'}">Du kaufst für ${euro(K * (1 - r))} statt ${euro(K)} ein. Am Monatsende bleiben <strong>${euro(neu)}</strong>, im Jahr sind das ${euro(K * r * 12)} mehr.${monate ? ` Deine Schulden wären in etwa <strong>${monate} ${monate === 1 ? 'Monat' : 'Monaten'}</strong> abbezahlt.` : debt > 0 ? ' Für den Schuldenabbau reicht das noch nicht.' : ''}</div>`;
+  }
+  $('#ks-reduce').addEventListener('input', updateWhatIf);
   function calcKS() {
     const out = $('#ks-out');
     const sum = g => $$(`[data-ks="${g}"]`).reduce((s, el) => s + (parseNum(el.value, true) || 0), 0);
     const E = sum('ein'), F = sum('fix'), K = sum('kauf');
-    if (!(E > 0)) { out.innerHTML = errBox(['Trag ein, wie viel jeden Monat reinkommt.']); return; }
+    if (!(E > 0)) { out.innerHTML = errBox(['Trag ein, wie viel jeden Monat reinkommt.']); ksState = null; updateWhatIf(); return; }
     const dispo = val('ks-dispo') || 0, zins = val('ks-zins') || 0, offen = val('ks-offen') || 0, andere = val('ks-andere') || 0;
     const debt = dispo + offen + andere, zinsJahr = dispo * zins / 100;
     const rest = E - F - K, base = Math.max(E, F + K);
@@ -781,8 +1124,6 @@ footer a:hover { color: var(--ink); }
     if (rest < 0) pill = `<span class="pill bad">Jeden Monat ${euro(-rest)} im Minus</span>`;
     else if (kaufAnteil > 0.2 || rest < E * 0.05) pill = '<span class="pill warn">Knapp</span>';
     else pill = '<span class="pill good">Im grünen Bereich</span>';
-    const halb = rest + K / 2;
-    const monate = debt > 0 && halb > 0 ? Math.ceil(debt / halb) : null;
     let budget = Math.max(0, Math.min(E * 0.3, (E - F) - E * 0.2));
     if (debt > 0) budget /= 2;
     out.innerHTML = `
@@ -801,9 +1142,10 @@ footer a:hover { color: var(--ink); }
         ['Schulden gesamt', euro(debt)],
         dispo > 0 && zins > 0 ? ['Dispozinsen pro Jahr', euro(zinsJahr)] : null
       ])}
-      ${K > 0 ? `<div class="box ${halb > 0 ? 'good' : 'warn'}">Halbierst du deine Einkäufe, bleiben dir <strong>${euro(halb)}</strong> im Monat.${monate ? ` Damit wären deine Schulden in etwa <strong>${monate} ${monate === 1 ? 'Monat' : 'Monaten'}</strong> abbezahlt.` : ''}</div>` : ''}
       <div class="box plain"><strong>Dein Vorschlag für ein festes Kaufbudget:</strong> ${budget > 0 ? `${euro(budget)} im Monat, also <strong>${euro(budget / 4.33)} pro Woche</strong>. Heb den Wochenbetrag in bar ab. Ist er weg, ist Kaufpause bis Montag.` : 'Im Moment ist kein Spielraum für Einkäufe über das Nötige hinaus. Eine Schuldnerberatung hilft dir, die festen Kosten und Schulden zu ordnen.'}${debt > 0 && budget > 0 ? ' Solange Schulden offen sind, ist das Budget halbiert.' : ''}</div>
       <p class="note">Faustregel: Für Wünsche höchstens 30 % des Einkommens, mindestens 20 % zum Sparen oder für Schulden.</p>`;
+    ksState = { rest, K, debt };
+    updateWhatIf();
   }
 
   /* ---------- Kauf-Bremse ---------- */
@@ -953,7 +1295,7 @@ footer a:hover { color: var(--ink); }
   $('#loeschen').addEventListener('click', () => {
     store.clear();
     $$('[data-tool]').forEach(sec => resetTool(sec));
-    kbList = []; kbSaved = 0; renderKBList();
+    kbList = []; kbSaved = 0; renderKBList(); plan = [];
     Object.values(CALC).forEach(f => f());
     $('#geloescht').textContent = 'Gelöscht. Alles ist wieder im Ausgangszustand.';
   });
@@ -982,7 +1324,8 @@ footer a:hover { color: var(--ink); }
     track(document.getElementById('v-' + h) || T[h] ? h : 'start');
     const t = T[h];
     if (t && !t.tool) { renderGuide(t); show('thema', h, t.titel); return; }
-    show(document.getElementById('v-' + h) ? h : 'start', h, t ? t.titel : ({ impressum: 'Impressum', datenschutz: 'Datenschutz' })[h]);
+    if (h === 'plan') renderPlan();
+    show(document.getElementById('v-' + h) ? h : 'start', h, t ? t.titel : ({ impressum: 'Impressum', datenschutz: 'Datenschutz', plan: 'Mein Plan' })[h]);
   }
   function show(view, key, name) {
     $$('[data-view]').forEach(s => { s.hidden = s.id !== 'v-' + view; });

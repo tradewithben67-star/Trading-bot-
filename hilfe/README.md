@@ -23,10 +23,32 @@ Schulden, Vorschlag für ein Kaufbudget) und `#hilfe` (Beratungsstellen und Tele
 Ältere Adressen (`#rabatte`, `#social`, `#apps`, `#heimlich`, `#horten`, `#ratenkauf`) leiten auf die
 zusammengefasste Karte weiter.
 
-Jede Tipp-Seite hat denselben Aufbau: „Kennst du das?“, „Warum das passiert“, „Was sofort hilft“,
-„Was auf Dauer hilft“, ein Satz für den Moment und Links zu passenden Werkzeugen.
-Die Texte stehen im Skript im Feld `TOPICS`. Ob ein Eintrag auf der Startseite erscheint,
-bestimmt `start` (die Zahl ist die Reihenfolge).
+Jede Tipp-Seite hat denselben Aufbau:
+
+1. **Kennst du das?** zum Antippen, mit Rückmeldung, wie viel davon zutrifft
+2. **Warum das passiert**, bei „Kaufen aus Frust“ mit dem Kreislauf zum Durchklicken
+   (Auslöser → Drang → Kauf → Reue → neues Tief, jeweils mit „Hier aussteigen“)
+3. **Was sofort hilft**, jeder Tipp mit „+ Plan“
+4. ein Satz für den Moment
+5. ein **Mini-Werkzeug** zum Thema:
+
+   | Seite | Werkzeug |
+   | --- | --- |
+   | Einkaufen im Laden | Sale-Check: echter Rabatt oder nur Ausgabe? |
+   | Online-Shopping | Paket-Rechner mit Schiebereglern |
+   | Kaufen aus Frust | Impuls-Pause: Gefühl wählen, 20-Minuten-Timer, passende Ideen |
+   | Schulden & Raten | Schuldenliste mit Reihenfolge und Brief-Vorlage „Ratenzahlung anfragen“ |
+   | Für Angehörige | Gesprächsstarter mit Ich-Botschaft zum Kopieren |
+
+6. **Was auf Dauer hilft**, ebenfalls mit „+ Plan“
+7. **Gut zu wissen**: drei Fragen und Antworten zum Aufklappen
+8. **Nächster Schritt**: Rechner und Hilfe & Beratung, dazu „Mein Plan“
+
+**Mein Plan** (`#plan`) sammelt alle Tipps, die man mit „+ Plan“ ausgewählt hat, zum Abhaken.
+Der **Rechner** hat zusätzlich einen Schieberegler „Was wäre, wenn du weniger kaufst?“.
+
+Die Texte stehen im Skript in `TOPICS` (Grundinhalt) und `EXTRA` (Fragen, Mini-Werkzeug).
+Ob ein Eintrag auf der Startseite erscheint, bestimmt `start` (die Zahl ist die Reihenfolge).
 
 ## Hilfe-Kontakte (Stand November 2026, einmal im Jahr prüfen)
 

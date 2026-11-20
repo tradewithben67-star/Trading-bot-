@@ -4,6 +4,8 @@ Eine Website für den Alltag: Man klickt sein Problem an und bekommt ein Werkzeu
 Für alle, nicht nur für eine Zielgruppe: Geld und Haushalt, Wohnen und Energie, Unterwegs, Küche, Lernen, Job und Trading.
 Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine fremden Schriften.
 
+Aussehen: weißer Hintergrund, die Startseite zeigt jedes Thema als Karte mit Symbol und Bereichsfarbe. Ein Klick auf eine Karte öffnet das Werkzeug mit allen Informationen. Farben stehen als Tokens oben im `:root`-Block, die Bereichsfarben in den `[data-c=…]`-Regeln, die Symbole in `ICONS` im Skript.
+
 ## Themen
 
 | Adresse | Problem | Werkzeug |

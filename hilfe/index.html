@@ -10,39 +10,34 @@
 /* Layout: Karopapier-Kopf mit Suche, darunter ein Raster aus Problem-Kacheln.
    Jedes Thema öffnet eine eigene Ansicht: Formular links, Ergebnis rechts (am Handy untereinander). */
 :root {
-  --paper: #f5f7fb;
+  --paper: #ffffff;
   --surface: #ffffff;
-  --ink: #17213b;
-  --ink-soft: #4f5b78;
-  --line: #d5ddec;
-  --grid: rgba(39, 65, 196, .09);
-  --pen: #2741c4;
-  --pen-soft: #e8ecfb;
+  --subtle: #f7f8fa;
+  --ink: #0f172a;
+  --ink-soft: #5b6475;
+  --line: #e6e8ee;
+  --pen: #1f4fd1;
+  --pen-soft: #eef3ff;
   --on-pen: #ffffff;
-  --marker: #ffe45c;
-  --good: #17703f; --good-bg: #e3f4ea;
-  --warn: #8f5200; --warn-bg: #fdf0d9;
-  --bad: #a8231b;  --bad-bg: #fbe5e3;
+  --marker: #e6edfd;
+  --good: #15803d; --good-bg: #ecf7f0;
+  --warn: #a15c07; --warn-bg: #fdf4e3;
+  --bad: #b42318;  --bad-bg: #fdeceb;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, .04), 0 2px 6px rgba(15, 23, 42, .05);
+  --shadow-hover: 0 4px 8px rgba(15, 23, 42, .04), 0 16px 32px -8px rgba(15, 23, 42, .14);
   --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
-  --r: 10px;
+  --r: 14px;
+  color-scheme: light;
 }
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --paper: #0e1424; --surface: #161f35; --ink: #e7ebf5; --ink-soft: #a2adc6; --line: #2a3553;
-    --grid: rgba(150, 170, 255, .07); --pen: #9aabff; --pen-soft: #1f2a4a; --on-pen: #0e1424;
-    --marker: rgba(255, 222, 70, .38);
-    --good: #6fd79f; --good-bg: #16302a; --warn: #f0b65a; --warn-bg: #33281a; --bad: #ff8a80; --bad-bg: #3a1e22;
-    color-scheme: dark;
-  }
-}
-:root[data-theme="dark"] {
-  --paper: #0e1424; --surface: #161f35; --ink: #e7ebf5; --ink-soft: #a2adc6; --line: #2a3553;
-  --grid: rgba(150, 170, 255, .07); --pen: #9aabff; --pen-soft: #1f2a4a; --on-pen: #0e1424;
-  --marker: rgba(255, 222, 70, .38);
-  --good: #6fd79f; --good-bg: #16302a; --warn: #f0b65a; --warn-bg: #33281a; --bad: #ff8a80; --bad-bg: #3a1e22;
-  color-scheme: dark;
-}
+/* Farbtöne der Bereiche: Symbol-Hintergrund und Symbolfarbe */
+[data-c="geld"]      { --tint: #ebf7f0; --tint-ink: #15803d; }
+[data-c="wohnen"]    { --tint: #fff4e3; --tint-ink: #b45309; }
+[data-c="unterwegs"] { --tint: #eaf1ff; --tint-ink: #1d4ed8; }
+[data-c="kueche"]    { --tint: #fdedf0; --tint-ink: #be123c; }
+[data-c="lernen"]    { --tint: #f1edff; --tint-ink: #6d28d9; }
+[data-c="bewerbung"] { --tint: #e6f6f7; --tint-ink: #0e7490; }
+[data-c="trading"]   { --tint: #eef0f4; --tint-ink: #334155; }
 
 * { box-sizing: border-box; }
 html { -webkit-text-size-adjust: 100%; }
@@ -58,67 +53,75 @@ p { margin: 0; }
   padding-left: max(16px, env(safe-area-inset-left, 0px));
   padding-right: max(16px, env(safe-area-inset-right, 0px));
 }
-mark {
-  color: inherit; padding: 0 .06em;
-  background: linear-gradient(100deg, transparent 1%, var(--marker) 3%, var(--marker) 97%, transparent 99%) no-repeat 0 78% / 100% 58%;
-}
+mark { background: none; color: inherit; padding: 0; }
 .ph { color: var(--warn); font-family: var(--mono); font-size: .9em; }
 .num { font-variant-numeric: tabular-nums; }
 
 /* Kopfzeile */
-.top { border-bottom: 1px solid var(--line); background: var(--paper); }
+.top { border-bottom: 1px solid var(--line); background: var(--paper); position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+.brand { display: inline-flex; align-items: center; gap: 10px; }
+.logo { width: 28px; height: 28px; border-radius: 8px; background: var(--ink); display: grid; place-items: center; }
+.logo svg { width: 16px; height: 16px; stroke: #ffffff; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
-.brand { font-weight: 850; font-size: 1.15rem; letter-spacing: -.02em; color: var(--ink); text-decoration: none; }
+.brand { font-weight: 800; font-size: 1.08rem; letter-spacing: -.02em; color: var(--ink); text-decoration: none; }
 .top nav { display: flex; gap: 18px; font-size: .92rem; }
 .top nav a { color: var(--ink-soft); text-decoration: none; }
 .top nav a:hover { color: var(--pen); }
 
 /* Startseite */
-.hero {
-  background-color: var(--paper);
-  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
-  background-size: 20px 20px; background-position: -1px -1px;
-  border-bottom: 1px solid var(--line);
-}
-.hero .wrap { padding-block: 52px 40px; display: grid; gap: 18px; }
-.hero h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 850; letter-spacing: -.04em; line-height: 1; }
-.hero .lead { font-size: 1.15rem; color: var(--ink-soft); max-width: 40rem; }
+.hero { background: var(--paper); }
+.hero .wrap { padding-block: 56px 8px; display: grid; gap: 16px; }
+.eyebrow { font-size: .8rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; color: var(--pen); }
+.hero h1 { font-size: clamp(2.3rem, 5.5vw, 3.6rem); font-weight: 800; letter-spacing: -.035em; line-height: 1.05; }
+.hero .lead { font-size: 1.12rem; color: var(--ink-soft); max-width: 38rem; }
 .search { position: relative; max-width: 40rem; margin-top: 6px; }
 .search input[type="text"] {
-  width: 100%; font: inherit; font-size: 1.1rem; padding: 15px 16px 15px 46px;
-  border: 2px solid var(--ink); border-radius: var(--r); background: var(--surface); color: var(--ink);
+  width: 100%; font: inherit; font-size: 1.05rem; padding: 14px 16px 14px 46px;
+  border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink);
+  box-shadow: var(--shadow-card);
 }
+.search input[type="text"]:focus { border-color: var(--pen); box-shadow: 0 0 0 4px var(--pen-soft); outline: none; }
 .search svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--ink-soft); fill: none; stroke-width: 2.2; }
 .chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .chip {
-  font: inherit; font-size: .9rem; padding: 6px 13px; border-radius: 999px; cursor: pointer;
-  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  font: inherit; font-size: .88rem; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft);
 }
+.chip:hover { color: var(--ink); border-color: #cfd4de; }
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 
-.board { padding-block: 32px 12px; display: grid; gap: 18px; }
+.board { padding-block: 28px 12px; display: grid; gap: 18px; }
 .board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .board-head h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); font-weight: 700; }
 .count { font-size: .9rem; color: var(--ink-soft); }
-.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(255px, 1fr)); gap: 20px; }
 .tile {
-  display: grid; grid-template-rows: auto 1fr auto; gap: 8px; min-width: 0;
-  padding: 18px 18px 14px; border: 1px solid var(--line); border-radius: var(--r);
+  display: grid; grid-template-rows: auto 1fr auto; gap: 16px; min-width: 0;
+  padding: 22px; border: 1px solid var(--line); border-radius: var(--r);
   background: var(--surface); color: var(--ink); text-decoration: none;
-  transition: border-color .15s, transform .15s;
+  box-shadow: var(--shadow-card);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
 }
-.tile:hover { border-color: var(--pen); transform: translateY(-2px); }
-.tile .cat { font-size: .74rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--pen); }
-.tile h3 { font-size: 1.16rem; font-weight: 750; letter-spacing: -.01em; }
-.tile p { color: var(--ink-soft); font-size: .94rem; }
-.tile .meta { display: flex; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
+.tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: #d9dde6; }
+.tile:active { transform: translateY(-1px); }
+.tile-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--tint, var(--pen-soft)); flex: none; }
+.ic svg { width: 22px; height: 22px; stroke: var(--tint-ink, var(--pen)); fill: none; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.tile .cat { font-size: .72rem; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; color: var(--ink-soft); padding: 4px 9px; border-radius: 999px; background: var(--subtle); }
+.tile-body { display: grid; gap: 6px; align-content: start; }
+.tile h3 { font-size: 1.12rem; font-weight: 700; letter-spacing: -.012em; line-height: 1.25; }
+.tile p { color: var(--ink-soft); font-size: .93rem; line-height: 1.5; }
+.tile .meta { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .84rem; color: var(--ink-soft); border-top: 1px solid var(--line); padding-top: 14px; }
 .tile .meta b { color: var(--ink); font-weight: 600; }
-.empty { padding: 22px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-soft); }
+.go { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--ink); transition: background .18s, color .18s, border-color .18s; }
+.tile:hover .go { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.empty { padding: 22px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-soft); grid-column: 1 / -1; }
 
 .wish { padding-block: 28px 44px; }
 .wish-box {
   display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center;
-  padding: 22px; border-radius: var(--r); background: var(--pen-soft);
+  padding: 24px; border-radius: var(--r); background: var(--subtle); border: 1px solid var(--line);
 }
 .wish-box h2 { font-size: 1.25rem; margin-bottom: 4px; }
 .wish-box p { color: var(--ink-soft); }
@@ -129,8 +132,12 @@ mark {
 .back { font-size: .92rem; text-decoration: none; color: var(--ink-soft); }
 .back:hover { color: var(--pen); }
 .tool-head { display: grid; gap: 10px; max-width: 46rem; }
-.tool-head .cat { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--pen); }
-.tool-head h1 { font-size: clamp(1.8rem, 4.6vw, 2.7rem); font-weight: 850; letter-spacing: -.03em; }
+.tool-head .ic { width: 52px; height: 52px; border-radius: 14px; margin-bottom: 4px; }
+.tool-head .ic svg { width: 26px; height: 26px; }
+.tool-head .cat { font-size: .76rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--ink-soft); }
+.tool-head h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; }
+[data-view]:not([hidden]) { animation: viewIn .22s ease-out; }
+@keyframes viewIn { from { opacity: .4; transform: translateY(8px); } }
 .tool-head .lead { color: var(--ink-soft); font-size: 1.06rem; }
 .tool-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 28px; align-items: start; }
 @media (max-width: 860px) { .tool-grid { grid-template-columns: minmax(0, 1fr); } }
@@ -149,13 +156,14 @@ input[type="text"], input[type="date"], select, textarea {
   width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
   background: var(--surface); color: var(--ink); min-width: 0;
 }
+input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); outline: none; }
 textarea { resize: vertical; line-height: 1.45; }
 .suffix { position: relative; }
 .suffix input[type="text"] { padding-right: 46px; }
 .suffix span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: .9rem; pointer-events: none; }
 
 .example { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .85rem; color: var(--ink-soft); }
-.tag { font-family: var(--mono); font-size: .75rem; padding: 2px 8px; border-radius: 4px; background: var(--marker); color: var(--ink); }
+.tag { font-size: .74rem; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--pen-soft); color: var(--pen); }
 
 .btn, .btn-ghost {
   font: inherit; font-weight: 650; font-size: .92rem; cursor: pointer; border-radius: 8px; padding: 9px 15px;
@@ -167,11 +175,11 @@ textarea { resize: vertical; line-height: 1.45; }
 
 .result {
   position: sticky; top: 16px; display: grid; gap: 16px;
-  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--r); padding: 20px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow-card);
 }
 @media (max-width: 860px) { .result { position: static; } }
 .result .kicker { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-soft); font-weight: 700; }
-.big { font-size: clamp(2rem, 5vw, 2.6rem); font-weight: 850; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.big { font-size: clamp(2rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
 .big small { font-size: .5em; font-weight: 650; color: var(--ink-soft); letter-spacing: 0; }
 dl.rows { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
 dl.rows dt, dl.rows dd { padding: 8px 0; border-top: 1px solid var(--line); margin: 0; }
@@ -263,7 +271,7 @@ details .prose { margin-top: 10px; }
 /* Verzeichnis */
 .dir-tools { display: grid; gap: 12px; }
 .dir { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-.entry { display: grid; gap: 8px; align-content: start; padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; }
+.entry { display: grid; gap: 8px; align-content: start; padding: 20px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; box-shadow: var(--shadow-card); }
 .entry-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
 .entry h3 { font-size: 1.1rem; }
 .entry .price { font-family: var(--mono); font-size: .76rem; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
@@ -273,13 +281,13 @@ details .prose { margin-top: 10px; }
 .entry p { font-size: .92rem; }
 .entry .haken { color: var(--ink-soft); }
 .entry .haken b { color: var(--ink); }
-.entry.featured { border-style: dashed; background: transparent; }
+.entry.featured { border-style: dashed; background: transparent; box-shadow: none; }
 .toggle { display: inline-flex; gap: 8px; align-items: center; font-size: .9rem; cursor: pointer; }
 .toggle input { accent-color: var(--pen); width: 16px; height: 16px; }
 
 /* Rechtliches */
 .legal { padding-block: 26px 48px; display: grid; gap: 18px; }
-.legal h1 { font-size: clamp(1.8rem, 4.6vw, 2.5rem); font-weight: 850; letter-spacing: -.03em; }
+.legal h1 { font-size: clamp(1.8rem, 4.6vw, 2.5rem); font-weight: 800; letter-spacing: -.03em; }
 .legal address { font-style: normal; color: var(--ink); }
 
 footer { border-top: 1px solid var(--line); }
@@ -288,7 +296,7 @@ footer nav { display: flex; gap: 18px; }
 footer a { color: var(--ink-soft); }
 
 @media (prefers-reduced-motion: reduce) {
-  * { transition: none !important; }
+  * { transition: none !important; animation: none !important; }
 }
 </style>
 </head>
@@ -296,7 +304,7 @@ footer a { color: var(--ink-soft); }
 
 <header class="top">
   <div class="wrap">
-    <a class="brand" href="#start">Wo <mark>hakt's</mark>?</a>
+    <a class="brand" href="#start"><span class="logo" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L4 17l3 3 5.3-5.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"></path></svg></span>Wo hakt's?</a>
     <nav aria-label="Hauptnavigation">
       <a href="#start">Alle Themen</a>
       <a href="#lerntools">Lern-Tools</a>
@@ -310,8 +318,9 @@ footer a { color: var(--ink-soft); }
 <section id="v-start" data-view>
   <div class="hero">
     <div class="wrap">
-      <h1>Wo <mark>hakt's</mark>?</h1>
-      <p class="lead">Kleine Probleme aus dem Alltag, schnell gelöst: Haushaltsgeld, Kosten teilen, Abos, Strom, Fahrt, Rezept, Lernen, Bewerbung. Klick an, wo es bei dir hakt, und bekomm einen Rechner, einen Plan oder eine Checkliste. Ohne Anmeldung, deine Eingaben bleiben auf deinem Gerät.</p>
+      <span class="eyebrow">Werkzeuge für den Alltag</span>
+      <h1>Wo hakt's?</h1>
+      <p class="lead">Wähl eine Karte. Dahinter steckt ein Rechner, ein Plan oder eine Checkliste, die dein Problem in wenigen Minuten löst. Ohne Anmeldung, deine Eingaben bleiben auf deinem Gerät.</p>
       <div class="search">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
         <input type="text" id="suche" placeholder="Beschreib dein Problem, z. B. „Klausur“, „Miete“, „Lots“" aria-label="Problem suchen" autocomplete="off">
@@ -322,7 +331,7 @@ footer a { color: var(--ink-soft); }
 
   <div class="wrap board">
     <div class="board-head">
-      <h2>Probleme, die wir lösen</h2>
+      <h2>Alle Themen</h2>
       <span class="count" id="trefferzahl"></span>
     </div>
     <div class="tiles" id="tiles"></div>
@@ -1209,6 +1218,23 @@ Butter zum Braten</textarea>
     { id: 'positionsgroesse', cat: 'trading', frage: 'Wie viel darf ich pro Trade riskieren?', text: 'Positionsgröße aus Konto, Risiko und Stop-Loss. Für Gold, Forex, Aktien und Krypto.', typ: 'Rechner', dauer: '1 Min', tags: 'trading trade lot lots stop loss sl tp risiko position positionsgrösse gold xau forex devisen aktie aktien etf krypto bitcoin crv chance hebel broker' }
   ];
 
+  const ICONS = {
+    haushaltsgeld: '<rect x="3" y="6" width="18" height="13" rx="2.5"></rect><path d="M3 10h18"></path><path d="M16 14.5h2"></path><path d="M6 6l9-3 1.5 3"></path>',
+    'kosten-teilen': '<circle cx="9" cy="8" r="3.2"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M17 14c2.2 0 4 1.8 4 4"></path>',
+    abos: '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path><path d="M9 15.5l2 2 4-4"></path>',
+    stromkosten: '<path d="M13 2L4.5 13.5H12L11 22l8.5-11.5H12z"></path>',
+    fahrtkosten: '<path d="M5 17h14M3 17v-4.5L5.5 7h13L21 12.5V17"></path><path d="M3 12.5h18"></path><circle cx="7.5" cy="17.5" r="1.8"></circle><circle cx="16.5" cy="17.5" r="1.8"></circle>',
+    rezept: '<path d="M7 3v7a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V3M9 12v9"></path><path d="M17 3c-1.7 1.3-2.5 3.5-2.5 6.5V13H17v8"></path>',
+    sparziel: '<circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="5"></circle><circle cx="12" cy="12" r="1.2"></circle>',
+    klassenkasse: '<path d="M2 9l10-5 10 5-10 5z"></path><path d="M6 11v5c0 1.4 2.7 3 6 3s6-1.6 6-3v-5"></path><path d="M22 9v6"></path>',
+    auszug: '<path d="M3 11l9-7 9 7"></path><path d="M5 9.5V20h14V9.5"></path><path d="M10 20v-6h4v6"></path>',
+    lernplan: '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path><path d="M7.5 14h4M7.5 17.5h7"></path>',
+    lernmethode: '<path d="M9 18h6M10 21h4"></path><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"></path>',
+    bewerbung: '<rect x="3" y="7" width="18" height="13" rx="2.5"></rect><path d="M9 7V5.5A1.5 1.5 0 0 1 10.5 4h3A1.5 1.5 0 0 1 15 5.5V7"></path><path d="M3 12.5h18"></path>',
+    lerntools: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"></rect><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"></rect><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"></rect>',
+    positionsgroesse: '<path d="M3 20h18"></path><path d="M4 16l5-5 4 3 7-8"></path><path d="M15 6h5v5"></path>'
+  };
+  const icon = id => `<span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[id] || ''}</svg></span>`;
   const fold = s => s.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
   let activeCat = 'alle';
 
@@ -1226,10 +1252,10 @@ Butter zum Braten</textarea>
       return words.every(w => hay.includes(w));
     });
     $('#tiles').innerHTML = hits.length ? hits.map(t => `
-      <a class="tile" href="#${t.id}">
-        <span class="cat">${esc(CATS[t.cat])}</span>
-        <div style="display:grid;gap:6px"><h3>${esc(t.frage)}</h3><p>${esc(t.text)}</p></div>
-        <span class="meta"><b>${esc(t.typ)}</b><span>${esc(t.dauer)} →</span></span>
+      <a class="tile" href="#${t.id}" data-c="${t.cat}">
+        <div class="tile-top">${icon(t.id)}<span class="cat">${esc(CATS[t.cat])}</span></div>
+        <div class="tile-body"><h3>${esc(t.frage)}</h3><p>${esc(t.text)}</p></div>
+        <div class="meta"><span><b>${esc(t.typ)}</b> · ${esc(t.dauer)}</span><span class="go" aria-hidden="true">→</span></div>
       </a>`).join('')
       : `<div class="empty">Dazu haben wir noch kein Werkzeug. <a href="#wunsch">Sag uns, wo es hakt</a>, dann bauen wir es.</div>`;
     $('#trefferzahl').textContent = hits.length === 1 ? '1 Thema' : hits.length + ' Themen';
@@ -1930,6 +1956,11 @@ Butter zum Braten</textarea>
     $('#geloescht').textContent = 'Gelöscht. Alle Rechner zeigen wieder die Beispielwerte.';
   });
 
+  TOPICS.forEach(t => {
+    const sec = document.getElementById('v-' + t.id); if (!sec) return;
+    sec.dataset.c = t.cat;
+    const head = $('.tool-head', sec); if (head) head.insertAdjacentHTML('afterbegin', icon(t.id));
+  });
   renderChips(); renderTiles(); renderKK(); renderBW(); renderDir(); ktList.render();
   Object.values(CALC).forEach(f => f());
 

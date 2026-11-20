@@ -1,70 +1,73 @@
-# Wo hakt's?
+# Wo hakt's beim Kaufen?
 
-Eine Website für den Alltag: Man klickt sein Problem an und bekommt ein Werkzeug, das es löst.
-Für alle, nicht nur für eine Zielgruppe: Geld und Haushalt, Wohnen und Energie, Unterwegs, Küche, Lernen, Job und Trading.
-Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine fremden Schriften.
+Eine Website rund um **Kaufsucht**. Auf der Startseite steht jeder Problembereich als Karte.
+Ein Klick auf eine Karte öffnet Tipps, Hintergründe und Wege zur Beratung.
+Dazu kommen Werkzeuge: Selbstcheck, Kassensturz-Rechner, Kauf-Bremse mit Warteliste,
+Kauftagebuch und Abo-Check.
 
-Aussehen: weißer Hintergrund, die Startseite zeigt jedes Thema als Karte mit Symbol und Bereichsfarbe. Ein Klick auf eine Karte öffnet das Werkzeug mit allen Informationen. Farben stehen als Tokens oben im `:root`-Block, die Bereichsfarben in den `[data-c=…]`-Regeln, die Symbole in `ICONS` im Skript.
+Eine Datei (`index.html`), kein Build, keine Abhängigkeiten, keine Cookies, keine Werbung, keine fremden Schriften.
 
-## Themen
+## Karten
 
-| Adresse | Problem | Werkzeug |
+| Adresse | Bereich | Karte |
 | --- | --- | --- |
-| `#haushaltsgeld` | Wo bleibt mein Geld jeden Monat? | Einnahmen und Ausgaben nach der 50-30-20-Regel, mit Balken und Spartipps |
-| `#kosten-teilen` | Wer schuldet wem wie viel? | Gruppenausgaben fair aufteilen, möglichst wenige Überweisungen, zum Kopieren |
-| `#abos` | Welche Abos und Verträge kosten mich am meisten? | Abo-Check: Kosten pro Jahr, Sparpotenzial, Hinweise zum Kündigen |
-| `#stromkosten` | Was kostet mich ein Gerät an Strom? | Geräte mit Watt und Nutzung, Kosten pro Jahr |
-| `#fahrtkosten` | Was kostet die Fahrt und wie teilen wir sie auf? | Sprit- oder Ladekosten pro Person |
-| `#rezept` | Wie rechne ich ein Rezept auf mehr Personen um? | Zutatenliste umrechnen, versteht Brüche, rundet Eier auf |
-| `#sparziel` | Wie lange muss ich sparen, bis ich mir das leisten kann? | Dauer bis zum Ziel mit Zinsen, nötige Rate bis zum Wunschtermin |
-| `#positionsgroesse` | Wie viel darf ich pro Trade riskieren? | Rechner für Gold, Forex, Aktien, Krypto: Lots/Stück, Verlust, CRV, nötige Trefferquote |
-| `#klassenkasse` | Reicht unser Geld für Abiball oder Klassenfahrt? | Budgetplaner mit eigenen Posten, Betrag pro Person und Monat |
-| `#auszug` | Kann ich mir die eigene Wohnung oder WG leisten? | Start- und Monatskosten gegen Einkommen, Notgroschen |
-| `#lernplan` | Ich schaffe meinen Stoff bis zur Prüfung nicht. | Lernplan mit Wiederholungen nach 1, 3 und 7 Lerntagen |
-| `#lernmethode` | Welche Lernmethode passt zu meinem Stoff? | Entscheidungshilfe mit drei Fragen |
-| `#bewerbung` | Wie fange ich mit der Bewerbung an? | Checkliste plus Anschreiben-Gerüst zum Kopieren |
-| `#lerntools` | Welches kostenlose Tool hilft mir beim Lernen? | Kuratiertes Verzeichnis mit Filter |
-| `#impressum`, `#datenschutz` | | Pflichtseiten |
+| `#laden` | Wo ich kaufe | Ich kaufe im Laden mehr, als ich wollte. |
+| `#online` | Wo ich kaufe | Ich bestelle ständig online. |
+| `#social` | Wo ich kaufe | Ich kaufe, was ich auf Social Media sehe. |
+| `#rabatte` | Wo ich kaufe | Bei Sale und Rabatt kann ich nicht Nein sagen. |
+| `#apps` | Wo ich kaufe | Ich gebe Geld in Apps, Spielen und Abos aus. |
+| `#gefuehle` | Gefühle & Verhalten | Ich kaufe, wenn es mir schlecht geht. |
+| `#heimlich` | Gefühle & Verhalten | Ich verstecke Einkäufe vor anderen. |
+| `#horten` | Gefühle & Verhalten | Bei mir stapeln sich Dinge, die ich nie benutze. |
+| `#ratenkauf` | Geld & Schulden | Ich kaufe auf Rechnung, in Raten oder „später zahlen“. |
+| `#schulden` | Geld & Schulden | Ich habe den Überblick über meine Schulden verloren. |
+| `#abos` | Geld & Schulden | Abo-Check |
+| `#selbstcheck` | Werkzeuge | Selbstcheck mit 10 Aussagen (keine Diagnose) |
+| `#kassensturz` | Werkzeuge | Rechner: Einkommen, feste Kosten, Einkäufe, Schulden, Vorschlag für ein Kaufbudget |
+| `#kaufbremse` | Werkzeuge | Sechs Fragen vor dem Kauf, Arbeitszeit hinter dem Preis, Warteliste |
+| `#tagebuch` | Werkzeuge | Kauftagebuch mit Auswertung nach Gefühlen |
+| `#angehoerige` | Hilfe & Beratung | Jemand, der mir nahesteht, kauft zu viel. |
+| `#hilfe` | Hilfe & Beratung | Beratungsstellen und Telefonnummern |
 
-Startseite: Suchfeld (sucht in Frage, Text und Stichwörtern) und Filter nach Bereich.
-Eingaben und Haken bleiben im Browser des Besuchers (`localStorage`, Schlüssel `wh:…`)
-und lassen sich unter Datenschutz löschen.
+Jede Tipp-Karte hat denselben Aufbau: „Kennst du das?“, „Warum das passiert“, „Was sofort hilft“,
+„Was auf Dauer hilft“, ein Satz für den Moment und Links zu passenden Werkzeugen.
+Die Texte stehen im Skript im Feld `TOPICS`. Eine neue Karte ist ein neuer Eintrag dort
+(dazu ein Symbol in `ICONS`).
 
-## Ein neues Thema hinzufügen
+## Hilfe-Kontakte (Stand November 2026, einmal im Jahr prüfen)
 
-1. In `index.html` eine neue `<section id="v-meinthema" data-view data-tool hidden>` anlegen
-   (am einfachsten eine bestehende kopieren).
-2. Im Skript in `TOPICS` einen Eintrag ergänzen (`id`, `cat`, `frage`, `text`, `typ`, `dauer`, `tags`).
-3. Eine Rechenfunktion schreiben und in `CALC` unter `'v-meinthema'` eintragen.
-   Felder mit `data-save` werden automatisch gespeichert und mit „Beispiel wiederherstellen“ zurückgesetzt.
-4. Für Listen mit beliebig vielen Zeilen (wie Abos, Geräte, Ausgaben) gibt es `rowList({...})`;
-   die Abos zeigen, wie man es benutzt.
+* Telefonseelsorge 0800 111 0 111, 0800 111 0 222, 116 123
+* Suchthilfeverzeichnis der DHS: suchthilfeverzeichnis.de
+* Digitale Suchtberatung: suchtberatung.digital
+* Selbsthilfe über NAKOS: nakos.de
+* Schuldnerberatung, Online-Beratung der Caritas: caritas.de/schuldnerberatung
+* Terminservicestelle 116 117, Nummer gegen Kummer 116 111, Notruf 112
+
+Die Sucht- & Drogen-Hotline ist bewusst nicht aufgeführt: Für 2026 gibt es widersprüchliche
+Angaben zur Rufnummer. Erst eintragen, wenn die aktuelle Nummer bestätigt ist.
+
+## Daten
+
+Selbstcheck-Antworten, Rechnerwerte, Kauftagebuch und Warteliste bleiben nur im Browser
+des Besuchers (`localStorage`, Schlüssel `wh:…`). Unter Datenschutz lässt sich alles löschen.
 
 ## Vor dem Veröffentlichen eintragen
-
-Alle offenen Stellen stehen in eckigen Klammern und haben die Klasse `ph`:
 
 ```bash
 grep -n 'class="ph"' hilfe/index.html
 ```
 
-* **Impressum**: Name und ladungsfähige Anschrift (kein Postfach), E-Mail.
+* **Impressum**: Name, ladungsfähige Anschrift (kein Postfach), E-Mail.
 * **Datenschutz**: der Hoster (bei GitHub Pages: GitHub Inc., USA).
-* **Kontakt-Adresse** im Kasten „Dein Problem ist nicht dabei?“.
-* **Partnerlinks** in den Kästen „Anzeige“ und der Featured-Eintrag im Verzeichnis.
-  Partnerlinks immer als Werbung gekennzeichnet lassen.
+* **Kontakt-Adresse** im Kasten „Dir fehlt ein Thema?“.
 
 Impressum und Datenschutz sind Vorlagen und ersetzen keine Rechtsberatung.
+Die Inhalte ersetzen keine Beratung oder Therapie; das steht auch im Fuß jeder Seite.
 
-## Werte, die altern
+## Aussehen
 
-Stand November 2026, einmal im Jahr prüfen:
-
-* Deutschlandticket 63 € (Feld `az-ticket`)
-* Rundfunkbeitrag 18,36 € pro Wohnung (Hinweis unter „Jeden Monat“)
-* Kindergeld 259 € (Feld `az-kindergeld`)
-* Beispielpreise für Strom (35 ct/kWh), Sprit (1,75 €/l) und Tagesgeld-Zinsen (2 %)
-* Preise und Haken im Verzeichnis (`TOOLS` im Skript)
+Weißer Hintergrund, Karten mit Symbol und Bereichsfarbe. Farben stehen als Tokens im `:root`-Block,
+die Bereichsfarben in den `[data-c=…]`-Regeln.
 
 ## Ansehen
 

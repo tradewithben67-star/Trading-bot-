@@ -1,0 +1,1311 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wo hakt's?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Rechner, Pläne und Checklisten für konkrete Alltagsprobleme: Trading-Risiko, Abikasse, erste Wohnung, Lernplan, Bewerbung und Lern-Tools.">
+<style>
+/* Layout: Karopapier-Kopf mit Suche, darunter ein Raster aus Problem-Kacheln.
+   Jedes Thema öffnet eine eigene Ansicht: Formular links, Ergebnis rechts (am Handy untereinander). */
+:root {
+  --paper: #f5f7fb;
+  --surface: #ffffff;
+  --ink: #17213b;
+  --ink-soft: #4f5b78;
+  --line: #d5ddec;
+  --grid: rgba(39, 65, 196, .09);
+  --pen: #2741c4;
+  --pen-soft: #e8ecfb;
+  --on-pen: #ffffff;
+  --marker: #ffe45c;
+  --good: #17703f; --good-bg: #e3f4ea;
+  --warn: #8f5200; --warn-bg: #fdf0d9;
+  --bad: #a8231b;  --bad-bg: #fbe5e3;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  --r: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1424; --surface: #161f35; --ink: #e7ebf5; --ink-soft: #a2adc6; --line: #2a3553;
+    --grid: rgba(150, 170, 255, .07); --pen: #9aabff; --pen-soft: #1f2a4a; --on-pen: #0e1424;
+    --marker: rgba(255, 222, 70, .38);
+    --good: #6fd79f; --good-bg: #16302a; --warn: #f0b65a; --warn-bg: #33281a; --bad: #ff8a80; --bad-bg: #3a1e22;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0e1424; --surface: #161f35; --ink: #e7ebf5; --ink-soft: #a2adc6; --line: #2a3553;
+  --grid: rgba(150, 170, 255, .07); --pen: #9aabff; --pen-soft: #1f2a4a; --on-pen: #0e1424;
+  --marker: rgba(255, 222, 70, .38);
+  --good: #6fd79f; --good-bg: #16302a; --warn: #f0b65a; --warn-bg: #33281a; --bad: #ff8a80; --bad-bg: #3a1e22;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--font); }
+a { color: var(--pen); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--pen); outline-offset: 2px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.15; margin: 0; }
+p { margin: 0; }
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+mark {
+  color: inherit; padding: 0 .06em;
+  background: linear-gradient(100deg, transparent 1%, var(--marker) 3%, var(--marker) 97%, transparent 99%) no-repeat 0 78% / 100% 58%;
+}
+.ph { color: var(--warn); font-family: var(--mono); font-size: .9em; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* Kopfzeile */
+.top { border-bottom: 1px solid var(--line); background: var(--paper); }
+.top .wrap { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding-block: 12px; }
+.brand { font-weight: 850; font-size: 1.15rem; letter-spacing: -.02em; color: var(--ink); text-decoration: none; }
+.top nav { display: flex; gap: 18px; font-size: .92rem; }
+.top nav a { color: var(--ink-soft); text-decoration: none; }
+.top nav a:hover { color: var(--pen); }
+
+/* Startseite */
+.hero {
+  background-color: var(--paper);
+  background-image: linear-gradient(var(--grid) 1px, transparent 1px), linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+  background-size: 20px 20px; background-position: -1px -1px;
+  border-bottom: 1px solid var(--line);
+}
+.hero .wrap { padding-block: 52px 40px; display: grid; gap: 18px; }
+.hero h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); font-weight: 850; letter-spacing: -.04em; line-height: 1; }
+.hero .lead { font-size: 1.15rem; color: var(--ink-soft); max-width: 40rem; }
+.search { position: relative; max-width: 40rem; margin-top: 6px; }
+.search input[type="text"] {
+  width: 100%; font: inherit; font-size: 1.1rem; padding: 15px 16px 15px 46px;
+  border: 2px solid var(--ink); border-radius: var(--r); background: var(--surface); color: var(--ink);
+}
+.search svg { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); width: 20px; height: 20px; stroke: var(--ink-soft); fill: none; stroke-width: 2.2; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip {
+  font: inherit; font-size: .9rem; padding: 6px 13px; border-radius: 999px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+}
+.chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+.board { padding-block: 32px 12px; display: grid; gap: 18px; }
+.board-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.board-head h2 { font-size: 1.05rem; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); font-weight: 700; }
+.count { font-size: .9rem; color: var(--ink-soft); }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+.tile {
+  display: grid; grid-template-rows: auto 1fr auto; gap: 8px; min-width: 0;
+  padding: 18px 18px 14px; border: 1px solid var(--line); border-radius: var(--r);
+  background: var(--surface); color: var(--ink); text-decoration: none;
+  transition: border-color .15s, transform .15s;
+}
+.tile:hover { border-color: var(--pen); transform: translateY(-2px); }
+.tile .cat { font-size: .74rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--pen); }
+.tile h3 { font-size: 1.16rem; font-weight: 750; letter-spacing: -.01em; }
+.tile p { color: var(--ink-soft); font-size: .94rem; }
+.tile .meta { display: flex; justify-content: space-between; gap: 8px; font-family: var(--mono); font-size: .78rem; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 10px; margin-top: 4px; }
+.tile .meta b { color: var(--ink); font-weight: 600; }
+.empty { padding: 22px; border: 1px dashed var(--line); border-radius: var(--r); color: var(--ink-soft); }
+
+.wish { padding-block: 28px 44px; }
+.wish-box {
+  display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 16px; align-items: center;
+  padding: 22px; border-radius: var(--r); background: var(--pen-soft);
+}
+.wish-box h2 { font-size: 1.25rem; margin-bottom: 4px; }
+.wish-box p { color: var(--ink-soft); }
+@media (max-width: 640px) { .wish-box { grid-template-columns: 1fr; } }
+
+/* Werkzeug-Ansichten */
+.tool { padding-block: 26px 48px; display: grid; gap: 26px; }
+.back { font-size: .92rem; text-decoration: none; color: var(--ink-soft); }
+.back:hover { color: var(--pen); }
+.tool-head { display: grid; gap: 10px; max-width: 46rem; }
+.tool-head .cat { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; font-weight: 700; color: var(--pen); }
+.tool-head h1 { font-size: clamp(1.8rem, 4.6vw, 2.7rem); font-weight: 850; letter-spacing: -.03em; }
+.tool-head .lead { color: var(--ink-soft); font-size: 1.06rem; }
+.tool-grid { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr); gap: 28px; align-items: start; }
+@media (max-width: 860px) { .tool-grid { grid-template-columns: minmax(0, 1fr); } }
+.tool-grid > * { min-width: 0; }
+
+.form { display: grid; gap: 22px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 14px; min-width: 0; }
+legend { font-weight: 750; font-size: 1.02rem; padding: 0; margin-bottom: 12px; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 520px) { .row, .row.three { grid-template-columns: minmax(0, 1fr); } }
+.field { display: grid; gap: 5px; min-width: 0; }
+.field label, .lbl { font-size: .9rem; font-weight: 600; }
+.hint { font-size: .82rem; color: var(--ink-soft); }
+input[type="text"], input[type="date"], select, textarea {
+  width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--surface); color: var(--ink); min-width: 0;
+}
+textarea { resize: vertical; line-height: 1.45; }
+.suffix { position: relative; }
+.suffix input[type="text"] { padding-right: 46px; }
+.suffix span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: .9rem; pointer-events: none; }
+
+.example { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .85rem; color: var(--ink-soft); }
+.tag { font-family: var(--mono); font-size: .75rem; padding: 2px 8px; border-radius: 4px; background: var(--marker); color: var(--ink); }
+
+.btn, .btn-ghost {
+  font: inherit; font-weight: 650; font-size: .92rem; cursor: pointer; border-radius: 8px; padding: 9px 15px;
+}
+.btn { background: var(--pen); color: var(--on-pen); border: 1px solid var(--pen); }
+.btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { border-color: var(--pen); color: var(--pen); }
+.btn-small { padding: 5px 10px; font-size: .82rem; }
+
+.result {
+  position: sticky; top: 16px; display: grid; gap: 16px;
+  background: var(--surface); border: 2px solid var(--ink); border-radius: var(--r); padding: 20px;
+}
+@media (max-width: 860px) { .result { position: static; } }
+.result .kicker { font-size: .78rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-soft); font-weight: 700; }
+.big { font-size: clamp(2rem, 5vw, 2.6rem); font-weight: 850; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.big small { font-size: .5em; font-weight: 650; color: var(--ink-soft); letter-spacing: 0; }
+dl.rows { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+dl.rows dt, dl.rows dd { padding: 8px 0; border-top: 1px solid var(--line); margin: 0; }
+dl.rows dt { color: var(--ink-soft); font-size: .92rem; padding-right: 12px; }
+dl.rows dd { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 2px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.pill.good, .box.good { background: var(--good-bg); color: var(--good); }
+.pill.warn, .box.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad, .box.bad { background: var(--bad-bg); color: var(--bad); }
+.box { padding: 12px 14px; border-radius: 8px; font-size: .93rem; }
+.box ul { margin: 0; padding-left: 18px; }
+.note { font-size: .88rem; color: var(--ink-soft); }
+
+.partner { border: 1px dashed var(--line); border-radius: 8px; padding: 12px 14px; font-size: .88rem; color: var(--ink-soft); display: grid; gap: 4px; }
+.partner .ad { font-size: .7rem; text-transform: uppercase; letter-spacing: .1em; font-weight: 700; }
+
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 650; font-size: .95rem; }
+details .prose { margin-top: 10px; }
+.prose { display: grid; gap: 10px; color: var(--ink-soft); font-size: .94rem; max-width: 65ch; }
+.prose h2 { color: var(--ink); font-size: 1.15rem; margin-top: 12px; }
+.prose ul { margin: 0; padding-left: 20px; }
+
+/* Klassenkasse: Posten-Liste */
+.posten { display: grid; gap: 8px; }
+.posten-row { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.posten-row button { font: inherit; width: 36px; height: 38px; border-radius: 8px; border: 1px solid var(--line); background: transparent; color: var(--ink-soft); cursor: pointer; }
+.posten-row button:hover { color: var(--bad); border-color: var(--bad); }
+.posten-head { font-size: .8rem; color: var(--ink-soft); font-weight: 600; }
+@media (max-width: 520px) {
+  .posten-row { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; }
+  .posten-row .p-name { grid-column: 1 / -1; }
+  .posten-head { display: none; }
+}
+
+/* Lernplan */
+.plan { list-style: none; margin: 0; padding: 0; display: grid; }
+.plan li { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); }
+.plan .day { font-weight: 700; font-size: .9rem; font-variant-numeric: tabular-nums; }
+.plan .day small { display: block; font-weight: 500; color: var(--ink-soft); }
+.plan .items { display: grid; gap: 3px; font-size: .92rem; }
+.plan .items span { color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.plan .neu::before { content: "neu "; font-family: var(--mono); font-size: .72rem; background: var(--marker); color: var(--ink); padding: 0 5px; border-radius: 3px; margin-right: 4px; }
+.plan .wdh::before { content: "wdh "; font-family: var(--mono); font-size: .72rem; border: 1px solid var(--line); padding: 0 5px; border-radius: 3px; margin-right: 4px; }
+.plan li.final .items { font-weight: 650; }
+.plan-scroll { max-height: 560px; overflow: auto; }
+.weekdays { display: flex; flex-wrap: wrap; gap: 6px; }
+.weekdays label { display: inline-flex; align-items: center; gap: 5px; padding: 5px 10px; border: 1px solid var(--line); border-radius: 999px; font-size: .88rem; cursor: pointer; background: var(--surface); }
+
+/* Entscheidungshilfe */
+.choices { display: grid; gap: 8px; }
+.choices label { display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; background: var(--surface); }
+.choices label:has(input:checked) { border-color: var(--pen); background: var(--pen-soft); }
+.choices input { margin-top: 4px; accent-color: var(--pen); }
+.method h3 { font-size: 1.3rem; }
+.method ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+
+/* Bewerbung */
+.steps { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+.step { display: grid; gap: 8px; }
+.step h3 { font-size: 1rem; }
+.check { display: flex; gap: 10px; align-items: flex-start; font-size: .95rem; cursor: pointer; }
+.check input { margin-top: 5px; accent-color: var(--pen); width: 16px; height: 16px; flex: none; }
+.check:has(input:checked) span { color: var(--ink-soft); text-decoration: line-through; }
+.progress { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress div { height: 100%; background: var(--pen); width: 0; transition: width .25s; }
+.letter { font-family: var(--font); font-size: .92rem; min-height: 360px; background: var(--paper); }
+
+/* Verzeichnis */
+.dir-tools { display: grid; gap: 12px; }
+.dir { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+.entry { display: grid; gap: 8px; align-content: start; padding: 16px; border: 1px solid var(--line); border-radius: var(--r); background: var(--surface); min-width: 0; }
+.entry-top { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.entry h3 { font-size: 1.1rem; }
+.entry .price { font-family: var(--mono); font-size: .76rem; padding: 2px 7px; border-radius: 4px; white-space: nowrap; }
+.entry .price.frei { background: var(--good-bg); color: var(--good); }
+.entry .price.fremium { background: var(--warn-bg); color: var(--warn); }
+.entry .k { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--pen); font-weight: 700; }
+.entry p { font-size: .92rem; }
+.entry .haken { color: var(--ink-soft); }
+.entry .haken b { color: var(--ink); }
+.entry.featured { border-style: dashed; background: transparent; }
+.toggle { display: inline-flex; gap: 8px; align-items: center; font-size: .9rem; cursor: pointer; }
+.toggle input { accent-color: var(--pen); width: 16px; height: 16px; }
+
+/* Rechtliches */
+.legal { padding-block: 26px 48px; display: grid; gap: 18px; }
+.legal h1 { font-size: clamp(1.8rem, 4.6vw, 2.5rem); font-weight: 850; letter-spacing: -.03em; }
+.legal address { font-style: normal; color: var(--ink); }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 20px 28px; display: flex; flex-wrap: wrap; gap: 10px 22px; justify-content: space-between; font-size: .86rem; color: var(--ink-soft); }
+footer nav { display: flex; gap: 18px; }
+footer a { color: var(--ink-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#start">Wo <mark>hakt's</mark>?</a>
+    <nav aria-label="Hauptnavigation">
+      <a href="#start">Alle Themen</a>
+      <a href="#lerntools">Lern-Tools</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<!-- ============ START ============ -->
+<section id="v-start" data-view>
+  <div class="hero">
+    <div class="wrap">
+      <h1>Wo <mark>hakt's</mark>?</h1>
+      <p class="lead">Klick dein Problem an und bekomm ein Werkzeug, das es löst: einen Rechner, einen fertigen Plan oder eine Checkliste. Ohne Anmeldung, ohne Werbebanner, deine Eingaben bleiben auf deinem Gerät.</p>
+      <div class="search">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-4-4"></path></svg>
+        <input type="text" id="suche" placeholder="Beschreib dein Problem, z. B. „Klausur“, „Miete“, „Lots“" aria-label="Problem suchen" autocomplete="off">
+      </div>
+      <div class="chips" id="chips" role="group" aria-label="Nach Bereich filtern"></div>
+    </div>
+  </div>
+
+  <div class="wrap board">
+    <div class="board-head">
+      <h2>Probleme, die wir lösen</h2>
+      <span class="count" id="trefferzahl"></span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+  </div>
+
+  <div class="wrap wish" id="wunsch">
+    <div class="wish-box">
+      <div>
+        <h2>Dein Problem ist nicht dabei?</h2>
+        <p>Schreib uns in einem Satz, wo es hakt. Die häufigsten Wünsche werden das nächste Werkzeug.</p>
+      </div>
+      <div class="example">
+        <span class="ph" id="kontakt-mail">[deine@mail.de]</span>
+        <button type="button" class="btn-ghost btn-small" data-copy="kontakt-mail">Adresse kopieren</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ POSITIONSGRÖSSE ============ -->
+<section id="v-positionsgroesse" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Trading</span>
+      <h1>Wie viel darf ich pro Trade riskieren?</h1>
+      <p class="lead">Du legst fest, wie viel Prozent deines Kontos ein Verlust höchstens kosten darf. Der Rechner sagt dir, wie groß die Position dann sein darf.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Trag deine eigenen Zahlen ein. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Dein Konto</legend>
+          <div class="row">
+            <div class="field">
+              <label for="pg-konto">Kontostand</label>
+              <input type="text" inputmode="decimal" id="pg-konto" value="10.000" data-save data-geld>
+            </div>
+            <div class="field">
+              <label for="pg-waehrung">Kontowährung</label>
+              <select id="pg-waehrung" data-save>
+                <option value="EUR" selected>Euro (€)</option>
+                <option value="USD">US-Dollar ($)</option>
+              </select>
+            </div>
+          </div>
+          <div class="field">
+            <label for="pg-risiko">Risiko pro Trade</label>
+            <div class="suffix"><input type="text" inputmode="decimal" id="pg-risiko" value="1" data-save><span>%</span></div>
+            <span class="hint">Viele erfahrene Trader bleiben bei 0,5 bis 2 %.</span>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Der Trade</legend>
+          <div class="field">
+            <label for="pg-markt">Markt</label>
+            <select id="pg-markt" data-save>
+              <option value="gold" selected>Gold (XAU/USD), 1 Lot = 100 Unzen</option>
+              <option value="forex">Forex mit USD hinten (EUR/USD, GBP/USD …), 1 Lot = 100.000</option>
+              <option value="aktie">Aktie oder ETF (Stück)</option>
+              <option value="krypto">Krypto (Coins)</option>
+            </select>
+          </div>
+          <div class="row three">
+            <div class="field">
+              <label for="pg-einstieg">Einstieg</label>
+              <input type="text" inputmode="decimal" id="pg-einstieg" value="4050" data-save>
+            </div>
+            <div class="field">
+              <label for="pg-stop">Stop-Loss</label>
+              <input type="text" inputmode="decimal" id="pg-stop" value="4040" data-save>
+            </div>
+            <div class="field">
+              <label for="pg-ziel">Ziel <span class="hint">(optional)</span></label>
+              <input type="text" inputmode="decimal" id="pg-ziel" value="4080" data-save>
+            </div>
+          </div>
+          <span class="hint">Stop unter dem Einstieg heißt Kauf (long), Stop darüber heißt Verkauf (short). Kurse ohne Tausenderpunkt eingeben, z. B. 4050,5.</span>
+          <div class="field" id="pg-fx-feld">
+            <label for="pg-fx">Wechselkurs: 1 € = … $</label>
+            <input type="text" inputmode="decimal" id="pg-fx" value="1,16" data-save>
+            <span class="hint">Gold und diese Forex-Paare rechnen in Dollar. Trag den aktuellen EUR/USD-Kurs ein.</span>
+          </div>
+        </fieldset>
+        <details>
+          <summary>So rechnet der Rechner</summary>
+          <div class="prose">
+            <p>Erlaubter Verlust = Kontostand × Risiko. Abstand = Einstieg minus Stop. Positionsgröße = erlaubter Verlust ÷ (Abstand × Kontraktgröße).</p>
+            <p>Gold: 1 Lot sind 100 Unzen, 1 $ Kursbewegung sind also 100 $ pro Lot. Forex: 1 Pip ist 0,0001 und bei Paaren mit USD hinten 10 $ pro Lot. Die Größe wird auf 0,01 Lots abgerundet, damit du nie mehr riskierst als geplant.</p>
+            <p>Spread, Gebühren und Kurslücken (Slippage) sind nicht eingerechnet. Das ist keine Anlageberatung: Handel mit Hebelprodukten kann zum Totalverlust führen.</p>
+          </div>
+        </details>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="pg-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Broker mit kleinen Lots oder ein Trading-Journal: <span class="ph">[Partnerlink eintragen]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KLASSENKASSE ============ -->
+<section id="v-klassenkasse" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Geld &amp; Kasse</span>
+      <h1>Reicht unser Geld für Abiball oder Klassenfahrt?</h1>
+      <p class="lead">Trag alle Kosten ein, ob für alle zusammen oder pro Person. Dann siehst du, was fehlt und wie viel jede Person pro Monat einzahlen müsste.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Ein typischer Abijahrgang. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Eure Gruppe</legend>
+          <div class="row">
+            <div class="field">
+              <label for="kk-personen">Anzahl Personen</label>
+              <input type="text" inputmode="numeric" id="kk-personen" value="80" data-save>
+            </div>
+            <div class="field">
+              <label for="kk-monate">Monate bis zum Termin</label>
+              <input type="text" inputmode="numeric" id="kk-monate" value="7" data-save>
+            </div>
+          </div>
+          <div class="row">
+            <div class="field">
+              <label for="kk-kasse">Schon in der Kasse</label>
+              <div class="suffix"><input type="text" inputmode="decimal" id="kk-kasse" value="1.450" data-save data-geld><span>€</span></div>
+            </div>
+            <div class="field">
+              <label for="kk-aktionen">Geplante Einnahmen</label>
+              <div class="suffix"><input type="text" inputmode="decimal" id="kk-aktionen" value="1.800" data-save data-geld><span>€</span></div>
+              <span class="hint">Kuchenverkauf, Partys, Sponsoren …</span>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Kosten</legend>
+          <div class="posten">
+            <div class="posten-row posten-head" aria-hidden="true"><span>Posten</span><span>Betrag</span><span>gilt für</span><span></span></div>
+            <div id="kk-posten" class="posten"></div>
+          </div>
+          <div><button type="button" class="btn-ghost btn-small" id="kk-neu">+ Posten hinzufügen</button></div>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="kk-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Abipullis, Abibuch-Druck oder Location: <span class="ph">[Partnerlink eintragen]</span></span>
+          <span>Kassenbuch-Vorlage für die Stufe: <span class="ph">[Preis] · [Link zum Shop]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AUSZUG ============ -->
+<section id="v-auszug" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Wohnen</span>
+      <h1>Kann ich mir die eigene Wohnung oder WG leisten?</h1>
+      <p class="lead">Für den Start in Ausbildung, Studium oder WG. Du siehst, was der Einzug einmalig kostet, was jeden Monat abgeht und ob dein Einkommen reicht.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Azubi im ersten Jahr, kleines WG-Zimmer. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Einmalig beim Einzug</legend>
+          <div class="row">
+            <div class="field"><label for="az-kaution">Kaution</label><div class="suffix"><input type="text" inputmode="decimal" id="az-kaution" value="900" data-save data-geld data-az="start"><span>€</span></div><span class="hint">Höchstens 3 Kaltmieten (§ 551 BGB), zahlbar in 3 Raten.</span></div>
+            <div class="field"><label for="az-umzug">Umzug (Transporter, Helfer)</label><div class="suffix"><input type="text" inputmode="decimal" id="az-umzug" value="250" data-save data-geld data-az="start"><span>€</span></div></div>
+          </div>
+          <div class="row three">
+            <div class="field"><label for="az-moebel">Möbel</label><div class="suffix"><input type="text" inputmode="decimal" id="az-moebel" value="700" data-save data-geld data-az="start"><span>€</span></div></div>
+            <div class="field"><label for="az-kueche">Küche &amp; Haushalt</label><div class="suffix"><input type="text" inputmode="decimal" id="az-kueche" value="200" data-save data-geld data-az="start"><span>€</span></div></div>
+            <div class="field"><label for="az-einmal">Sonstiges</label><div class="suffix"><input type="text" inputmode="decimal" id="az-einmal" value="150" data-save data-geld data-az="start"><span>€</span></div></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Jeden Monat</legend>
+          <div class="row three">
+            <div class="field"><label for="az-miete">Warmmiete</label><div class="suffix"><input type="text" inputmode="decimal" id="az-miete" value="420" data-save data-geld data-az="aus" data-label="Miete"><span>€</span></div></div>
+            <div class="field"><label for="az-strom">Strom</label><div class="suffix"><input type="text" inputmode="decimal" id="az-strom" value="30" data-save data-geld data-az="aus" data-label="Strom"><span>€</span></div></div>
+            <div class="field"><label for="az-netz">Internet &amp; Handy</label><div class="suffix"><input type="text" inputmode="decimal" id="az-netz" value="30" data-save data-geld data-az="aus" data-label="Internet &amp; Handy"><span>€</span></div></div>
+            <div class="field"><label for="az-essen">Lebensmittel</label><div class="suffix"><input type="text" inputmode="decimal" id="az-essen" value="250" data-save data-geld data-az="aus" data-label="Lebensmittel"><span>€</span></div></div>
+            <div class="field"><label for="az-ticket">Deutschlandticket</label><div class="suffix"><input type="text" inputmode="decimal" id="az-ticket" value="63" data-save data-geld data-az="aus" data-label="Deutschlandticket"><span>€</span></div></div>
+            <div class="field"><label for="az-rundfunk">Rundfunkbeitrag</label><div class="suffix"><input type="text" inputmode="decimal" id="az-rundfunk" value="6,12" data-save data-geld data-az="aus" data-label="Rundfunkbeitrag"><span>€</span></div></div>
+            <div class="field"><label for="az-versich">Versicherungen</label><div class="suffix"><input type="text" inputmode="decimal" id="az-versich" value="12" data-save data-geld data-az="aus" data-label="Versicherungen"><span>€</span></div></div>
+            <div class="field"><label for="az-freizeit">Freizeit &amp; Kleidung</label><div class="suffix"><input type="text" inputmode="decimal" id="az-freizeit" value="120" data-save data-geld data-az="aus" data-label="Freizeit &amp; Kleidung"><span>€</span></div></div>
+            <div class="field"><label for="az-sonst">Sonstiges</label><div class="suffix"><input type="text" inputmode="decimal" id="az-sonst" value="40" data-save data-geld data-az="aus" data-label="Sonstiges"><span>€</span></div></div>
+          </div>
+          <span class="hint">Deutschlandticket: 63 € (Stand 2026), für Azubis oft günstiger über den Betrieb. Rundfunkbeitrag: 18,36 € pro Wohnung, in der WG geteilt (im Beispiel durch 3). Mit BAföG oder BAB kannst du dich befreien lassen.</span>
+        </fieldset>
+        <fieldset>
+          <legend>Jeden Monat rein</legend>
+          <div class="row three">
+            <div class="field"><label for="az-lohn">Ausbildungsgehalt / Job (netto)</label><div class="suffix"><input type="text" inputmode="decimal" id="az-lohn" value="820" data-save data-geld data-az="ein"><span>€</span></div></div>
+            <div class="field"><label for="az-kindergeld">Kindergeld an dich</label><div class="suffix"><input type="text" inputmode="decimal" id="az-kindergeld" value="259" data-save data-geld data-az="ein"><span>€</span></div></div>
+            <div class="field"><label for="az-foerder">BAföG / BAB / Wohngeld</label><div class="suffix"><input type="text" inputmode="decimal" id="az-foerder" value="0" data-save data-geld data-az="ein"><span>€</span></div></div>
+            <div class="field"><label for="az-eltern">Unterstützung Eltern</label><div class="suffix"><input type="text" inputmode="decimal" id="az-eltern" value="100" data-save data-geld data-az="ein"><span>€</span></div></div>
+            <div class="field"><label for="az-erspart">Schon gespart</label><div class="suffix"><input type="text" inputmode="decimal" id="az-erspart" value="1.500" data-save data-geld><span>€</span></div></div>
+          </div>
+          <span class="hint">Kindergeld: 259 € pro Monat (Stand 2026). Ab 18 können Eltern es direkt an dich auszahlen lassen.</span>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="az-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Kostenloses Girokonto für Azubis und Studis, Haftpflicht oder Umzugshilfe: <span class="ph">[Partnerlink eintragen]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LERNPLAN ============ -->
+<section id="v-lernplan" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Lernen</span>
+      <h1>Ich schaffe meinen Stoff bis zur Prüfung nicht.</h1>
+      <p class="lead">Trag deine Themen und das Prüfungsdatum ein. Du bekommst einen Plan, der jedes Thema einmal neu und danach nach 1, 3 und 7 Lerntagen wiederholt. So bleibt mehr hängen als beim Durchpauken am Vorabend.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Mathe-Klausur in drei Wochen. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Zeitraum</legend>
+          <div class="row">
+            <div class="field"><label for="lp-start">Ich fange an am</label><input type="date" id="lp-start" data-save></div>
+            <div class="field"><label for="lp-datum">Prüfung am</label><input type="date" id="lp-datum" data-save></div>
+          </div>
+          <div class="field">
+            <label for="lp-minuten">Lernzeit pro Tag</label>
+            <div class="suffix"><input type="text" inputmode="numeric" id="lp-minuten" value="90" data-save><span>Min</span></div>
+          </div>
+          <div class="field">
+            <span class="lbl">An diesen Tagen lerne ich nicht</span>
+            <div class="weekdays">
+              <label><input type="checkbox" id="lp-frei-1" data-save> Mo</label>
+              <label><input type="checkbox" id="lp-frei-2" data-save> Di</label>
+              <label><input type="checkbox" id="lp-frei-3" data-save> Mi</label>
+              <label><input type="checkbox" id="lp-frei-4" data-save> Do</label>
+              <label><input type="checkbox" id="lp-frei-5" data-save> Fr</label>
+              <label><input type="checkbox" id="lp-frei-6" data-save> Sa</label>
+              <label><input type="checkbox" id="lp-frei-0" data-save checked> So</label>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Themen</legend>
+          <div class="field">
+            <label for="lp-themen">Ein Thema pro Zeile, das schwerste zuerst</label>
+<textarea id="lp-themen" rows="8" data-save>Integralrechnung
+Kurvendiskussion
+Ableitungsregeln
+Wahrscheinlichkeit: Baumdiagramme
+Binomialverteilung
+Vektoren und Geraden
+Ebenen im Raum</textarea>
+          </div>
+        </fieldset>
+      </form>
+      <div class="result" aria-live="polite">
+        <div id="lp-out"></div>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Lernplaner zum Ausdrucken: <span class="ph">[Preis] · [Link zum Shop]</span></span>
+        </aside>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LERNMETHODE ============ -->
+<section id="v-lernmethode" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Lernen</span>
+      <h1>Welche Lernmethode passt zu meinem Stoff?</h1>
+      <p class="lead">Drei kurze Fragen. Danach weißt du, wie du lernst, und hast eine Anleitung für die nächste Stunde.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <fieldset>
+          <legend>1. Was musst du lernen?</legend>
+          <div class="choices">
+            <label><input type="radio" name="lm-stoff" id="lm-stoff-fakten" value="fakten" data-save checked><span><b>Vokabeln, Begriffe, Jahreszahlen</b><br><span class="hint">Dinge, die man einfach wissen muss</span></span></label>
+            <label><input type="radio" name="lm-stoff" id="lm-stoff-rechnen" value="rechnen" data-save><span><b>Rechnen und Formeln anwenden</b><br><span class="hint">Mathe, Physik, Chemie, Rechnungswesen</span></span></label>
+            <label><input type="radio" name="lm-stoff" id="lm-stoff-verstehen" value="verstehen" data-save><span><b>Zusammenhänge und Texte verstehen</b><br><span class="hint">Geschichte, Bio, Politik, Deutsch</span></span></label>
+            <label><input type="radio" name="lm-stoff" id="lm-stoff-praxis" value="praxis" data-save><span><b>Abläufe und Handgriffe</b><br><span class="hint">Berufsschule, Praxisprüfung, Software</span></span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>2. Wie viel Zeit bleibt?</legend>
+          <div class="choices">
+            <label><input type="radio" name="lm-zeit" id="lm-zeit-kurz" value="kurz" data-save><span>Weniger als 3 Tage</span></label>
+            <label><input type="radio" name="lm-zeit" id="lm-zeit-mittel" value="mittel" data-save checked><span>1 bis 2 Wochen</span></label>
+            <label><input type="radio" name="lm-zeit" id="lm-zeit-lang" value="lang" data-save><span>Mehr als 2 Wochen</span></label>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>3. Woran scheitert es meistens?</legend>
+          <div class="choices">
+            <label><input type="radio" name="lm-problem" id="lm-problem-anfangen" value="anfangen" data-save><span>Ich fange gar nicht erst an</span></label>
+            <label><input type="radio" name="lm-problem" id="lm-problem-vergessen" value="vergessen" data-save checked><span>Ich vergesse es schnell wieder</span></label>
+            <label><input type="radio" name="lm-problem" id="lm-problem-verstehen" value="verstehen" data-save><span>Ich verstehe es nicht richtig</span></label>
+            <label><input type="radio" name="lm-problem" id="lm-problem-ablenkung" value="ablenkung" data-save><span>Ich lasse mich ständig ablenken</span></label>
+          </div>
+        </fieldset>
+      </form>
+      <div class="result method" aria-live="polite" id="lm-out"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ BEWERBUNG ============ -->
+<section id="v-bewerbung" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Bewerbung</span>
+      <h1>Wie fange ich mit der Bewerbung an?</h1>
+      <p class="lead">Arbeite die Checkliste von oben nach unten ab, deine Haken bleiben gespeichert. Unten füllst du das Anschreiben-Gerüst und kopierst den fertigen Text.</p>
+    </div>
+    <div class="tool-grid">
+      <div class="form">
+        <div class="field">
+          <span class="lbl" id="bw-stand">0 von 0 erledigt</span>
+          <div class="progress" aria-hidden="true"><div id="bw-bar"></div></div>
+        </div>
+        <ol class="steps" id="bw-steps"></ol>
+      </div>
+      <div class="result">
+        <div class="kicker">Gut zu wissen</div>
+        <dl class="rows">
+          <dt>Lebenslauf</dt><dd>1 Seite</dd>
+          <dt>Anschreiben</dt><dd>1 Seite, ca. 200–300 Wörter</dd>
+          <dt>Dateiname</dt><dd>Nachname_Vorname_Bewerbung.pdf</dd>
+          <dt>Ausbildung startet meist</dt><dd>1. August / 1. September</dd>
+          <dt>Bewerben für Ausbildung</dt><dd>ca. 1 Jahr vorher</dd>
+        </dl>
+        <p class="note">Stellen findest du zum Beispiel in der <a href="https://www.arbeitsagentur.de/jobsuche/" target="_blank" rel="noopener">Jobsuche der Arbeitsagentur</a> und bei der IHK oder Handwerkskammer in deiner Region.</p>
+        <aside class="partner">
+          <span class="ad">Anzeige</span>
+          <span>Bewerbungsvorlage (Lebenslauf + Deckblatt): <span class="ph">[Preis] · [Link zum Shop]</span></span>
+        </aside>
+      </div>
+    </div>
+
+    <div class="tool-head">
+      <h2 style="font-size:1.5rem">Anschreiben-Gerüst</h2>
+      <p class="lead">Fülle die Felder aus. Der Text entsteht rechts mit. Schreib das Warum immer neu für jede Firma, das merkt man beim Lesen.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Fiktive Firma, fiktive Person. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Die Stelle</legend>
+          <div class="row">
+            <div class="field">
+              <label for="bw-art">Ich bewerbe mich um</label>
+              <select id="bw-art" data-save>
+                <option value="ausbildung" selected>einen Ausbildungsplatz</option>
+                <option value="praktikum">ein Praktikum</option>
+                <option value="job">einen Nebenjob</option>
+              </select>
+            </div>
+            <div class="field"><label for="bw-start">ab</label><input type="text" id="bw-start" value="1. August 2027" data-save></div>
+          </div>
+          <div class="field"><label for="bw-beruf">als</label><input type="text" id="bw-beruf" value="Elektroniker für Energie- und Gebäudetechnik" data-save></div>
+          <div class="field"><label for="bw-firma">Firma</label><input type="text" id="bw-firma" value="Sonnwerk Solartechnik GmbH" data-save></div>
+          <div class="row">
+            <div class="field">
+              <label for="bw-anrede">Ansprechperson</label>
+              <select id="bw-anrede" data-save>
+                <option value="frau" selected>Frau …</option>
+                <option value="herr">Herr …</option>
+                <option value="neutral">Vor- und Nachname</option>
+                <option value="keine">Unbekannt</option>
+              </select>
+            </div>
+            <div class="field"><label for="bw-person">Name</label><input type="text" id="bw-person" value="Becker" data-save></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Du</legend>
+          <div class="field">
+            <label for="bw-warum">Warum gerade diese Firma? (1–2 Sätze)</label>
+            <textarea id="bw-warum" rows="3" data-save>Auf der Ausbildungsmesse in Kassel hat mir Ihr Azubi-Team gezeigt, wie Sie Solaranlagen auf Mehrfamilienhäusern planen und anschließen. Seitdem weiß ich, dass ich genau das lernen möchte.</textarea>
+          </div>
+          <div class="field">
+            <label for="bw-jetzt">Was machst du gerade?</label>
+            <textarea id="bw-jetzt" rows="2" data-save>besuche ich die 10. Klasse der Gesamtschule Nord und mache im Sommer 2027 meinen Realschulabschluss. Mathe und Physik gehören zu meinen besten Fächern.</textarea>
+            <span class="hint">Der Satz beginnt mit „Zurzeit …“.</span>
+          </div>
+          <div class="row">
+            <div class="field"><label for="bw-staerke">Eine Stärke</label><input type="text" id="bw-staerke" value="Zuverlässigkeit" data-save></div>
+            <div class="field"><label for="bw-name">Dein Name</label><input type="text" id="bw-name" value="Alex Muster" data-save></div>
+          </div>
+          <div class="field">
+            <label for="bw-beleg">Woran man die Stärke sieht</label>
+            <textarea id="bw-beleg" rows="2" data-save>Seit zwei Jahren trage ich jeden Samstag Zeitungen aus und war kein einziges Mal zu spät.</textarea>
+          </div>
+        </fieldset>
+      </form>
+      <div class="result">
+        <div class="kicker">Dein Anschreiben</div>
+        <textarea class="letter" id="bw-text" readonly aria-label="Fertiges Anschreiben"></textarea>
+        <div class="example"><button type="button" class="btn" data-copy="bw-text">Text kopieren</button><span id="bw-woerter" class="note"></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ LERN-TOOLS ============ -->
+<section id="v-lerntools" data-view hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start">← Alle Themen</a>
+    <div class="tool-head">
+      <span class="cat">Lernen · Verzeichnis</span>
+      <h1>Welches kostenlose Tool hilft mir beim Lernen?</h1>
+      <p class="lead">Eine kleine, geprüfte Auswahl statt einer endlosen Liste. Bei jedem Tool steht, wofür es taugt und wo der Haken ist. Stand: November 2026, Preise können sich ändern.</p>
+    </div>
+    <div class="dir-tools">
+      <div class="chips" id="dir-chips" role="group" aria-label="Nach Art filtern"></div>
+      <label class="toggle"><input type="checkbox" id="dir-frei"> Nur komplett kostenlose</label>
+    </div>
+    <div class="dir" id="dir"></div>
+  </div>
+</section>
+
+<!-- ============ IMPRESSUM ============ -->
+<section id="v-impressum" data-view hidden>
+  <div class="wrap legal">
+    <a class="back" href="#start">← Alle Themen</a>
+    <h1>Impressum</h1>
+    <div class="prose">
+      <h2>Angaben gemäß § 5 DDG</h2>
+      <address>
+        <span class="ph">[Vor- und Nachname]</span><br>
+        <span class="ph">[Straße und Hausnummer]</span><br>
+        <span class="ph">[PLZ und Ort]</span>
+      </address>
+      <h2>Kontakt</h2>
+      <p>E-Mail: <span class="ph">[deine@mail.de]</span></p>
+      <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+      <p><span class="ph">[Vor- und Nachname, Anschrift wie oben]</span></p>
+      <h2>Haftung für Inhalte und Links</h2>
+      <p>Die Rechner und Vorlagen auf dieser Seite sind sorgfältig erstellt, ersetzen aber keine Anlage-, Steuer-, Rechts- oder Berufsberatung. Für Inhalte verlinkter Seiten sind deren Betreiber verantwortlich. Werden uns Rechtsverletzungen bekannt, entfernen wir die betreffenden Links umgehend.</p>
+      <h2>Werbung und Partnerlinks</h2>
+      <p>Mit „Anzeige“ gekennzeichnete Links sind Partnerlinks. Kaufst du darüber etwas, erhalten wir eventuell eine Provision. Für dich ändert sich der Preis nicht.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATENSCHUTZ ============ -->
+<section id="v-datenschutz" data-view hidden>
+  <div class="wrap legal">
+    <a class="back" href="#start">← Alle Themen</a>
+    <h1>Datenschutz</h1>
+    <div class="prose">
+      <h2>Wer ist verantwortlich?</h2>
+      <p>Verantwortlich ist die im <a href="#impressum">Impressum</a> genannte Person.</p>
+      <h2>Hosting</h2>
+      <p>Diese Seite liegt bei <span class="ph">[Hoster, z. B. GitHub Pages der GitHub Inc., USA]</span>. Beim Aufruf verarbeitet der Hoster technisch notwendige Daten wie IP-Adresse, Zeitpunkt, aufgerufene Seite und Browsertyp in Server-Logdateien, um die Seite auszuliefern und vor Angriffen zu schützen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.</p>
+      <h2>Keine Cookies, kein Tracking</h2>
+      <p>Die Seite setzt keine Cookies, nutzt keine Analyse-Werkzeuge und lädt keine Schriften oder Skripte von fremden Servern.</p>
+      <h2>Deine Eingaben bleiben auf deinem Gerät</h2>
+      <p>Was du in die Rechner tippst und welche Punkte du in Checklisten abhakst, speichert die Seite im lokalen Speicher deines Browsers (localStorage), damit es beim nächsten Besuch noch da ist. Diese Daten werden nicht an uns oder andere übertragen. Du kannst sie jederzeit löschen:</p>
+      <div class="example"><button type="button" class="btn-ghost" id="loeschen">Gespeicherte Eingaben löschen</button><span id="geloescht" class="note"></span></div>
+      <h2>Externe Links</h2>
+      <p>Klickst du auf einen Link zu einer anderen Seite, verlässt du dieses Angebot. Ab dann gilt die Datenschutzerklärung des jeweiligen Anbieters.</p>
+      <h2>Deine Rechte</h2>
+      <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Widerspruch (Art. 15 bis 21 DSGVO) sowie auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde (Art. 77 DSGVO).</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Wo hakt's? · Keine Anlage-, Rechts- oder Steuerberatung.</span>
+    <nav aria-label="Rechtliches"><a href="#impressum">Impressum</a><a href="#datenschutz">Datenschutz</a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Hilfsfunktionen ---------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function parseNum(str, geld) {
+    let s = String(str == null ? '' : str).trim().replace(/[\s€$%]/g, '');
+    if (!s) return NaN;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    else if (geld && /^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    return Number(s);
+  }
+  const val = id => { const el = document.getElementById(id); return parseNum(el.value, 'geld' in el.dataset); };
+  const fmt = (x, d = 2, min) => x.toLocaleString('de-DE', { maximumFractionDigits: d, minimumFractionDigits: min == null ? 0 : min });
+  const euro = (x, cur = 'EUR') => x.toLocaleString('de-DE', { style: 'currency', currency: cur });
+  const pct = (x, d = 1) => fmt(x * 100, d) + ' %';
+  const rows = list => '<dl class="rows">' + list.filter(Boolean).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+  const errBox = list => `<div class="box bad"><strong>Da fehlt noch etwas:</strong><ul>${list.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
+
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem('wh:' + k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('wh:' + k, JSON.stringify(v)); } catch (e) { /* ohne Speicher geht es auch */ } },
+    clear() { try { Object.keys(localStorage).filter(k => k.startsWith('wh:')).forEach(k => localStorage.removeItem(k)); } catch (e) {} }
+  };
+
+  async function copyFrom(id, btn) {
+    const el = document.getElementById(id);
+    const text = 'value' in el && el.tagName !== 'SPAN' ? el.value : el.textContent;
+    const old = btn.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Kopiert'; }
+    catch (e) {
+      if (el.select) { el.focus(); el.select(); }
+      else { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+      btn.textContent = 'Markiert, jetzt Strg+C';
+    }
+    setTimeout(() => { btn.textContent = old; }, 1800);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-copy]');
+    if (b) copyFrom(b.dataset.copy, b);
+  });
+
+  /* ---------- Themen ---------- */
+  const CATS = { trading: 'Trading', geld: 'Geld & Kasse', wohnen: 'Wohnen', lernen: 'Lernen', bewerbung: 'Bewerbung' };
+  const TOPICS = [
+    { id: 'positionsgroesse', cat: 'trading', frage: 'Wie viel darf ich pro Trade riskieren?', text: 'Positionsgröße aus Konto, Risiko und Stop-Loss. Für Gold, Forex, Aktien und Krypto.', typ: 'Rechner', dauer: '1 Min', tags: 'trading trade lot lots stop loss sl tp risiko position positionsgrösse gold xau forex devisen aktie aktien etf krypto bitcoin crv chance hebel broker' },
+    { id: 'klassenkasse', cat: 'geld', frage: 'Reicht unser Geld für Abiball oder Klassenfahrt?', text: 'Alle Kosten rein, Kasse gegenrechnen, Betrag pro Person und Monat sehen.', typ: 'Budgetplaner', dauer: '3 Min', tags: 'abi abikasse abiball abistreich abibuch abipulli klassenfahrt klassenkasse stufe jahrgang verein budget kosten pro person sammeln kuchenverkauf geld' },
+    { id: 'auszug', cat: 'wohnen', frage: 'Kann ich mir die eigene Wohnung oder WG leisten?', text: 'Startkosten und Monatskosten für Ausbildung, Studium oder WG gegen dein Einkommen.', typ: 'Kostenrechner', dauer: '3 Min', tags: 'wg wohnung zimmer ausziehen auszug miete kaution studium studienstart ausbildung azubi umzug bafög bab kindergeld budget lebenshaltung geld kosten' },
+    { id: 'lernplan', cat: 'lernen', frage: 'Ich schaffe meinen Stoff bis zur Prüfung nicht.', text: 'Themen und Datum eintragen, Lernplan mit eingebauten Wiederholungen bekommen.', typ: 'Plan-Generator', dauer: '2 Min', tags: 'lernen prüfung klausur test abi abitur abschlussprüfung lernplan zeitplan stress wiederholen zeit schaffen' },
+    { id: 'lernmethode', cat: 'lernen', frage: 'Welche Lernmethode passt zu meinem Stoff?', text: 'Drei Fragen, eine Methode mit Anleitung für die nächste Stunde.', typ: 'Entscheidungshilfe', dauer: '1 Min', tags: 'lernmethode methode lernen karteikarten feynman pomodoro konzentration vergessen prokrastination anfangen ablenkung handy verstehen' },
+    { id: 'bewerbung', cat: 'bewerbung', frage: 'Wie fange ich mit der Bewerbung an?', text: 'Checkliste Schritt für Schritt und ein Anschreiben-Gerüst, das du nur noch füllst.', typ: 'Guide + Vorlage', dauer: '10 Min', tags: 'bewerbung bewerben anschreiben lebenslauf ausbildung praktikum vorstellungsgespräch job nebenjob firma' },
+    { id: 'lerntools', cat: 'lernen', frage: 'Welches kostenlose Tool hilft mir beim Lernen?', text: 'Geprüfte Lern-Tools mit Filter, ehrlicher Kurzbewertung und dem jeweiligen Haken.', typ: 'Verzeichnis', dauer: '2 Min', tags: 'tool tools app apps kostenlos gratis karteikarten notizen mathe sprachen englisch übersetzen fokus timer verzeichnis' }
+  ];
+
+  const fold = s => s.toLowerCase().replace(/ä/g, 'a').replace(/ö/g, 'o').replace(/ü/g, 'u').replace(/ß/g, 'ss');
+  let activeCat = 'alle';
+
+  function renderChips() {
+    const counts = {};
+    TOPICS.forEach(t => { counts[t.cat] = (counts[t.cat] || 0) + 1; });
+    const list = [['alle', 'Alle']].concat(Object.keys(CATS).map(k => [k, CATS[k]]));
+    $('#chips').innerHTML = list.map(([k, n]) => `<button type="button" class="chip" data-cat="${k}" aria-pressed="${k === activeCat}">${esc(n)}</button>`).join('');
+  }
+  function renderTiles() {
+    const words = fold($('#suche').value).split(/\s+/).filter(Boolean);
+    const hits = TOPICS.filter(t => {
+      if (activeCat !== 'alle' && t.cat !== activeCat) return false;
+      const hay = fold([t.frage, t.text, t.tags, CATS[t.cat], t.typ].join(' '));
+      return words.every(w => hay.includes(w));
+    });
+    $('#tiles').innerHTML = hits.length ? hits.map(t => `
+      <a class="tile" href="#${t.id}">
+        <span class="cat">${esc(CATS[t.cat])}</span>
+        <div style="display:grid;gap:6px"><h3>${esc(t.frage)}</h3><p>${esc(t.text)}</p></div>
+        <span class="meta"><b>${esc(t.typ)}</b><span>${esc(t.dauer)} →</span></span>
+      </a>`).join('')
+      : `<div class="empty">Dazu haben wir noch kein Werkzeug. <a href="#wunsch">Sag uns, wo es hakt</a>, dann bauen wir es.</div>`;
+    $('#trefferzahl').textContent = hits.length === 1 ? '1 Thema' : hits.length + ' Themen';
+  }
+  $('#chips').addEventListener('click', e => {
+    const b = e.target.closest('[data-cat]'); if (!b) return;
+    activeCat = b.dataset.cat; renderChips(); renderTiles();
+  });
+  $('#suche').addEventListener('input', renderTiles);
+
+  /* ---------- Speichern & Zurücksetzen ---------- */
+  function saveTool(sec) {
+    const data = {};
+    $$('[data-save]', sec).forEach(el => { data[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value; });
+    store.set('f:' + sec.id, data);
+  }
+  function loadTool(sec) {
+    const data = store.get('f:' + sec.id); if (!data) return;
+    $$('[data-save]', sec).forEach(el => {
+      if (!(el.id in data)) return;
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!data[el.id]; else el.value = data[el.id];
+    });
+  }
+  function resetTool(sec) {
+    $$('[data-save]', sec).forEach(el => {
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = el.defaultChecked;
+      else if (el.tagName === 'SELECT') $$('option', el).forEach(o => { o.selected = o.defaultSelected; });
+      else el.value = el.defaultValue;
+    });
+    if (sec.id === 'v-klassenkasse') { kkRows = KK_DEFAULT.map(r => Object.assign({}, r)); renderKK(); }
+    store.set('f:' + sec.id, null);
+    if (sec.id === 'v-klassenkasse') store.set('kk-posten', null);
+  }
+
+  /* ---------- 1. Positionsgröße ---------- */
+  function calcPG() {
+    const out = $('#pg-out');
+    const A = val('pg-konto'), r = val('pg-risiko'), E = val('pg-einstieg'), S = val('pg-stop'), fx = val('pg-fx');
+    const tRaw = $('#pg-ziel').value.trim(), T = tRaw ? val('pg-ziel') : NaN;
+    const cur = $('#pg-waehrung').value, m = $('#pg-markt').value;
+    const usd = m === 'gold' || m === 'forex';
+    $('#pg-fx-feld').hidden = !(usd && cur === 'EUR');
+    const err = [];
+    if (!(A > 0)) err.push('Trag deinen Kontostand ein.');
+    if (!(r > 0 && r <= 100)) err.push('Das Risiko muss zwischen 0 und 100 % liegen.');
+    if (!(E > 0)) err.push('Der Einstiegskurs fehlt.');
+    if (!(S > 0)) err.push('Der Stop-Loss fehlt.');
+    if (E > 0 && S > 0 && E === S) err.push('Stop-Loss und Einstieg dürfen nicht gleich sein.');
+    if (usd && cur === 'EUR' && !(fx > 0)) err.push('Trag den Euro-Dollar-Kurs ein.');
+    const long = S < E;
+    if (tRaw && !(T > 0)) err.push('Das Ziel ist keine Zahl.');
+    else if (tRaw && E > 0 && S > 0 && ((long && T <= E) || (!long && T >= E))) err.push(long ? 'Dein Stop liegt unter dem Einstieg (Kauf). Dann muss das Ziel über dem Einstieg liegen.' : 'Dein Stop liegt über dem Einstieg (Verkauf). Dann muss das Ziel unter dem Einstieg liegen.');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+
+    const conv = usd && cur === 'EUR' ? 1 / fx : 1;
+    const money = x => euro(x, cur);
+    const d = Math.abs(E - S);
+    const R = A * r / 100;
+    let spec;
+    if (m === 'gold') spec = { unit: 'Lots', step: 0.01, dec: 2, per: d * 100 * conv, nominal: 100 * E * conv, dist: fmt(d, 2, 2) + ' $' };
+    else if (m === 'forex') { const pips = d / 0.0001; spec = { unit: 'Lots', step: 0.01, dec: 2, per: pips * 10 * conv, nominal: 100000 * E * conv, dist: fmt(pips, 1) + ' Pips' }; }
+    else if (m === 'aktie') spec = { unit: 'Stück', step: 1, dec: 0, per: d, nominal: E, dist: money(d) };
+    else spec = { unit: 'Coins', step: 0.0001, dec: 4, per: d, nominal: E, dist: money(d) };
+
+    const size = Math.floor(R / spec.per / spec.step + 1e-9) * spec.step;
+    if (size <= 0) {
+      const minR = spec.step * spec.per;
+      out.innerHTML = `<div class="kicker">Ergebnis</div><div class="box warn">Mit diesem Stop ist schon die kleinste Größe (${fmt(spec.step, spec.dec, spec.dec)} ${spec.unit}) zu groß: Sie würde ${money(minR)} riskieren, das sind ${pct(minR / A)} deines Kontos. Setz den Stop enger oder handle einen kleineren Markt.</div>`;
+      return;
+    }
+    const risk = size * spec.per, rp = risk / A;
+    const nominal = size * spec.nominal, lev = nominal / A;
+    let pill;
+    if (rp <= 0.01) pill = '<span class="pill good">Vorsichtig</span>';
+    else if (rp <= 0.02) pill = '<span class="pill good">Im üblichen Rahmen</span>';
+    else if (rp <= 0.05) pill = '<span class="pill warn">Hohes Risiko</span>';
+    else pill = '<span class="pill bad">Sehr hohes Risiko</span>';
+
+    let ziel = [];
+    if (tRaw) {
+      const crv = Math.abs(T - E) / d;
+      ziel = [
+        ['Chance-Risiko-Verhältnis', '1 : ' + fmt(crv, 2)],
+        ['Gewinn, wenn das Ziel kommt', money(risk * crv)],
+        ['Nötige Trefferquote', pct(1 / (1 + crv), 0)]
+      ];
+    }
+    out.innerHTML = `
+      <div class="kicker">${long ? 'Kauf (long)' : 'Verkauf (short)'} · Positionsgröße</div>
+      <div class="big">${fmt(size, spec.dec, spec.dec)} <small>${spec.unit}</small></div>
+      <div>${pill}</div>
+      ${rows([
+        ['Erlaubter Verlust', money(R)],
+        ['Tatsächlicher Verlust am Stop', `${money(risk)} (${pct(rp, 2)})`],
+        ['Abstand zum Stop', spec.dist],
+        ['Positionswert', money(nominal)],
+        ['Nötiger Hebel', lev <= 1 ? 'keiner' : fmt(lev, 1) + '-fach']
+      ].concat(ziel))}
+      <div class="box ${rp > 0.02 ? 'warn' : 'good'}">Nach 10 Verlusten in Folge mit diesem Risiko hättest du noch <strong>${money(A * Math.pow(1 - rp, 10))}</strong>. Das passiert öfter, als man denkt.</div>
+      ${tRaw ? `<p class="note">Die Trefferquote ist der Anteil an Trades, den du gewinnen musst, um bei diesem Verhältnis ohne Gebühren auf null zu kommen.</p>` : ''}`;
+  }
+
+  /* ---------- 2. Klassenkasse ---------- */
+  const KK_DEFAULT = [
+    { name: 'Location Abiball', betrag: '3.200', art: 'gesamt' },
+    { name: 'DJ und Technik', betrag: '900', art: 'gesamt' },
+    { name: 'Abibuch', betrag: '22', art: 'pp' },
+    { name: 'Abipulli', betrag: '32', art: 'pp' },
+    { name: 'Abistreich und Deko', betrag: '400', art: 'gesamt' }
+  ];
+  let kkRows = store.get('kk-posten') || KK_DEFAULT.map(r => Object.assign({}, r));
+  function renderKK() {
+    $('#kk-posten').innerHTML = kkRows.map((r, i) => `
+      <div class="posten-row" data-i="${i}">
+        <input type="text" class="p-name" id="kk-name-${i}" value="${esc(r.name)}" aria-label="Posten ${i + 1}: Bezeichnung" data-k="name">
+        <div class="suffix"><input type="text" inputmode="decimal" id="kk-betrag-${i}" value="${esc(r.betrag)}" aria-label="Posten ${i + 1}: Betrag" data-k="betrag"><span>€</span></div>
+        <select id="kk-art-${i}" aria-label="Posten ${i + 1}: gilt für" data-k="art">
+          <option value="gesamt"${r.art === 'gesamt' ? ' selected' : ''}>alle zusammen</option>
+          <option value="pp"${r.art === 'pp' ? ' selected' : ''}>pro Person</option>
+        </select>
+        <button type="button" aria-label="Posten ${i + 1} entfernen" data-del="${i}">×</button>
+      </div>`).join('');
+  }
+  $('#kk-posten').addEventListener('input', e => {
+    const row = e.target.closest('[data-i]'); if (!row || !e.target.dataset.k) return;
+    kkRows[+row.dataset.i][e.target.dataset.k] = e.target.value;
+    store.set('kk-posten', kkRows); calcKK();
+  });
+  $('#kk-posten').addEventListener('click', e => {
+    const b = e.target.closest('[data-del]'); if (!b) return;
+    kkRows.splice(+b.dataset.del, 1); store.set('kk-posten', kkRows); renderKK(); calcKK();
+  });
+  $('#kk-neu').addEventListener('click', () => {
+    kkRows.push({ name: '', betrag: '', art: 'gesamt' }); store.set('kk-posten', kkRows); renderKK();
+    const inp = $('#kk-name-' + (kkRows.length - 1)); if (inp) inp.focus();
+  });
+  function calcKK() {
+    const out = $('#kk-out');
+    const P = val('kk-personen'), M = val('kk-monate'), kasse = val('kk-kasse') || 0, akt = val('kk-aktionen') || 0;
+    const err = [];
+    if (!(P >= 1)) err.push('Wie viele Personen seid ihr?');
+    if (!(M >= 1)) err.push('Wie viele Monate sind es noch? (mindestens 1)');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const items = kkRows.map(r => { const b = parseNum(r.betrag, true) || 0; return { name: r.name || 'Ohne Namen', sum: r.art === 'pp' ? b * P : b, pp: r.art === 'pp', b }; });
+    const total = items.reduce((s, i) => s + i.sum, 0);
+    const gap = total - kasse - akt;
+    const perP = Math.max(0, gap) / P, perPM = perP / M;
+    const list = items.filter(i => i.sum > 0).sort((a, b) => b.sum - a.sum).map(i => [esc(i.name) + (i.pp ? ` <span class="hint">(${euro(i.b)} × ${fmt(P, 0)})</span>` : ''), euro(i.sum)]);
+    out.innerHTML = gap > 0 ? `
+      <div class="kicker">Jede Person zahlt pro Monat</div>
+      <div class="big">${euro(Math.ceil(perPM * 100) / 100)}</div>
+      <div><span class="pill warn">Es fehlen ${euro(gap)}</span></div>
+      ${rows([['Kosten gesamt', euro(total)], ['Schon in der Kasse', '− ' + euro(kasse)], ['Geplante Einnahmen', '− ' + euro(akt)], ['Fehlt', euro(gap)], ['Pro Person insgesamt', euro(perP)]])}
+      <p class="note">Ohne Beiträge müssten eure Aktionen jeden Monat zusätzlich <strong>${euro(gap / M)}</strong> einbringen.</p>
+      <details><summary>Kosten nach Posten</summary>${rows(list)}</details>`
+      : `
+      <div class="kicker">Ergebnis</div>
+      <div class="big">Reicht.</div>
+      <div><span class="pill good">${euro(-gap)} Puffer</span></div>
+      ${rows([['Kosten gesamt', euro(total)], ['Schon in der Kasse', euro(kasse)], ['Geplante Einnahmen', euro(akt)]])}
+      <p class="note">Plant trotzdem 10 % Puffer ein: Locations und Druckereien werden oft teurer als angefragt.</p>
+      <details><summary>Kosten nach Posten</summary>${rows(list)}</details>`;
+  }
+
+  /* ---------- 3. Auszug ---------- */
+  function calcAZ() {
+    const out = $('#az-out');
+    const sum = grp => $$(`[data-az="${grp}"]`).reduce((s, el) => s + (parseNum(el.value, true) || 0), 0);
+    const start = sum('start'), aus = sum('aus'), ein = sum('ein');
+    const erspart = val('az-erspart') || 0, miete = val('az-miete') || 0;
+    const saldo = ein - aus, luecke = start - erspart, notgroschen = aus * 3;
+    const mieteAnteil = ein > 0 ? miete / ein : 0;
+    const top = $$('[data-az="aus"]').map(el => [el.dataset.label, parseNum(el.value, true) || 0]).sort((a, b) => b[1] - a[1]).slice(0, 3);
+    let pill, text;
+    if (saldo < 0) { pill = `<span class="pill bad">Jeden Monat fehlen ${euro(-saldo)}</span>`; text = 'So geht es nicht lange gut. Prüf, ob dir BAföG, BAB oder Wohngeld zusteht, oder such ein günstigeres Zimmer.'; }
+    else if (saldo < 50) { pill = '<span class="pill warn">Sehr knapp</span>'; text = 'Es reicht gerade so. Eine kaputte Waschmaschine bringt dich ins Minus.'; }
+    else { pill = '<span class="pill good">Es reicht</span>'; text = `Mit ${euro(saldo)} im Monat hast du deinen Notgroschen von ${euro(notgroschen)} in etwa ${fmt(Math.ceil(Math.max(0, notgroschen - Math.max(0, -luecke)) / saldo), 0)} Monaten zusammen.`; }
+    out.innerHTML = `
+      <div class="kicker">Am Monatsende übrig</div>
+      <div class="big">${euro(saldo)}</div>
+      <div>${pill}</div>
+      ${rows([
+        ['Einnahmen pro Monat', euro(ein)],
+        ['Ausgaben pro Monat', euro(aus)],
+        ['Startkosten einmalig', euro(start)],
+        [luecke > 0 ? 'Für den Start fehlen' : 'Nach dem Einzug übrig', euro(Math.abs(luecke))],
+        ['Miete vom Einkommen', ein > 0 ? pct(mieteAnteil, 0) : '–'],
+        ['Notgroschen (3 Monate)', euro(notgroschen)]
+      ])}
+      <p class="note">${text}</p>
+      ${mieteAnteil > 0.4 ? '<div class="box warn">Die Miete frisst mehr als 40 % deines Einkommens. Als Faustregel gilt: höchstens ein Drittel.</div>' : ''}
+      <p class="note">Größte Posten: ${top.map(t => `${t[0]} ${euro(t[1])}`).join(', ')}.</p>`;
+  }
+
+  /* ---------- 4. Lernplan ---------- */
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const parseISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  (function setDateDefaults() {
+    const t = new Date(); const today = new Date(t.getFullYear(), t.getMonth(), t.getDate());
+    const s = $('#lp-start'), e = $('#lp-datum');
+    s.defaultValue = iso(today); e.defaultValue = iso(addDays(today, 21));
+    if (!s.value) s.value = s.defaultValue; if (!e.value) e.value = e.defaultValue;
+  })();
+  const round5 = x => Math.max(5, Math.round(x / 5) * 5);
+  let planText = '';
+  function calcLP() {
+    const out = $('#lp-out');
+    const start = parseISO($('#lp-start').value), exam = parseISO($('#lp-datum').value), M = val('lp-minuten');
+    const topics = $('#lp-themen').value.split('\n').map(s => s.trim()).filter(Boolean);
+    const frei = [0, 1, 2, 3, 4, 5, 6].map(i => $('#lp-frei-' + i).checked);
+    const err = [];
+    if (!start) err.push('Wann fängst du an?');
+    if (!exam) err.push('Wann ist die Prüfung?');
+    if (start && exam && exam <= start) err.push('Die Prüfung muss nach dem Starttag liegen.');
+    if (!(M >= 15)) err.push('Plane mindestens 15 Minuten pro Tag ein.');
+    if (!topics.length) err.push('Trag mindestens ein Thema ein.');
+    if (frei.every(Boolean)) err.push('Mindestens ein Wochentag muss ein Lerntag sein.');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const days = [];
+    for (let d = start; d < exam; d = addDays(d, 1)) if (!frei[d.getDay()]) days.push(d);
+    if (days.length < 2) { out.innerHTML = errBox(['Bis zur Prüfung bleiben weniger als zwei Lerntage. Nimm einen freien Tag dazu oder fang früher an.']); return; }
+    const final = days.pop();
+    const L = days.length, n = topics.length;
+    const window = L <= 4 ? L : Math.max(1, Math.round(L * 0.7));
+    const plan = days.map(d => ({ d, neu: [], wdh: [] }));
+    topics.forEach((t, i) => {
+      const k = Math.floor(i * window / n);
+      plan[k].neu.push(t);
+      [1, 3, 7].forEach(off => { if (k + off < L) plan[k + off].wdh.push(t); });
+    });
+    const dfmt = d => d.toLocaleDateString('de-DE', { weekday: 'short', day: '2-digit', month: '2-digit' });
+    let maxNeu = 0, totalWdh = 0;
+    const lines = [];
+    const html = plan.map(p => {
+      const units = p.neu.length * 2 + p.wdh.length;
+      maxNeu = Math.max(maxNeu, p.neu.length); totalWdh += p.wdh.length;
+      if (!units) { lines.push(`${dfmt(p.d)}: Puffer, Lücken schließen`); return `<li><span class="day">${dfmt(p.d)}</span><div class="items"><span>Puffer: offene Fragen klären, Lücken schließen</span></div></li>`; }
+      const u = M / units;
+      const items = p.neu.map(t => `<div class="neu">${esc(t)} <span>· ${round5(2 * u)} Min</span></div>`).concat(p.wdh.map(t => `<div class="wdh">${esc(t)} <span>· ${round5(u)} Min</span></div>`));
+      lines.push(`${dfmt(p.d)}: ` + p.neu.map(t => 'NEU ' + t).concat(p.wdh.map(t => 'Wiederholen ' + t)).join(' | '));
+      return `<li><span class="day">${dfmt(p.d)}</span><div class="items">${items.join('')}</div></li>`;
+    }).join('');
+    const finalText = 'Generalprobe: alte Klausur unter Prüfungsbedingungen, danach nur noch Lücken. Früh schlafen.';
+    lines.push(`${dfmt(final)}: ${finalText}`);
+    planText = `Lernplan bis ${exam.toLocaleDateString('de-DE')}\n\n` + lines.join('\n');
+    const tage = Math.round((exam - start) / 864e5);
+    const warn = maxNeu > 2 ? `<div class="box warn">An manchen Tagen kommen ${maxNeu} neue Themen dazu. Mehr Zeit pro Tag, ein früherer Start oder weniger wichtige Themen streichen hilft.</div>` : '';
+    out.innerHTML = `
+      <div class="kicker">Dein Plan</div>
+      <div class="big">${L + 1} <small>Lerntage bis zur Prüfung</small></div>
+      ${rows([['Prüfung in', tage === 1 ? '1 Tag' : tage + ' Tagen'], ['Themen', n], ['Wiederholungen eingeplant', totalWdh]])}
+      ${warn}
+      <div class="plan-scroll"><ol class="plan">${html}<li class="final"><span class="day">${dfmt(final)}<small>letzter Tag</small></span><div class="items">${finalText}</div></li></ol></div>
+      <div class="example"><button type="button" class="btn" id="lp-copy">Plan kopieren</button><span class="note">zum Einfügen in Notizen oder Kalender</span></div>`;
+  }
+  document.addEventListener('click', async e => {
+    if (e.target.id !== 'lp-copy') return;
+    const b = e.target, old = b.textContent;
+    try { await navigator.clipboard.writeText(planText); b.textContent = 'Kopiert'; } catch (err) { b.textContent = 'Kopieren nicht erlaubt'; }
+    setTimeout(() => { b.textContent = old; }, 1800);
+  });
+
+  /* ---------- 5. Lernmethode ---------- */
+  const LM = {
+    stoff: {
+      fakten: { name: 'Abfragen statt Durchlesen (Active Recall)', why: 'Fakten bleiben hängen, wenn du sie aus dem Kopf holen musst. Lesen fühlt sich nach Lernen an, bringt aber wenig.', steps: ['Schreib jede Frage auf die Vorderseite einer Karteikarte, die Antwort hinten. Oder nutz Anki.', 'Frag dich ab und sortiere: gewusst, fast, nicht gewusst.', 'Die Stapel „fast“ und „nicht gewusst“ morgen wieder, „gewusst“ erst in ein paar Tagen.'] },
+      rechnen: { name: 'Aufgaben rechnen mit Fehlerheft', why: 'Rechnen lernst du nur durch Rechnen. Lösungen anschauen erzeugt das Gefühl, es zu können.', steps: ['Nimm alte Klausuren oder Aufgaben aus dem Buch und rechne ohne Lösung.', 'Jeden Fehler ins Fehlerheft: Aufgabe, was falsch war, die richtige Regel.', 'Vor der Prüfung das Fehlerheft durchrechnen, nicht das ganze Buch.'] },
+      verstehen: { name: 'Feynman-Methode: in eigenen Worten erklären', why: 'Was du einem Zwölfjährigen erklären kannst, hast du verstanden. Wo du stockst, ist deine Lücke.', steps: ['Nimm ein Thema und erklär es laut oder schriftlich, ohne Unterlagen.', 'Markier jede Stelle, an der du stockst oder Fachwörter brauchst.', 'Lies genau diese Stellen nach und erklär das Thema noch einmal kürzer.'] },
+      praxis: { name: 'Vormachen, nachmachen, selbst machen', why: 'Abläufe sitzen erst, wenn deine Hände sie ein paar Mal gemacht haben.', steps: ['Schreib den Ablauf als nummerierte Checkliste auf.', 'Mach ihn einmal mit Checkliste, dann ohne.', 'Lass dir dabei zusehen oder film dich und vergleich mit der Checkliste.'] }
+    },
+    zeit: {
+      kurz: 'Wenig Zeit: Lern zuerst, was am häufigsten drankommt. Altklausuren und Hinweise der Lehrkraft zeigen das. Schlaf trotzdem mindestens 7 Stunden, im Schlaf wird gespeichert.',
+      mittel: 'Ein bis zwei Wochen reichen gut. Verteil die Themen und wiederhol jedes nach 1, 3 und 7 Tagen. Der Lernplan-Generator macht das für dich.',
+      lang: 'Viel Zeit ist ein Vorteil, wenn du ihn nutzt: jeden Tag 30 bis 45 Minuten statt am Ende alles auf einmal. Wiederholungen ab der ersten Woche.'
+    },
+    problem: {
+      anfangen: 'Gegen das Aufschieben: Nimm dir nur 2 Minuten vor, zum Beispiel eine Karteikarte. Danach einen Timer auf 25 Minuten stellen, dann 5 Minuten Pause (Pomodoro).',
+      vergessen: 'Gegen das Vergessen: Wiederhol nach festen Abständen, bevor es weg ist. Am Ende jeder Lerneinheit 3 Minuten aus dem Kopf aufschreiben, was du gelernt hast.',
+      verstehen: 'Gegen das Nichtverstehen: Sammel konkrete Fragen statt „ich verstehe nichts“. Schau zu dem Thema ein Erklärvideo, zum Beispiel bei Serlo oder Khan Academy, und frag in der nächsten Stunde nach.',
+      ablenkung: 'Gegen Ablenkung: Handy in einen anderen Raum, nicht nur umdrehen. Feste Lernzeit am selben Ort, und nach jeder Einheit eine echte Pause ohne Bildschirm.'
+    }
+  };
+  function calcLM() {
+    const g = n => ($(`input[name="${n}"]:checked`) || {}).value;
+    const s = LM.stoff[g('lm-stoff')], z = LM.zeit[g('lm-zeit')], p = LM.problem[g('lm-problem')];
+    if (!s || !z || !p) { $('#lm-out').innerHTML = '<p class="note">Beantworte die drei Fragen.</p>'; return; }
+    $('#lm-out').innerHTML = `
+      <div class="kicker">Deine Methode</div>
+      <h3>${s.name}</h3>
+      <p class="note">${s.why}</p>
+      <div><span class="lbl">So legst du jetzt los</span><ol>${s.steps.map(x => `<li>${x}</li>`).join('')}</ol></div>
+      <div class="box good">${p}</div>
+      <p class="note">${z}</p>
+      <div class="example"><a class="btn-ghost btn-small" href="#lernplan" style="text-decoration:none">Lernplan bauen →</a><a class="btn-ghost btn-small" href="#lerntools" style="text-decoration:none">Passende Tools →</a></div>`;
+  }
+
+  /* ---------- 6. Bewerbung ---------- */
+  const BW_STEPS = [
+    ['Ziel klären', ['Drei Berufe oder Praktika notiert, die mich interessieren', 'Mit jemandem gesprochen, der den Beruf macht']],
+    ['Stellen finden', ['Jobsuche der Arbeitsagentur und Firmenseiten durchsucht', 'Fünf passende Firmen mit Bewerbungsfrist notiert']],
+    ['Unterlagen', ['Lebenslauf auf einer Seite, lückenlos, mit Datum', 'Die letzten zwei Zeugnisse eingescannt', 'Bewerbungsfoto (freiwillig, aber üblich)']],
+    ['Anschreiben', ['Für jede Firma das Warum neu geschrieben', 'Von jemand anderem Korrektur lesen lassen']],
+    ['Abschicken', ['Alles in einer PDF, kleiner als 5 MB', 'Seriöse E-Mail-Adresse, z. B. vorname.nachname@…', 'Bewerbung abgeschickt und Datum notiert']],
+    ['Nachfassen und Gespräch', ['Nach zwei Wochen ohne Antwort freundlich nachgefragt', 'Antworten auf „Warum wir?“ und „Ihre Stärken?“ laut geübt']]
+  ];
+  let bwChecks = store.get('bw-checks') || {};
+  function renderBW() {
+    let id = 0;
+    $('#bw-steps').innerHTML = BW_STEPS.map(([title, items], si) => `
+      <li class="step"><h3>${si + 1}. ${esc(title)}</h3>${items.map(t => { const k = 'bw-c' + (id++); return `<label class="check"><input type="checkbox" id="${k}"${bwChecks[k] ? ' checked' : ''}><span>${esc(t)}</span></label>`; }).join('')}</li>`).join('');
+    updateBW();
+  }
+  function updateBW() {
+    const all = $$('#bw-steps input'), done = all.filter(c => c.checked).length;
+    $('#bw-stand').textContent = `${done} von ${all.length} erledigt`;
+    $('#bw-bar').style.width = (all.length ? done / all.length * 100 : 0) + '%';
+  }
+  $('#bw-steps').addEventListener('change', e => {
+    if (e.target.type !== 'checkbox') return;
+    bwChecks[e.target.id] = e.target.checked; store.set('bw-checks', bwChecks); updateBW();
+  });
+  function calcBW() {
+    const g = id => $('#' + id).value.trim();
+    const art = g('bw-art'), beruf = g('bw-beruf') || '[Beruf]', firma = g('bw-firma') || '[Firma]', start = g('bw-start');
+    const person = g('bw-person'), anrede = g('bw-anrede');
+    const was = { ausbildung: 'einen Ausbildungsplatz', praktikum: 'ein Praktikum', job: 'einen Nebenjob' }[art];
+    const betreff = `Bewerbung um ${was} als ${beruf}${start ? ' ab ' + start : ''}`;
+    let gruss = 'Sehr geehrte Damen und Herren,';
+    if (person && anrede === 'frau') gruss = `Sehr geehrte Frau ${person},`;
+    else if (person && anrede === 'herr') gruss = `Sehr geehrter Herr ${person},`;
+    else if (person && anrede === 'neutral') gruss = `Guten Tag ${person},`;
+    const warum = g('bw-warum'), jetzt = g('bw-jetzt').replace(/^zurzeit\s+/i, ''), staerke = g('bw-staerke'), beleg = g('bw-beleg'), name = g('bw-name') || '[Dein Name]';
+    const absaetze = [
+      betreff, '', gruss, '',
+      (warum ? warum + ' ' : '') + `Deshalb bewerbe ich mich bei der ${firma} um ${was} als ${beruf}.`, '',
+      jetzt ? `Zurzeit ${jetzt}` : '',
+      staerke ? `Eine meiner Stärken ist ${staerke}. ${beleg}`.trim() : '',
+      '',
+      art === 'ausbildung' ? 'In der Ausbildung möchte ich lernen, sorgfältig und selbstständig zu arbeiten, und mich mit vollem Einsatz einbringen.' : art === 'praktikum' ? 'Im Praktikum möchte ich herausfinden, ob dieser Beruf zu mir passt, und dabei so viel wie möglich mit anpacken.' : 'Ich bin zuverlässig erreichbar und kann flexibel einspringen.',
+      '', 'Über eine Einladung zu einem persönlichen Gespräch freue ich mich.', '', 'Mit freundlichen Grüßen', '', name
+    ];
+    const text = absaetze.join('\n').replace(/\n{3,}/g, '\n\n');
+    $('#bw-text').value = text;
+    const w = text.split(/\s+/).filter(Boolean).length;
+    $('#bw-woerter').textContent = `${w} Wörter` + (w < 120 ? ' · etwas mehr über dich wäre gut' : w > 330 ? ' · zu lang, kürzen' : ' · passt auf eine Seite');
+  }
+
+  /* ---------- 7. Lern-Tools ---------- */
+  const DIR_CATS = { alle: 'Alle', karteikarten: 'Karteikarten', mathe: 'Mathe & Naturwissenschaft', schreiben: 'Schreiben', sprachen: 'Sprachen', organisation: 'Notizen & Planen', fokus: 'Fokus' };
+  const TOOLS = [
+    { n: 'Anki', url: 'https://apps.ankiweb.net', k: 'karteikarten', preis: 'kostenlos', frei: true, gut: 'Vokabeln, Fachbegriffe und Formeln. Fragt dich genau dann ab, wenn du kurz vorm Vergessen bist.', haken: 'Sieht altmodisch aus und braucht etwa eine Stunde Einarbeitung. Am PC, auf Android und im Browser kostenlos, die iPhone-App kostet einmalig.' },
+    { n: 'Quizlet', url: 'https://quizlet.com', k: 'karteikarten', preis: 'Freemium', frei: false, gut: 'Schnell Karteikarten anlegen oder fertige Sets von anderen nutzen.', haken: 'Viele Lernmodi stecken hinter dem Abo. Fremde Sets enthalten manchmal Fehler.' },
+    { n: 'Serlo', url: 'https://de.serlo.org', k: 'mathe', preis: 'kostenlos', frei: true, gut: 'Deutsche Erklärungen und Übungen nah am Schulstoff, vor allem Mathe. Gemeinnützig und ohne Werbung.', haken: 'Nicht jedes Fach ist gleich ausführlich.' },
+    { n: 'Khan Academy', url: 'https://de.khanacademy.org', k: 'mathe', preis: 'kostenlos', frei: true, gut: 'Erklärvideos plus Übungen mit sofortiger Rückmeldung, von Mathe bis Naturwissenschaften.', haken: 'Das deutsche Angebot ist kleiner als das englische.' },
+    { n: 'GeoGebra', url: 'https://www.geogebra.org', k: 'mathe', preis: 'kostenlos', frei: true, gut: 'Funktionen zeichnen, Geometrie, Ergebnisse einer Kurvendiskussion nachprüfen.', haken: 'Ersetzt nicht das Rechnen von Hand, das in der Klausur zählt.' },
+    { n: 'Zotero', url: 'https://www.zotero.org', k: 'schreiben', preis: 'kostenlos', frei: true, gut: 'Quellen sammeln und das Literaturverzeichnis automatisch erstellen. Ideal für Facharbeit und Hausarbeit.', haken: 'Lohnt sich erst ab ein paar Quellen.' },
+    { n: 'LanguageTool', url: 'https://languagetool.org/de', k: 'schreiben', preis: 'Freemium', frei: false, gut: 'Prüft Rechtschreibung, Grammatik und Kommas, auch direkt im Browser.', haken: 'Stilvorschläge und lange Texte nur mit Abo.' },
+    { n: 'DeepL', url: 'https://www.deepl.com', k: 'sprachen', preis: 'Freemium', frei: false, gut: 'Sehr gute Übersetzungen, um schwierige fremdsprachige Texte zu verstehen.', haken: 'Zum Lernen nur, wenn du die Übersetzung danach selbst erklären kannst. Kopierte Texte fallen auf.' },
+    { n: 'Duolingo', url: 'https://www.duolingo.com', k: 'sprachen', preis: 'Freemium', frei: false, gut: 'Tägliche Routine für Wortschatz, gut für den Einstieg in eine neue Sprache.', haken: 'Bringt dich kaum zum freien Sprechen oder Schreiben. Werbung in der kostenlosen Version.' },
+    { n: 'Obsidian', url: 'https://obsidian.md', k: 'organisation', preis: 'kostenlos', frei: true, gut: 'Notizen als Dateien auf deinem Gerät, untereinander verlinkbar wie ein eigenes Wiki.', haken: 'Abgleich zwischen Geräten kostet extra oder braucht einen eigenen Weg.' },
+    { n: 'Excalidraw', url: 'https://excalidraw.com', k: 'organisation', preis: 'kostenlos', frei: true, gut: 'Mindmaps und Skizzen im Browser, ohne Konto.', haken: 'Bei großen Themen wird es schnell unübersichtlich.' },
+    { n: 'Pomofocus', url: 'https://pomofocus.io', k: 'fokus', preis: 'kostenlos', frei: true, gut: 'Einfacher Pomodoro-Timer im Browser: 25 Minuten lernen, 5 Minuten Pause.', haken: 'Hilft nur, wenn das Handy trotzdem weg liegt.' }
+  ];
+  let dirCat = 'alle';
+  function renderDir() {
+    $('#dir-chips').innerHTML = Object.keys(DIR_CATS).map(k => `<button type="button" class="chip" data-dc="${k}" aria-pressed="${k === dirCat}">${esc(DIR_CATS[k])}</button>`).join('');
+    const nurFrei = $('#dir-frei').checked;
+    const list = TOOLS.filter(t => (dirCat === 'alle' || t.k === dirCat) && (!nurFrei || t.frei));
+    $('#dir').innerHTML = list.map(t => `
+      <article class="entry">
+        <div class="entry-top"><h3>${esc(t.n)}</h3><span class="price ${t.frei ? 'frei' : 'fremium'}">${esc(t.preis)}</span></div>
+        <span class="k">${esc(DIR_CATS[t.k])}</span>
+        <p>${esc(t.gut)}</p>
+        <p class="haken"><b>Haken:</b> ${esc(t.haken)}</p>
+        <a href="${t.url}" target="_blank" rel="noopener">Zu ${esc(t.n)} ↗</a>
+      </article>`).join('') + `
+      <article class="entry featured">
+        <span class="partner ad" style="border:0;padding:0">Anzeige</span>
+        <h3>Platz für einen Featured-Eintrag</h3>
+        <p class="haken">Hier kann ein passendes Tool hervorgehoben stehen, klar als Werbung gekennzeichnet. <span class="ph">[Partner eintragen]</span></p>
+      </article>`;
+  }
+  $('#dir-chips').addEventListener('click', e => { const b = e.target.closest('[data-dc]'); if (!b) return; dirCat = b.dataset.dc; renderDir(); });
+  $('#dir-frei').addEventListener('change', renderDir);
+
+  /* ---------- Verdrahtung ---------- */
+  const CALC = { 'v-positionsgroesse': calcPG, 'v-klassenkasse': calcKK, 'v-auszug': calcAZ, 'v-lernplan': calcLP, 'v-lernmethode': calcLM, 'v-bewerbung': calcBW };
+  $$('[data-tool]').forEach(sec => {
+    loadTool(sec);
+    const run = CALC[sec.id];
+    const onChange = e => { if (!e.target.matches('[data-save]')) return; saveTool(sec); run(); };
+    sec.addEventListener('input', onChange);
+    sec.addEventListener('change', onChange);
+    $$('[data-reset]', sec).forEach(b => b.addEventListener('click', () => { resetTool(sec); run(); }));
+  });
+  $('#loeschen').addEventListener('click', () => {
+    store.clear();
+    $$('[data-tool]').forEach(sec => resetTool(sec));
+    bwChecks = {}; renderBW();
+    Object.values(CALC).forEach(f => f());
+    $('#geloescht').textContent = 'Gelöscht. Alle Rechner zeigen wieder die Beispielwerte.';
+  });
+
+  renderChips(); renderTiles(); renderKK(); renderBW(); renderDir();
+  Object.values(CALC).forEach(f => f());
+
+  /* ---------- Ansichten über die Adresse ---------- */
+  const NAMES = { impressum: 'Impressum', datenschutz: 'Datenschutz' };
+  TOPICS.forEach(t => { NAMES[t.id] = t.frage; });
+  let current = null;
+  function route() {
+    const h = location.hash.slice(1);
+    const id = document.getElementById('v-' + h) ? h : 'start';
+    if (h === 'wunsch') { if (current !== 'start') show('start'); $('#wunsch').scrollIntoView(); return; }
+    show(id);
+  }
+  function show(id) {
+    $$('[data-view]').forEach(s => { s.hidden = s.id !== 'v-' + id; });
+    document.title = id === 'start' ? "Wo hakt's?" : `${NAMES[id] || ''} · Wo hakt's?`;
+    if (current !== null && current !== id) window.scrollTo(0, 0);
+    current = id;
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

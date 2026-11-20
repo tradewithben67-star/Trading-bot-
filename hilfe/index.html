@@ -1,0 +1,1343 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Wo hakt's beim Kaufen?</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Hilfe bei Kaufsucht: Tipps für Laden, Online-Shopping, Social Media, Rabatte, Ratenkauf und Schulden, dazu Selbstcheck, Kassensturz-Rechner, Kauf-Bremse, Kauftagebuch und Beratungsstellen.">
+<style>
+/* Layout: weiße Seite. Start = Raster aus Karten (eine pro Problembereich oder Werkzeug).
+   Ein Klick öffnet die Detailansicht: Inhalt links, Begleitkarte rechts (am Handy untereinander). */
+:root {
+  --paper: #ffffff;
+  --surface: #ffffff;
+  --subtle: #f7f8fa;
+  --ink: #0f172a;
+  --ink-soft: #5b6475;
+  --line: #e6e8ee;
+  --pen: #1f4fd1;
+  --pen-soft: #eef3ff;
+  --on-pen: #ffffff;
+  --good: #15803d; --good-bg: #ecf7f0;
+  --warn: #a15c07; --warn-bg: #fdf4e3;
+  --bad: #b42318;  --bad-bg: #fdeceb;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, .04), 0 2px 6px rgba(15, 23, 42, .05);
+  --shadow-hover: 0 4px 8px rgba(15, 23, 42, .04), 0 16px 32px -8px rgba(15, 23, 42, .14);
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --r: 14px;
+  color-scheme: light;
+}
+/* Symbole: einheitlich ruhig */
+[data-c] { --tint: #f2f4f7; --tint-ink: #0f172a; }
+
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.55 var(--font); }
+a { color: var(--pen); }
+a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--pen); outline-offset: 2px;
+}
+h1, h2, h3 { text-wrap: balance; line-height: 1.15; margin: 0; }
+p { margin: 0; }
+.wrap {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.ph { color: var(--warn); font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .9em; }
+
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--paper); }
+
+/* Start: nur Karten, mittig */
+.start { min-height: calc(100vh - 60px); min-height: calc(100dvh - 60px); display: grid; align-content: center; padding-block: 48px; }
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; width: 100%; max-width: 640px; margin: 0 auto; }
+@media (max-width: 640px) { .tiles { gap: 12px; } .start { padding-block: 24px; } }
+.tile {
+  display: flex; flex-direction: column; justify-content: space-between; gap: 32px; min-height: 196px; min-width: 0;
+  padding: 26px; border: 1px solid var(--line); border-radius: 20px;
+  background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card);
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.tile:hover { transform: translateY(-3px); box-shadow: var(--shadow-hover); border-color: #d9dde6; }
+.tile:active { transform: translateY(-1px); }
+.ic { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--tint, #f2f4f7); flex: none; }
+.ic svg { width: 22px; height: 22px; stroke: var(--tint-ink, var(--ink)); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.tile .ic { width: 52px; height: 52px; border-radius: 15px; }
+.tile .ic svg { width: 26px; height: 26px; }
+.tile h2 { font-size: 1.2rem; font-weight: 700; letter-spacing: -.015em; line-height: 1.25; }
+@media (max-width: 640px) {
+  .tile { min-height: 156px; padding: 20px; gap: 24px; border-radius: 18px; }
+  .tile h2 { font-size: 1.05rem; }
+  .tile .ic { width: 46px; height: 46px; }
+}
+
+/* Detailansichten */
+.tool { padding-block: 28px 56px; display: grid; gap: 32px; }
+.back { font-size: .92rem; text-decoration: none; color: var(--ink-soft); justify-self: start; }
+.back:hover { color: var(--pen); }
+.tool-head { display: grid; gap: 10px; max-width: 46rem; }
+.tool-head .ic, .phead .ic { width: 52px; height: 52px; border-radius: 15px; margin-bottom: 6px; }
+.tool-head .ic svg, .phead .ic svg { width: 26px; height: 26px; }
+.tool-head h1 { font-size: clamp(1.8rem, 4.4vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; }
+.tool-head .lead { color: var(--ink-soft); font-size: 1.06rem; }
+.tool-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); gap: 32px; align-items: start; }
+@media (max-width: 860px) { .tool-grid { grid-template-columns: minmax(0, 1fr); } }
+.tool-grid > * { min-width: 0; }
+[data-view]:not([hidden]) { animation: viewIn .22s ease-out; }
+@keyframes viewIn { from { opacity: .4; transform: translateY(8px); } }
+
+/* Ratgeber und Hilfe: eine schmale Spalte */
+.wrap.page { max-width: 720px; padding-block: 28px 64px; display: grid; gap: 40px; }
+.phead { display: grid; gap: 12px; }
+.phead h1 { font-size: clamp(1.8rem, 4.4vw, 2.5rem); font-weight: 800; letter-spacing: -.03em; }
+.phead .lead { color: var(--ink-soft); font-size: 1.08rem; }
+.block { display: grid; gap: 14px; }
+.block h2 { font-size: 1.15rem; font-weight: 700; letter-spacing: -.01em; }
+.block > p { color: var(--ink-soft); }
+.list { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.list li { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 8px; }
+.list.signs li { color: var(--ink-soft); }
+.list.signs li::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft); margin: 10px 0 0 6px; }
+.list.tips li::before { content: ""; width: 6px; height: 11px; border: solid var(--ink); border-width: 0 2px 2px 0; transform: rotate(45deg); margin: 4px 0 0 7px; }
+.page .mantra { margin: 0; padding-block: 4px; font-size: clamp(1.25rem, 3vw, 1.5rem); font-weight: 700; letter-spacing: -.015em; line-height: 1.35; color: var(--ink); }
+.next2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+@media (max-width: 560px) { .next2 { grid-template-columns: minmax(0, 1fr); } }
+.action { display: flex; align-items: center; gap: 14px; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); color: var(--ink); text-decoration: none; box-shadow: var(--shadow-card); transition: transform .18s ease, box-shadow .18s ease; }
+.action:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.action b { display: block; font-weight: 700; }
+.action small { display: block; color: var(--ink-soft); font-size: .86rem; }
+.more { font-size: .92rem; color: var(--ink-soft); }
+.more a { color: var(--ink); }
+.sos-line { padding: 14px 16px; border-radius: 12px; background: var(--subtle); font-size: .92rem; color: var(--ink-soft); }
+.sos-line a { color: var(--ink); font-weight: 700; text-decoration: none; white-space: nowrap; }
+
+.side { position: sticky; top: 24px; display: grid; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 22px; box-shadow: var(--shadow-card); }
+@media (max-width: 860px) { .side { position: static; } }
+.kicker { font-size: .76rem; text-transform: uppercase; letter-spacing: .09em; color: var(--ink-soft); font-weight: 700; }
+.mantra { margin: 0; font-size: 1.22rem; font-weight: 700; letter-spacing: -.012em; line-height: 1.35; color: var(--ink); }
+.lrows { display: grid; gap: 8px; }
+.lrows.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+@media (max-width: 640px) { .lrows.two { grid-template-columns: minmax(0, 1fr); } }
+.lrow { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); text-decoration: none; font-weight: 600; font-size: .94rem; }
+.lrow:hover { border-color: var(--pen); color: var(--pen); }
+.lrow .ic { width: 34px; height: 34px; border-radius: 9px; }
+.lrow .ic svg { width: 18px; height: 18px; }
+.lrow small { display: block; font-weight: 500; color: var(--ink-soft); font-size: .82rem; }
+.divider { border: 0; border-top: 1px solid var(--line); margin: 0; }
+
+/* Formulare */
+.form { display: grid; gap: 24px; }
+fieldset { border: 0; padding: 0; margin: 0; display: grid; gap: 14px; min-width: 0; }
+legend { font-weight: 750; font-size: 1.02rem; padding: 0; margin-bottom: 12px; }
+.row { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.row.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 520px) { .row, .row.three { grid-template-columns: minmax(0, 1fr); } }
+.field { display: grid; gap: 5px; min-width: 0; align-content: start; }
+.field label, .lbl { font-size: .9rem; font-weight: 600; }
+.hint { font-size: .82rem; color: var(--ink-soft); font-weight: 400; }
+input[type="text"], input[type="date"], select, textarea {
+  width: 100%; font: inherit; padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--surface); color: var(--ink); min-width: 0;
+}
+input[type="text"]:focus, input[type="date"]:focus, select:focus, textarea:focus { border-color: var(--pen); box-shadow: 0 0 0 3px var(--pen-soft); outline: none; }
+.suffix { position: relative; }
+.suffix input[type="text"] { padding-right: 46px; }
+.suffix span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: .9rem; pointer-events: none; }
+.example { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-size: .85rem; color: var(--ink-soft); }
+.tag { font-size: .74rem; font-weight: 650; padding: 3px 9px; border-radius: 999px; background: var(--pen-soft); color: var(--pen); }
+
+.btn, .btn-ghost { display: inline-flex; align-items: center; justify-content: center; font: inherit; font-weight: 650; font-size: .92rem; cursor: pointer; border-radius: 10px; padding: 10px 16px; text-decoration: none; }
+.btn { background: var(--ink); color: #ffffff; border: 1px solid var(--ink); }
+.btn:hover { background: #24304a; }
+.btn:disabled { opacity: .6; cursor: default; }
+.btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--line); }
+.btn-ghost:hover { border-color: var(--pen); color: var(--pen); }
+.btn-small { padding: 6px 11px; font-size: .82rem; border-radius: 8px; }
+
+/* Ergebnis */
+.big { font-size: clamp(2rem, 5vw, 2.6rem); font-weight: 800; letter-spacing: -.03em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.big small { font-size: .5em; font-weight: 650; color: var(--ink-soft); letter-spacing: 0; }
+dl.rows { margin: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; }
+dl.rows dt, dl.rows dd { padding: 8px 0; border-top: 1px solid var(--line); margin: 0; }
+dl.rows dt { color: var(--ink-soft); font-size: .92rem; padding-right: 12px; }
+dl.rows dd { text-align: right; font-weight: 650; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+.pill.good, .box.good { background: var(--good-bg); color: var(--good); }
+.pill.warn, .box.warn { background: var(--warn-bg); color: var(--warn); }
+.pill.bad, .box.bad { background: var(--bad-bg); color: var(--bad); }
+.box { padding: 12px 14px; border-radius: 10px; font-size: .93rem; }
+.box.plain { background: var(--subtle); color: var(--ink); }
+.box ul { margin: 0; padding-left: 18px; }
+.note { font-size: .88rem; color: var(--ink-soft); }
+.bar-wrap { position: relative; padding-block: 4px; }
+.bar { display: flex; height: 16px; border-radius: 99px; overflow: hidden; background: var(--line); }
+.bar span { height: 100%; }
+.legend { display: grid; gap: 4px; font-size: .88rem; }
+.legend > span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: var(--c); }
+details { border-top: 1px solid var(--line); padding-top: 12px; }
+summary { cursor: pointer; font-weight: 650; font-size: .95rem; }
+.prose { display: grid; gap: 10px; color: var(--ink-soft); font-size: .94rem; max-width: 65ch; }
+details .prose { margin-top: 10px; }
+.prose h2 { color: var(--ink); font-size: 1.15rem; margin-top: 12px; }
+
+/* Listen mit Zeilen */
+.posten { display: grid; gap: 8px; }
+.posten-row { display: grid; grid-template-columns: var(--cols); gap: 8px; align-items: center; }
+.posten-row > button { font: inherit; width: 36px; height: 40px; border-radius: 9px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; }
+.posten-row > button:hover { color: var(--bad); border-color: var(--bad); }
+.posten-head { font-size: .8rem; color: var(--ink-soft); font-weight: 600; }
+@media (max-width: 560px) {
+  .posten-row { display: flex; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+  .posten-row > * { flex: 1 1 calc(50% - 4px); min-width: 0; }
+  .posten-row > .p-name { order: -2; flex: 1 1 calc(100% - 52px); }
+  .posten-row > button { order: -1; flex: 0 0 36px; }
+  .posten-head { display: none; }
+}
+
+/* Selbstcheck */
+.qs { display: grid; }
+.q { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 14px; align-items: center; padding: 14px 0; border-top: 1px solid var(--line); }
+.q p { font-size: .97rem; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); justify-self: start; }
+.seg label { position: relative; padding: 7px 13px; font-size: .86rem; cursor: pointer; border-left: 1px solid var(--line); color: var(--ink-soft); }
+.seg label:first-child { border-left: 0; }
+.seg input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.seg label:has(input:checked) { background: var(--ink); color: #ffffff; }
+.seg label:has(input:focus-visible) { outline: 2px solid var(--pen); outline-offset: -2px; }
+@media (max-width: 560px) { .q { grid-template-columns: minmax(0, 1fr); gap: 8px; } }
+.progress { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+.progress div { height: 100%; background: var(--ink); width: 0; transition: width .25s; }
+
+/* Kauf-Bremse */
+.checks { display: grid; gap: 8px; }
+.check { display: flex; gap: 10px; align-items: flex-start; padding: 11px 12px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; font-size: .95rem; }
+.check:has(input:checked) { border-color: var(--pen); background: var(--pen-soft); }
+.check input { margin-top: 4px; accent-color: var(--pen); width: 16px; height: 16px; flex: none; }
+.panel { border: 1px solid var(--line); border-radius: var(--r); padding: 22px; display: grid; gap: 14px; box-shadow: var(--shadow-card); }
+.panel h2 { font-size: 1.15rem; }
+.wl { list-style: none; margin: 0; padding: 0; display: grid; }
+.wl li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 0; border-top: 1px solid var(--line); }
+.wl b { font-weight: 650; }
+.wl .when { font-size: .85rem; color: var(--ink-soft); }
+.wl .btns { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 560px) { .wl li { grid-template-columns: minmax(0, 1fr); } .wl .btns { justify-content: flex-start; } }
+
+/* Hilfe: schlichte Liste */
+.contacts { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.contacts li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 20px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+.contacts h3 { font-size: 1.02rem; font-weight: 700; }
+.contacts p { color: var(--ink-soft); font-size: .92rem; margin-top: 3px; }
+.contacts a { font-weight: 650; text-decoration: none; color: var(--pen); white-space: nowrap; }
+.contacts a.nr { color: var(--ink); font-size: 1.1rem; font-variant-numeric: tabular-nums; }
+.contacts li.urgent a.nr { color: var(--bad); }
+@media (max-width: 560px) { .contacts li { grid-template-columns: minmax(0, 1fr); } }
+
+/* Interaktive Teile */
+.list.tips li { grid-template-columns: 22px minmax(0, 1fr) auto; align-items: start; }
+.plan-btn { font: inherit; font-size: .78rem; font-weight: 650; padding: 4px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); cursor: pointer; white-space: nowrap; }
+.plan-btn:hover { border-color: var(--ink); color: var(--ink); }
+.plan-btn[aria-pressed="true"] { background: var(--good-bg); color: var(--good); border-color: transparent; }
+.picks { display: grid; gap: 8px; }
+.pick { font: inherit; text-align: left; display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 10px; align-items: start; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); color: var(--ink); cursor: pointer; transition: border-color .15s, background .15s; }
+.pick:hover { border-color: #c9cfda; }
+.pick .bx { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid #c6ccd8; margin-top: 2px; display: grid; place-items: center; }
+.pick[aria-pressed="true"] { border-color: var(--ink); background: var(--subtle); }
+.pick[aria-pressed="true"] .bx { background: var(--ink); border-color: var(--ink); }
+.pick[aria-pressed="true"] .bx::after { content: ""; width: 4px; height: 8px; border: solid #ffffff; border-width: 0 2px 2px 0; transform: rotate(45deg) translate(-1px, -1px); }
+.fb { font-size: .94rem; color: var(--ink); font-weight: 600; min-height: 1px; }
+.fb:empty { display: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { font: inherit; font-size: .88rem; font-weight: 550; padding: 7px 14px; border-radius: 999px; cursor: pointer; border: 1px solid var(--line); background: var(--surface); color: var(--ink-soft); }
+.chip:hover { color: var(--ink); border-color: #c9cfda; }
+.chip[aria-pressed="true"] { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.widget { gap: 16px; }
+.widget h2 { font-size: 1.2rem; font-weight: 700; letter-spacing: -.01em; }
+.kreis { display: grid; gap: 12px; }
+.kreis-steps { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.kstep { font: inherit; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px 6px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--surface); color: var(--ink-soft); font-size: .88rem; font-weight: 600; cursor: pointer; }
+.kstep b { width: 22px; height: 22px; border-radius: 50%; background: var(--subtle); display: grid; place-items: center; font-size: .75rem; color: var(--ink); }
+.kstep[aria-pressed="true"] { background: var(--ink); color: #ffffff; border-color: var(--ink); }
+.kstep[aria-pressed="true"] b { background: rgba(255, 255, 255, .18); color: #ffffff; }
+.karrow { color: var(--ink-soft); font-size: .9rem; }
+.kdetail { padding: 16px 18px; border-radius: 12px; background: var(--subtle); display: grid; gap: 6px; font-size: .95rem; }
+.kdetail .exit { color: var(--good); font-weight: 600; }
+.timer { display: flex; gap: 22px; align-items: center; flex-wrap: wrap; }
+.ring { --p: 0; width: 132px; height: 132px; border-radius: 50%; background: conic-gradient(var(--ink) calc(var(--p) * 1%), var(--line) 0); display: grid; place-items: center; flex: none; }
+.ring span { width: 116px; height: 116px; border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-size: 1.6rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.timer-side { flex: 1 1 240px; display: grid; gap: 12px; min-width: 0; }
+.idea { font-size: 1.02rem; font-weight: 600; color: var(--ink); }
+.faq { gap: 0; }
+.faq h2 { margin-bottom: 8px; }
+.faq details { border-top: 1px solid var(--line); padding: 14px 0; }
+.faq details:last-of-type { border-bottom: 1px solid var(--line); }
+.faq summary { list-style: none; display: flex; justify-content: space-between; gap: 16px; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary::after { content: "+"; font-weight: 400; color: var(--ink-soft); font-size: 1.25rem; line-height: 1; }
+.faq details[open] summary::after { content: "–"; }
+.faq details p { margin-top: 8px; color: var(--ink-soft); max-width: 65ch; }
+.prio { margin: 0; padding-left: 22px; display: grid; gap: 12px; }
+.prio li { padding-left: 4px; }
+.prio .ptop { display: flex; justify-content: space-between; gap: 12px; font-weight: 650; }
+.prio .ptop span:last-child { font-variant-numeric: tabular-nums; }
+.prio small { display: block; color: var(--ink-soft); font-size: .88rem; margin-top: 2px; }
+.brief { display: grid; gap: 12px; margin-top: 12px; }
+.out-text { min-height: 230px; font-size: .9rem; background: var(--subtle); }
+.whatif { display: grid; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+input[type="range"] { width: 100%; accent-color: var(--ink); }
+.plan-list { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+.plan-list li { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: start; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.plan-list input { width: 18px; height: 18px; margin-top: 3px; accent-color: var(--ink); }
+.plan-list li.done label { color: var(--ink-soft); text-decoration: line-through; }
+.plan-list .x { font: inherit; border: 0; background: none; color: var(--ink-soft); cursor: pointer; font-size: 1.1rem; line-height: 1; padding: 2px 6px; }
+.plan-list .x:hover { color: var(--bad); }
+
+/* Rechtliches */
+.legal { padding-block: 26px 48px; display: grid; gap: 18px; }
+.legal h1 { font-size: clamp(1.8rem, 4.6vw, 2.5rem); font-weight: 800; letter-spacing: -.03em; }
+.legal address { font-style: normal; color: var(--ink); }
+
+footer { border-top: 1px solid var(--line); }
+footer .wrap { padding-block: 18px 24px; display: flex; justify-content: center; font-size: .84rem; color: var(--ink-soft); }
+footer nav { display: flex; gap: 18px; flex-wrap: wrap; }
+footer a { color: var(--ink-soft); text-decoration: none; }
+footer a:hover { color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; animation: none !important; }
+}
+</style>
+</head>
+<body>
+
+<main>
+
+<!-- ============ START ============ -->
+<section id="v-start" data-view>
+  <h1 class="sr-only">Wo hakt's beim Kaufen? Hilfe bei Kaufsucht</h1>
+  <div class="wrap start">
+    <div class="tiles" id="tiles"></div>
+  </div>
+</section>
+
+<!-- ============ RATGEBER (wird je nach Karte gefüllt) ============ -->
+<section id="v-thema" data-view hidden></section>
+
+<!-- ============ MEIN PLAN (wird per Skript gefüllt) ============ -->
+<section id="v-plan" data-view hidden></section>
+
+<!-- ============ SELBSTCHECK ============ -->
+<section id="v-selbstcheck" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <div class="tool-head">
+      <h1>Ist mein Kaufverhalten noch im Rahmen?</h1>
+      <p class="lead">Zehn Aussagen, zwei Minuten. Antworte so, wie es in den letzten sechs Monaten war. Das ist eine ehrliche Einschätzung für dich, keine Diagnose.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><button type="button" class="btn-ghost btn-small" data-reset>Antworten löschen</button></div>
+        <div class="qs" id="sc-fragen"></div>
+      </form>
+      <div class="side" aria-live="polite"><div id="sc-out"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KASSENSTURZ ============ -->
+<section id="v-kassensturz" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <div class="tool-head">
+      <h1>Wie viel kann ich mir eigentlich leisten?</h1>
+      <p class="lead">Trag ein, was jeden Monat reinkommt, was fest weggeht und was du für Einkäufe ausgibst. Dazu deine Schulden. Du siehst, was wirklich übrig bleibt, und bekommst einen Vorschlag für ein festes Kaufbudget.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> Trag deine eigenen Zahlen ein. <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Was jeden Monat reinkommt</legend>
+          <div class="row">
+            <div class="field"><label for="ks-netto">Gehalt, Rente oder Bürgergeld (netto)</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-netto" value="2.100" data-save data-geld data-ks="ein"><span>€</span></div></div>
+            <div class="field"><label for="ks-weitere">Weitere Einnahmen</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-weitere" value="0" data-save data-geld data-ks="ein"><span>€</span></div><span class="hint">Kindergeld, Nebenjob, Unterhalt …</span></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Feste Kosten im Monat</legend>
+          <div class="row three">
+            <div class="field"><label for="ks-miete">Miete warm</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-miete" value="750" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-energie">Strom &amp; Gas</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-energie" value="90" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-versich">Versicherungen</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-versich" value="55" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-handy">Handy &amp; Internet</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-handy" value="40" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-mobil">Auto oder Ticket</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-mobil" value="100" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-essen">Lebensmittel</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-essen" value="350" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-raten">Kredit- und Ratenzahlungen</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-raten" value="120" data-save data-geld data-ks="fix"><span>€</span></div></div>
+            <div class="field"><label for="ks-fixsonst">Sonstiges Festes</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-fixsonst" value="50" data-save data-geld data-ks="fix"><span>€</span></div></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Einkäufe im Monat</legend>
+          <div class="row three">
+            <div class="field"><label for="ks-kleidung">Kleidung &amp; Schuhe</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-kleidung" value="180" data-save data-geld data-ks="kauf" data-label="Kleidung &amp; Schuhe"><span>€</span></div></div>
+            <div class="field"><label for="ks-online">Online-Bestellungen</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-online" value="150" data-save data-geld data-ks="kauf" data-label="Online-Bestellungen"><span>€</span></div></div>
+            <div class="field"><label for="ks-kosmetik">Kosmetik &amp; Pflege</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-kosmetik" value="60" data-save data-geld data-ks="kauf" data-label="Kosmetik &amp; Pflege"><span>€</span></div></div>
+            <div class="field"><label for="ks-technik">Elektronik &amp; Technik</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-technik" value="70" data-save data-geld data-ks="kauf" data-label="Elektronik"><span>€</span></div></div>
+            <div class="field"><label for="ks-deko">Deko &amp; Haushalt</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-deko" value="50" data-save data-geld data-ks="kauf" data-label="Deko &amp; Haushalt"><span>€</span></div></div>
+            <div class="field"><label for="ks-apps">Apps, Spiele &amp; Abos</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-apps" value="35" data-save data-geld data-ks="kauf" data-label="Apps &amp; Spiele"><span>€</span></div></div>
+            <div class="field"><label for="ks-kaufsonst">Sonstige Einkäufe</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-kaufsonst" value="40" data-save data-geld data-ks="kauf" data-label="Sonstiges"><span>€</span></div></div>
+          </div>
+          <span class="hint">Schätzen ist erlaubt. Genauer wird es mit den Kontoauszügen der letzten drei Monate: zusammenzählen und durch drei teilen.</span>
+        </fieldset>
+        <fieldset>
+          <legend>Schulden</legend>
+          <div class="row">
+            <div class="field"><label for="ks-dispo">Genutzter Dispo</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-dispo" value="1.200" data-save data-geld><span>€</span></div><span class="hint">So weit ist dein Konto im Minus.</span></div>
+            <div class="field"><label for="ks-zins">Dispozins</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-zins" value="11" data-save><span>%</span></div><span class="hint">Steht im Kontoauszug oder im Preisaushang der Bank.</span></div>
+            <div class="field"><label for="ks-offen">Offene Rechnungen &amp; Ratenkäufe</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-offen" value="900" data-save data-geld><span>€</span></div><span class="hint">Alles mit „später zahlen“, Rechnung oder Raten.</span></div>
+            <div class="field"><label for="ks-andere">Andere Schulden</label><div class="suffix"><input type="text" inputmode="decimal" id="ks-andere" value="0" data-save data-geld><span>€</span></div><span class="hint">Kredite, Kreditkarte, Geld von Bekannten.</span></div>
+          </div>
+        </fieldset>
+      </form>
+      <div class="side">
+        <div id="ks-out" style="display:grid;gap:16px" aria-live="polite"></div>
+        <div class="whatif" id="ks-whatif">
+          <label for="ks-reduce" class="lbl">Was wäre, wenn du weniger kaufst? Um <span id="ks-reduce-v">50 %</span> weniger:</label>
+          <input type="range" id="ks-reduce" min="0" max="100" step="10" value="50">
+          <div id="ks-whatif-out" aria-live="polite"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KAUF-BREMSE ============ -->
+<section id="v-kaufbremse" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <div class="tool-head">
+      <h1>Soll ich das jetzt kaufen?</h1>
+      <p class="lead">Bevor du bezahlst: Trag ein, was du kaufen willst, und beantworte sechs Fragen. Du siehst, wie viel Arbeitszeit im Preis steckt und wie lange du besser wartest. Wünsche kommen auf die Warteliste statt in den Warenkorb.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Was willst du kaufen?</legend>
+          <div class="row">
+            <div class="field"><label for="kb-was">Was</label><input type="text" id="kb-was" value="Sneaker" data-save></div>
+            <div class="field"><label for="kb-preis">Preis</label><div class="suffix"><input type="text" inputmode="decimal" id="kb-preis" value="129" data-save data-geld><span>€</span></div></div>
+          </div>
+          <div class="row">
+            <div class="field"><label for="kb-netto">Dein Netto im Monat</label><div class="suffix"><input type="text" inputmode="decimal" id="kb-netto" value="2.100" data-save data-geld><span>€</span></div></div>
+            <div class="field"><label for="kb-stunden">Arbeitsstunden pro Woche</label><div class="suffix"><input type="text" inputmode="decimal" id="kb-stunden" value="38" data-save><span>Std.</span></div></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Was stimmt?</legend>
+          <div class="checks">
+            <label class="check"><input type="checkbox" id="kb-q1" data-save checked><span>Ich habe schon etwas Ähnliches.</span></label>
+            <label class="check"><input type="checkbox" id="kb-q2" data-save><span>Ich würde es auch ohne Rabatt kaufen.</span></label>
+            <label class="check"><input type="checkbox" id="kb-q3" data-save><span>Ich wollte es schon vor einer Woche haben.</span></label>
+            <label class="check"><input type="checkbox" id="kb-q4" data-save checked><span>Ich kann es sofort bezahlen, ohne Dispo, Raten oder „später zahlen“.</span></label>
+            <label class="check"><input type="checkbox" id="kb-q5" data-save><span>Ich weiß, wo es hinkommt und wann ich es benutze.</span></label>
+            <label class="check"><input type="checkbox" id="kb-q6" data-save checked><span>Ich bin gerade gestresst, traurig, gelangweilt oder sehr aufgedreht.</span></label>
+          </div>
+        </fieldset>
+      </form>
+      <div class="side" aria-live="polite"><div id="kb-out" style="display:grid;gap:16px"></div></div>
+    </div>
+    <div class="panel">
+      <h2>Deine Warteliste</h2>
+      <p class="note">Hier landen Wünsche, bis die Wartezeit vorbei ist. Danach entscheidest du in Ruhe. Die Liste bleibt nur auf diesem Gerät.</p>
+      <div id="kb-liste"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ KAUFTAGEBUCH ============ -->
+<section id="v-tagebuch" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <div class="tool-head">
+      <h1>Wann und warum kaufe ich?</h1>
+      <p class="lead">Trag jeden Kauf außerhalb des Nötigsten ein, mit dem Gefühl davor. Nach zwei, drei Wochen siehst du, welche Situationen dich zum Kaufen bringen. Das Tagebuch bleibt nur auf diesem Gerät.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispieleinträge</span> <button type="button" class="btn-ghost btn-small" id="tb-leeren">Alles löschen und neu anfangen</button></div>
+        <fieldset>
+          <legend>Deine Käufe</legend>
+          <div id="tb-rows" class="posten"></div>
+          <div><button type="button" class="btn-ghost btn-small" id="tb-neu">+ Kauf eintragen</button></div>
+        </fieldset>
+      </form>
+      <div class="side" aria-live="polite"><div id="tb-out" style="display:grid;gap:16px"></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ABOS ============ -->
+<section id="v-abos" data-view data-tool hidden>
+  <div class="wrap tool">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <div class="tool-head">
+      <h1>Welche Abos laufen bei mir eigentlich?</h1>
+      <p class="lead">Kleine Beträge summieren sich. Trag alles ein, was regelmäßig abgebucht wird, und wie oft du es wirklich nutzt.</p>
+    </div>
+    <div class="tool-grid">
+      <form class="form" autocomplete="off" onsubmit="return false">
+        <div class="example"><span class="tag">Beispielwerte</span> <button type="button" class="btn-ghost btn-small" data-reset>Beispiel wiederherstellen</button></div>
+        <fieldset>
+          <legend>Deine Abos und Verträge</legend>
+          <div id="ab-rows" class="posten"></div>
+          <div><button type="button" class="btn-ghost btn-small" id="ab-neu">+ Abo hinzufügen</button></div>
+          <span class="hint">Such in Kontoauszügen und bei Bezahldiensten nach Abbuchungen, die jeden Monat gleich sind.</span>
+        </fieldset>
+      </form>
+      <div class="side" aria-live="polite">
+        <div id="ab-out" style="display:grid;gap:16px"></div>
+        <details>
+          <summary>So kündigst du leichter</summary>
+          <div class="prose">
+            <p>Verträge, die seit dem 1. März 2022 abgeschlossen wurden, verlängern sich nach der Mindestlaufzeit nicht mehr um ein ganzes Jahr. Danach kannst du jederzeit mit höchstens einem Monat Frist kündigen.</p>
+            <p>Wer online einen Vertrag abschließen lässt, muss auch online einen Kündigungsbutton anbieten. Heb die Bestätigung auf.</p>
+          </div>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ HILFE ============ -->
+<section id="v-hilfe" data-view hidden>
+  <div class="wrap page">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <header class="phead" id="hilfe-kopf">
+      <h1>Wo bekomme ich Hilfe?</h1>
+      <p class="lead">Kaufsucht ist kein Charakterfehler. Diese Stellen helfen kostenlos oder über die Krankenkasse, vertraulich und ohne Vorwürfe.</p>
+    </header>
+    <ul class="contacts">
+      <li class="urgent"><div><h3>Telefonseelsorge</h3><p>Sofort mit jemandem reden. Kostenlos, anonym, rund um die Uhr. Auch 0800 111 0 222 oder 116 123.</p></div><a class="nr" href="tel:08001110111">0800 111 0 111</a></li>
+      <li><div><h3>Suchtberatung vor Ort</h3><p>Hilft auch bei Kaufsucht. Kostenlos, mit Schweigepflicht, ohne Überweisung. Auch Angehörige können kommen.</p></div><a href="https://www.suchthilfeverzeichnis.de" target="_blank" rel="noopener">Stelle finden ↗</a></li>
+      <li><div><h3>Online-Suchtberatung</h3><p>Per Chat, Video oder Nachricht, ohne Wartezimmer.</p></div><a href="https://www.suchtberatung.digital" target="_blank" rel="noopener">suchtberatung.digital ↗</a></li>
+      <li><div><h3>Selbsthilfegruppen</h3><p>Die Kontaktstelle NAKOS vermittelt Gruppen, auch die Anonymen Kaufsüchtigen.</p></div><a href="https://www.nakos.de" target="_blank" rel="noopener">nakos.de ↗</a></li>
+      <li><div><h3>Schuldnerberatung</h3><p>Meist kostenlos bei Verbraucherzentrale, Caritas, Diakonie, AWO, DRK oder der Gemeinde. Früh melden, die Wartezeit kann lang sein. Finger weg von Entschuldung gegen Gebühr.</p></div><a href="https://www.caritas.de/schuldnerberatung" target="_blank" rel="noopener">Online-Beratung ↗</a></li>
+      <li><div><h3>Psychotherapie</h3><p>Über die Hausarztpraxis oder die Terminservicestelle, die ein Erstgespräch vermittelt.</p></div><a class="nr" href="tel:116117">116 117</a></li>
+      <li><div><h3>Nummer gegen Kummer</h3><p>Für Kinder und Jugendliche, montags bis samstags von 14 bis 20 Uhr.</p></div><a class="nr" href="tel:116111">116 111</a></li>
+      <li><div><h3>Notruf</h3><p>Bei akuter Gefahr für dich oder andere.</p></div><a class="nr" href="tel:112">112</a></li>
+    </ul>
+    <section class="block">
+      <h2>So läuft das erste Gespräch</h2>
+      <p>Du rufst an oder schreibst und bekommst einen Termin. Du erzählst nur so viel, wie du möchtest. Niemand verlangt, dass du sofort aufhörst. Gemeinsam überlegt ihr, was als Nächstes hilft. Ein Satz für den Anruf: „Ich glaube, ich kaufe zu viel, und möchte darüber sprechen.“</p>
+    </section>
+    <p class="more">Auch hilfreich: <a href="#selbstcheck">Selbstcheck</a> · <a href="#angehoerige">Tipps für Angehörige</a> · <a href="#plan">Mein Plan</a></p>
+  </div>
+</section>
+
+<!-- ============ IMPRESSUM ============ -->
+<section id="v-impressum" data-view hidden>
+  <div class="wrap legal">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <h1>Impressum</h1>
+    <div class="prose">
+      <h2>Angaben gemäß § 5 DDG</h2>
+      <address>
+        <span class="ph">[Vor- und Nachname]</span><br>
+        <span class="ph">[Straße und Hausnummer]</span><br>
+        <span class="ph">[PLZ und Ort]</span>
+      </address>
+      <h2>Kontakt</h2>
+      <p>E-Mail: <span class="ph">[deine@mail.de]</span></p>
+      <h2>Verantwortlich für den Inhalt nach § 18 Abs. 2 MStV</h2>
+      <p><span class="ph">[Vor- und Nachname, Anschrift wie oben]</span></p>
+      <h2>Wichtiger Hinweis</h2>
+      <p>Die Inhalte dieser Seite sind sorgfältig erstellt, ersetzen aber keine Beratung, Diagnose oder Therapie. Wende dich bei Problemen an eine der Stellen unter <a href="#hilfe">Hilfe finden</a>.</p>
+      <h2>Haftung für Links</h2>
+      <p>Für Inhalte verlinkter Seiten sind deren Betreiber verantwortlich. Werden uns Rechtsverletzungen bekannt, entfernen wir die betreffenden Links umgehend.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ DATENSCHUTZ ============ -->
+<section id="v-datenschutz" data-view hidden>
+  <div class="wrap legal">
+    <a class="back" href="#start" data-back>← Zurück</a>
+    <h1>Datenschutz</h1>
+    <div class="prose">
+      <h2>Wer ist verantwortlich?</h2>
+      <p>Verantwortlich ist die im <a href="#impressum">Impressum</a> genannte Person.</p>
+      <h2>Hosting</h2>
+      <p>Diese Seite liegt bei <span class="ph">[Hoster, z. B. GitHub Pages der GitHub Inc., USA]</span>. Beim Aufruf verarbeitet der Hoster technisch notwendige Daten wie IP-Adresse, Zeitpunkt, aufgerufene Seite und Browsertyp in Server-Logdateien, um die Seite auszuliefern und vor Angriffen zu schützen. Rechtsgrundlage ist Art. 6 Abs. 1 lit. f DSGVO.</p>
+      <h2>Keine Cookies, kein Tracking</h2>
+      <p>Die Seite setzt keine Cookies, nutzt keine Analyse-Werkzeuge, zeigt keine Werbung und lädt keine Schriften oder Skripte von fremden Servern.</p>
+      <h2>Deine Eingaben bleiben auf deinem Gerät</h2>
+      <p>Antworten im Selbstcheck, Zahlen in den Rechnern, dein Plan, dein Kauftagebuch, deine Warteliste und deine Schuldenliste speichert die Seite nur im lokalen Speicher deines Browsers (localStorage), damit sie beim nächsten Besuch noch da sind. Diese Daten werden nicht an uns oder andere übertragen. Wer dein Gerät benutzt, kann sie aber sehen. Du kannst alles jederzeit löschen:</p>
+      <div class="example"><button type="button" class="btn-ghost" id="loeschen">Alle gespeicherten Eingaben löschen</button><span id="geloescht" class="note"></span></div>
+      <h2>Externe Links</h2>
+      <p>Klickst du auf einen Link zu einer Beratungsstelle oder einer anderen Seite, verlässt du dieses Angebot. Ab dann gilt die Datenschutzerklärung des jeweiligen Anbieters.</p>
+      <h2>Deine Rechte</h2>
+      <p>Du hast das Recht auf Auskunft, Berichtigung, Löschung, Einschränkung der Verarbeitung und Widerspruch (Art. 15 bis 21 DSGVO) sowie auf Beschwerde bei einer Datenschutz-Aufsichtsbehörde (Art. 77 DSGVO).</p>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <nav aria-label="Rechtliches"><a href="#impressum">Impressum</a><a href="#datenschutz">Datenschutz</a></nav>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ---------- Hilfsfunktionen ---------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  function parseNum(str, geld) {
+    let s = String(str == null ? '' : str).trim().replace(/[\s€$%]/g, '');
+    if (!s) return NaN;
+    if (s.includes(',')) s = s.replace(/\./g, '').replace(',', '.');
+    else if (geld && /^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+    return Number(s);
+  }
+  const val = id => { const el = document.getElementById(id); return parseNum(el.value, 'geld' in el.dataset); };
+  const fmt = (x, d = 2, min) => x.toLocaleString('de-DE', { maximumFractionDigits: d, minimumFractionDigits: min == null ? 0 : min });
+  const euro = x => x.toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
+  const pct = (x, d = 0) => fmt(x * 100, d) + ' %';
+  const rows = list => '<dl class="rows">' + list.filter(Boolean).map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join('') + '</dl>';
+  const errBox = list => `<div class="box bad"><strong>Da fehlt noch etwas:</strong><ul>${list.map(e => `<li>${e}</li>`).join('')}</ul></div>`;
+  const iso = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const parseISO = s => { const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s || ''); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; };
+  const today = () => { const t = new Date(); return new Date(t.getFullYear(), t.getMonth(), t.getDate()); };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const dm = d => d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit' });
+
+  const store = {
+    get(k) { try { return JSON.parse(localStorage.getItem('wh:' + k)); } catch (e) { return null; } },
+    set(k, v) { try { localStorage.setItem('wh:' + k, JSON.stringify(v)); } catch (e) { /* ohne Speicher geht es auch */ } },
+    clear() { try { Object.keys(localStorage).filter(k => k.startsWith('wh:')).forEach(k => localStorage.removeItem(k)); } catch (e) {} }
+  };
+
+  async function copyFrom(id, btn) {
+    const el = document.getElementById(id), text = el.textContent, old = btn.textContent;
+    try { await navigator.clipboard.writeText(text); btn.textContent = 'Kopiert'; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); btn.textContent = 'Markiert, jetzt kopieren'; }
+    setTimeout(() => { btn.textContent = old; }, 1800);
+  }
+  document.addEventListener('click', e => { const b = e.target.closest('[data-copy]'); if (b) copyFrom(b.dataset.copy, b); });
+  document.addEventListener('click', async e => {
+    const b = e.target.closest('[data-copyval]'); if (!b) return;
+    const el = document.getElementById(b.dataset.copyval), old = b.textContent;
+    try { await navigator.clipboard.writeText(el.value); b.textContent = 'Kopiert'; } catch (err) { el.focus(); el.select(); b.textContent = 'Markiert, jetzt kopieren'; }
+    setTimeout(() => { b.textContent = old; }, 1800);
+  });
+
+  /* ---------- Symbole ---------- */
+  const ICONS = {
+    laden: '<path d="M5 8h14l-1 12H6z"></path><path d="M9 8V6a3 3 0 0 1 6 0v2"></path>',
+    online: '<circle cx="9" cy="20" r="1.5"></circle><circle cx="17" cy="20" r="1.5"></circle><path d="M3 4h2l2.4 11h10.2L20 7H6.3"></path>',
+    social: '<rect x="6" y="2.5" width="12" height="19" rx="2.5"></rect><path d="M12 15.5s-3-1.8-3-4a1.6 1.6 0 0 1 3-.8 1.6 1.6 0 0 1 3 .8c0 2.2-3 4-3 4z"></path>',
+    rabatte: '<path d="M3 12V4h8l10 10-8 8z"></path><circle cx="7.5" cy="8.5" r="1.3"></circle>',
+    apps: '<path d="M6 8h12a4 4 0 0 1 4 4v1a3 3 0 0 1-5.4 1.8L15 13H9l-1.6 1.8A3 3 0 0 1 2 13v-1a4 4 0 0 1 4-4z"></path><path d="M7 10.5v3M5.5 12h3"></path><path d="M16 11.5h0M18 13h0"></path>',
+    gefuehle: '<path d="M7 15a4 4 0 0 1-.6-7.95A5.5 5.5 0 0 1 17 6a3.5 3.5 0 0 1 .5 7H7z"></path><path d="M8 18.5l-1 2M12 18.5l-1 2M16 18.5l-1 2"></path>',
+    heimlich: '<path d="M3 3l18 18"></path><path d="M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a15 15 0 0 1-2.6 3.2M6.6 6.6C4.2 8.2 3 12 3 12s4 6 9 6a8.6 8.6 0 0 0 4.2-1.1"></path><path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"></path>',
+    horten: '<path d="M3 7.5l9-4.5 9 4.5v9L12 21l-9-4.5z"></path><path d="M3 7.5l9 4.5 9-4.5M12 12v9"></path>',
+    ratenkauf: '<rect x="2.5" y="5" width="19" height="14" rx="2.5"></rect><path d="M2.5 10h19M6 15h4"></path>',
+    schulden: '<path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"></path><path d="M9 8h6M9 12h6"></path>',
+    angehoerige: '<circle cx="9" cy="8" r="3.2"></circle><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"></path><circle cx="17" cy="9" r="2.5"></circle><path d="M17 14c2.2 0 4 1.8 4 4"></path>',
+    selbstcheck: '<rect x="5" y="4" width="14" height="17" rx="2.5"></rect><path d="M9 4V3h6v1"></path><path d="M9 12.5l2 2 4-4"></path>',
+    kassensturz: '<rect x="5" y="2.5" width="14" height="19" rx="2.5"></rect><path d="M8.5 7h7"></path><path d="M8.5 11.5h0M12 11.5h0M15.5 11.5h0M8.5 15h0M12 15h0M8.5 18h0M12 18h0M15.5 15v3"></path>',
+    kaufbremse: '<circle cx="12" cy="12" r="9"></circle><path d="M10 9v6M14 9v6"></path>',
+    tagebuch: '<path d="M5 4.5A1.5 1.5 0 0 1 6.5 3H19v15H6.5A1.5 1.5 0 0 0 5 19.5z"></path><path d="M5 19.5A1.5 1.5 0 0 0 6.5 21H19"></path><path d="M9 7.5h6"></path>',
+    abos: '<rect x="3" y="5" width="18" height="16" rx="2.5"></rect><path d="M3 10h18M8 3v4M16 3v4"></path><path d="M9 15.5l2 2 4-4"></path>',
+    hilfe: '<circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3.5"></circle><path d="M5.6 5.6l3.9 3.9M14.5 14.5l3.9 3.9M18.4 5.6l-3.9 3.9M9.5 14.5l-3.9 3.9"></path>'
+  };
+  ICONS.plan = '<path d="M10 6h10M10 12h10M10 18h10"></path><path d="M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2 2.3-2.2M4 18l1.2 1.2 2.3-2.2"></path>';
+  const icon = id => `<span class="ic" aria-hidden="true"><svg viewBox="0 0 24 24">${ICONS[id] || ''}</svg></span>`;
+
+  /* ---------- Inhalte ---------- */
+  const CATS = { orte: 'Wo ich kaufe', gefuehle: 'Gefühle', geld: 'Geld & Schulden', werkzeuge: 'Werkzeuge', hilfe: 'Hilfe & Beratung' };
+  const TOPICS = [
+    { id: 'laden', start: 1, name: 'Einkaufen im Laden', cat: 'orte', titel: 'Ich kaufe im Laden mehr, als ich wollte.', kurz: 'Shoppingtour, Drogerie, Sale-Schilder: Du gehst mit einem Plan rein und kommst mit vollen Tüten raus.', typ: 'Tipps',
+      kennst: ['Du gehst „nur kurz schauen“ und kaufst trotzdem.', 'An der Kasse liegen Dinge im Korb, die nicht auf deiner Liste standen.', 'Bei Rabatt und Sale kannst du kaum Nein sagen.', 'Zu Hause fragst du dich, warum du das gekauft hast.'],
+      warum: 'Läden sind so gebaut, dass du länger bleibst und mehr mitnimmst: Musik, Licht, Sonderflächen und Kleinkram an der Kasse. Rabattschilder wecken die Angst, etwas zu verpassen. Gespart hast du aber nur, wenn du es ohnehin zum vollen Preis gekauft hättest. Je müder oder gestresster du bist, desto schwächer ist die innere Bremse.',
+      sofort: ['Geh nur mit Einkaufsliste los und kauf nur, was draufsteht.', 'Nimm Bargeld für genau diesen Einkauf mit. Karte und Handy-Bezahlung bleiben zu Hause.', 'Frag dich bei jedem reduzierten Teil: Würde ich es auch zum vollen Preis kaufen?', 'Leg alles, was nicht auf der Liste steht, zurück und schreib es auf. Willst du es in einer Woche noch, kannst du wiederkommen.', 'Verlass den Laden, sobald du merkst, dass du nur schaust, um dich besser zu fühlen.'],
+      spaeter: ['Ersetz das Bummeln durch etwas anderes: Spaziergang, Sport, Treffen ohne Shopping.', 'Meide eine Zeit lang die Läden, in denen du am häufigsten zu viel kaufst.', 'Überweis das Geld, das du nicht ausgegeben hast, direkt aufs Sparkonto. Dann ist die Ersparnis echt.', 'Geh mit jemandem einkaufen, der von deinem Ziel weiß.'],
+      moment: 'Ich darf es mir ansehen. Ich muss es nicht mitnehmen.', tools: ['kaufbremse', 'tagebuch', 'kassensturz'] },
+    { id: 'online', start: 2, name: 'Online-Shopping', cat: 'orte', titel: 'Ich bestelle ständig online.', kurz: 'Ein Klick, und morgen ist das Paket da. Dazu Werbung auf Social Media und Käufe in Apps und Spielen.', typ: 'Tipps',
+      kennst: ['Du scrollst durch Shops, ohne etwas Bestimmtes zu suchen.', 'Fast jeden Tag kommt ein Paket, manchmal weißt du nicht mehr, was drin ist.', 'Du kaufst Dinge, die du bei Influencern oder in Werbung gesehen hast.', 'Kleine Beträge in Apps und Spielen summieren sich, ohne dass du es merkst.'],
+      warum: 'Online fehlt fast jede natürliche Bremse: kein Weg, kein Bargeld, kein Gewicht in der Hand. Gespeicherte Bezahldaten machen aus einem Impuls in Sekunden eine Bestellung. Viele Beiträge auf Social Media sind Werbung, auch wenn sie wie ein Tipp unter Freunden wirken. Spielwährungen und Abos verschleiern, wie viel echtes Geld du ausgibst.',
+      sofort: ['Lösch gespeicherte Karten und Bezahldaten aus Shops, Browser und App-Store.', 'Lösch Shop-Apps vom Handy und schalte Newsletter und Push-Mitteilungen ab.', 'Entfolge Accounts, nach denen du regelmäßig etwas kaufst.', 'Setz Wünsche auf die Warteliste der Kauf-Bremse statt in den Warenkorb.', 'Lass bei deinem Mobilfunkanbieter eine Drittanbietersperre einrichten. Dann kann nichts mehr über die Handyrechnung abgebucht werden.', 'Bestell nichts nach 22 Uhr. Müde bestellt man mehr.'],
+      spaeter: ['Leg einen festen Bestelltag pro Monat fest und bestell nur mit Liste.', 'Kauf Trendprodukte grundsätzlich erst nach 30 Tagen.', 'Erledige Rücksendungen innerhalb von zwei Tagen. Bei Online-Käufen hast du in der Regel 14 Tage Widerrufsrecht.', 'Mach einmal im Monat den Abo-Check und schau in die Kaufhistorie deines App-Stores.'],
+      moment: 'Der Warenkorb läuft nicht weg. Ich schlafe eine Nacht darüber.', tools: ['kaufbremse', 'abos', 'tagebuch'] },
+    { id: 'gefuehle', start: 3, name: 'Kaufen aus Frust', cat: 'gefuehle', titel: 'Ich kaufe, wenn es mir schlecht geht.', kurz: 'Stress, Traurigkeit, Langeweile oder Einsamkeit: Kaufen fühlt sich kurz wie eine Lösung an. Danach kommen Scham und volle Schränke.', typ: 'Tipps', krise: true,
+      kennst: ['Nach einem schlechten Tag landest du im Shop.', 'Beim Kaufen fühlst du dich kurz besser, danach leer oder schuldig.', 'Du versteckst Einkäufe oder sagst nicht, was etwas gekostet hat.', 'Im Schrank hängen Sachen mit Etikett, Pakete bleiben ungeöffnet.'],
+      warum: 'Kaufen sorgt für einen kurzen Glücksmoment. Wird es das wichtigste Mittel, um schlechte Gefühle auszuhalten, braucht man diesen Moment immer öfter. Oft geht es dann ums Kaufen selbst, nicht um die Sache, deshalb bleibt vieles ungenutzt liegen. Scham führt dazu, dass man es versteckt, und so bleibt man mit dem Problem allein.',
+      sofort: ['Halt kurz an und benenne das Gefühl: „Ich bin gerade gestresst“ oder „Ich bin einsam“.', 'Warte 20 Minuten. Starke Kaufimpulse werden fast immer schwächer, wenn man sie aushält.', 'Tu in der Zeit etwas für den Körper: rausgehen, kaltes Wasser ins Gesicht, jemanden anrufen.', 'Erzähl einer Person, der du vertraust, davon. Ein Satz reicht: „Ich kaufe mehr, als mir guttut.“'],
+      spaeter: ['Führ das Kauftagebuch. Nach ein paar Wochen siehst du, welche Gefühle bei dir zum Kaufen führen.', 'Schick zurück, was noch geht, und gib für jedes neue Teil ein altes weg.', 'Sprich mit einer Suchtberatung oder in einer Psychotherapie darüber. Gute Erfahrungen gibt es mit Verhaltenstherapie.', 'Wenn du dich oft niedergeschlagen, leer oder hoffnungslos fühlst, lass das ärztlich abklären. Das ist behandelbar.'],
+      moment: 'Das Gefühl geht vorbei, auch wenn ich nichts kaufe.', tools: ['tagebuch', 'selbstcheck', 'hilfe'] },
+    { id: 'schulden', start: 4, name: 'Schulden & Raten', cat: 'geld', titel: 'Ich habe Schulden durch meine Einkäufe.', kurz: 'Rechnungen, Raten, „später zahlen“ und ein Dispo im Minus. Und die Angst vor dem Briefkasten.', typ: 'Tipps',
+      kennst: ['Du hast mehrere offene Rechnungen und Raten bei verschiedenen Anbietern.', 'Du bezahlst alte Einkäufe, während schon neue dazukommen.', 'Der Dispo ist fast immer ausgeschöpft.', 'Briefe von Banken oder Inkassobüros öffnest du nicht mehr.'],
+      warum: '„Später zahlen“ trennt das Kaufen vom Bezahlen. Der Kauf fühlt sich kostenlos an, die Rechnung kommt, wenn der gute Moment vorbei ist. Viele kleine Raten wirken harmlos, zusammen fressen sie einen großen Teil des Einkommens. Dazu kommen Dispozinsen, Mahngebühren und Inkassokosten. Das ist kein persönliches Versagen, sondern ein Kreislauf, aus dem man mit Unterstützung herauskommt.',
+      sofort: ['Öffne alle Briefe und leg sie in einen Ordner. Noch nichts lösen, nur sammeln.', 'Schreib alle offenen Rechnungen und Raten auf und trag die Summe im Rechner ein.', 'Kauf nichts mehr auf Rechnung oder Raten. Was du nicht sofort bezahlen kannst, kannst du dir gerade nicht leisten.', 'Sichere zuerst das Wichtigste: Miete, Strom und Krankenversicherung haben Vorrang.', 'Droht eine Kontopfändung: Deine Bank muss dein Girokonto auf Antrag in ein Pfändungsschutzkonto (P-Konto) umwandeln.'],
+      spaeter: ['Melde dich früh bei einer anerkannten Schuldnerberatung, zum Beispiel bei Verbraucherzentrale, Caritas, Diakonie, AWO oder deiner Gemeinde. Sie ist meist kostenlos.', 'Unterschreib keine neuen Kredite oder Ratenvereinbarungen, bevor du dort gesprochen hast.', 'Vorsicht bei Anbietern, die schnelle Entschuldung gegen Gebühr versprechen.', 'Kündige Abos, die du selten nutzt, und stell auf Bargeld oder eine Debitkarte um.'],
+      moment: 'Hinschauen ist der erste Schritt raus.', tools: ['kassensturz', 'abos', 'hilfe'] },
+    { id: 'kassensturz', name: 'Rechner', cat: 'werkzeuge', titel: 'Wie viel kann ich mir eigentlich leisten?', typ: 'Rechner', tool: true },
+    { id: 'hilfe', name: 'Hilfe & Beratung', cat: 'hilfe', titel: 'Wo bekomme ich Hilfe?', typ: 'Kontakte', tool: true },
+    { id: 'angehoerige', name: 'Für Angehörige', cat: 'hilfe', titel: 'Jemand, der mir nahesteht, kauft zu viel.', kurz: 'Partnerin, Partner, Kind, Eltern oder Freunde: Du machst dir Sorgen und weißt nicht, wie du es ansprechen sollst.', typ: 'Tipps',
+      kennst: ['Ständig kommen Pakete, und darüber wird nicht gesprochen.', 'Gemeinsames Geld reicht plötzlich nicht mehr.', 'Du entdeckst versteckte Einkäufe oder Rechnungen.', 'Du hast schon Schulden übernommen, damit es nicht eskaliert.'],
+      warum: 'Kaufsucht betrifft fast immer auch die Menschen drumherum. Vorwürfe führen meist dazu, dass noch mehr versteckt wird. Hilfreicher ist ein ruhiges Gespräch über das, was du beobachtest, und über deine eigenen Grenzen.',
+      sofort: ['Such einen ruhigen Moment, nicht direkt nach einem Streit oder einem neuen Paket.', 'Sprich von dir: „Ich mache mir Sorgen, weil …“ statt „Du kaufst schon wieder …“.', 'Biete Unterstützung an, zum Beispiel die Begleitung zum ersten Termin bei einer Beratungsstelle.', 'Übernimm keine Schulden und gib kein Geld, das wieder in Einkäufe fließen kann.'],
+      spaeter: ['Schütz dein eigenes Geld: getrennte Konten, keine gemeinsamen Kredite ohne Klarheit.', 'Auch Angehörige können sich bei Suchtberatungsstellen beraten lassen, ohne dass die betroffene Person mitkommt.', 'Pass auf dich auf. Du kannst unterstützen, aber nicht für jemand anderen aufhören.'],
+      moment: 'Ich kann unterstützen, aber ich muss es nicht allein lösen.', tools: ['hilfe'] },
+    { id: 'selbstcheck', name: 'Selbstcheck', cat: 'werkzeuge', titel: 'Ist mein Kaufverhalten noch im Rahmen?', typ: 'Selbstcheck', tool: true },
+    { id: 'kaufbremse', name: 'Kauf-Bremse', cat: 'werkzeuge', titel: 'Soll ich das jetzt kaufen?', typ: 'Kauf-Bremse', tool: true },
+    { id: 'tagebuch', name: 'Kauftagebuch', cat: 'werkzeuge', titel: 'Wann und warum kaufe ich?', typ: 'Kauftagebuch', tool: true },
+    { id: 'abos', name: 'Abo-Check', cat: 'geld', titel: 'Welche Abos laufen bei mir eigentlich?', typ: 'Abo-Check', tool: true }
+  ];
+  /* Alte Adressen führen auf die zusammengefassten Karten */
+  const ALIAS = { rabatte: 'laden', social: 'online', apps: 'online', heimlich: 'gefuehle', horten: 'gefuehle', ratenkauf: 'schulden' };
+  const T = Object.fromEntries(TOPICS.map(t => [t.id, t]));
+
+  /* ---------- Startseite: vier Karten ---------- */
+  function renderTiles() {
+    $('#tiles').innerHTML = TOPICS.filter(t => t.start).sort((a, b) => a.start - b.start)
+      .map(t => `<a class="tile" href="#${t.id}" data-c="${t.cat}">${icon(t.id)}<h2>${esc(t.name)}</h2></a>`).join('');
+  }
+
+  /* ---------- Mehr Tiefe pro Thema: Fragen, Kreislauf, Mini-Werkzeuge ---------- */
+  const EXTRA = {
+    laden: { widget: 'sale', faq: [
+      ['Warum wirkt ein Rabatt so stark?', 'Der durchgestrichene Preis wirkt wie ein Anker: Daneben erscheint der neue Preis klein, auch wenn er für dich viel Geld ist. Dazu kommt die Angst, ein Angebot zu verpassen. Beides schaltet das ruhige Abwägen ab.'],
+      ['Hilft Bargeld wirklich?', 'Viele Menschen geben mit Bargeld weniger aus, weil sie das Geld weggehen sehen. Mit Karte oder Handy fühlt sich Bezahlen fast nach nichts an. Probier es vier Wochen lang aus und vergleich danach.'],
+      ['Kann ich Gekauftes im Laden zurückgeben?', 'Ein gesetzliches Rückgaberecht gibt es im Laden nicht, viele Geschäfte nehmen Ware aber freiwillig zurück. Frag nach und heb Kassenzettel auf. Was nicht zurückgeht, kannst du verkaufen und das Geld für Schulden oder Rücklagen nutzen.']
+    ] },
+    online: { widget: 'pakete', faq: [
+      ['Wie funktioniert das Widerrufsrecht?', 'Bei Online-Käufen kannst du in der Regel innerhalb von 14 Tagen nach Erhalt der Ware ohne Grund widerrufen. Ausnahmen gibt es zum Beispiel bei individuell angefertigter Ware oder geöffneten Hygieneartikeln. Die Rücksendekosten können bei dir liegen, wenn der Shop vorher darauf hingewiesen hat.'],
+      ['Was ist eine Drittanbietersperre?', 'Damit kann niemand mehr Beträge über deine Handyrechnung abbuchen, zum Beispiel für Abos oder In-App-Käufe. Du beantragst sie bei deinem Mobilfunkanbieter, online, telefonisch oder per Brief.'],
+      ['Woran erkenne ich Werbung auf Social Media?', 'Bezahlte Beiträge müssen gekennzeichnet sein, oft steht „Anzeige“, „Werbung“ oder „Bezahlte Partnerschaft“ dabei. Auch Rabattcodes und Links zu Shops zeigen, dass jemand an deinem Kauf mitverdient.']
+    ] },
+    gefuehle: { widget: 'impuls', kreis: true, faq: [
+      ['Ist Kaufsucht eine richtige Krankheit?', 'Kaufsucht hat im Diagnosesystem keinen eigenen Namen, wird von Fachleuten aber als ernsthafte psychische Störung behandelt, meist als Störung der Impulskontrolle. Für dich zählt vor allem: Sie ist behandelbar, und Beratungsstellen helfen auch ohne Diagnose.'],
+      ['Wie wird Kaufsucht behandelt?', 'Am besten untersucht ist die kognitive Verhaltenstherapie, oft in Gruppen. Dort lernst du, Auslöser zu erkennen, Impulse auszuhalten und neue Wege für schwierige Gefühle zu finden. Häufig kommen Schuldnerberatung und Selbsthilfegruppe dazu.'],
+      ['Wann sollte ich mir Hilfe holen?', 'Wenn du es allein mehrmals nicht geschafft hast, wenn Schulden entstehen, wenn du Einkäufe versteckst oder wenn es dir seelisch schlecht geht. Ein erstes Gespräch bei einer Suchtberatung ist kostenlos und verpflichtet zu nichts.']
+    ] },
+    schulden: { widget: 'schuldenliste', faq: [
+      ['Was ist ein P-Konto?', 'Ein Pfändungsschutzkonto schützt jeden Monat einen Grundbetrag deines Guthabens vor Pfändung, damit du Miete und Lebensmittel zahlen kannst. Deine Bank muss ein bestehendes Girokonto auf Antrag umwandeln, auch wenn es im Minus ist, spätestens innerhalb von vier Geschäftstagen.'],
+      ['Was bedeutet ein Schufa-Eintrag?', 'Unbezahlte Forderungen können nach mehreren Mahnungen an die Schufa gemeldet werden. Das erschwert später zum Beispiel Mietverträge, Handyverträge und Kredite. Deshalb lohnt es sich, früh mit Gläubigern und einer Schuldnerberatung zu sprechen.'],
+      ['Was macht eine Schuldnerberatung genau?', 'Sie verschafft dir einen Überblick, prüft, ob Forderungen und Gebühren berechtigt sind, verhandelt mit Gläubigern über Raten oder Vergleiche und hilft beim P-Konto. Wenn nichts anderes mehr geht, begleitet sie dich auch durch eine Privatinsolvenz.']
+    ] },
+    angehoerige: { widget: 'gespraech', faq: [
+      ['Muss ich für die Schulden aufkommen?', 'Grundsätzlich haftest du nicht für Schulden anderer, wenn du nichts mitunterschrieben hast. Ausnahmen gibt es etwa bei gemeinsamen Verträgen, Bürgschaften oder bei Ehepaaren für Geschäfte des täglichen Lebensbedarfs. Lass dich im Zweifel von einer Schuldnerberatung beraten.'],
+      ['Was, wenn die Person nichts ändern will?', 'Du kannst niemanden zwingen. Du kannst aber deine Grenzen klar sagen, dein eigenes Geld schützen und dir selbst Unterstützung holen. Oft wirkt genau das mit der Zeit.'],
+      ['Wo bekomme ich selbst Hilfe?', 'Suchtberatungsstellen beraten auch Angehörige, kostenlos und vertraulich. Über NAKOS findest du außerdem Selbsthilfegruppen für Angehörige.']
+    ] }
+  };
+
+  const KREIS = [
+    ['Auslöser', 'Stress, Langeweile, ein Streit oder Werbung lösen ein unangenehmes Gefühl aus.', 'Hier aussteigen: Gefühl benennen und 20 Minuten warten.'],
+    ['Drang', 'Der Gedanke ans Kaufen wird stärker, alles andere tritt in den Hintergrund.', 'Hier aussteigen: Shop schließen, Handy weglegen, rausgehen.'],
+    ['Kauf', 'Beim Bezahlen kommt ein kurzer Kick, für einen Moment geht es besser.', 'Hier aussteigen: Bargeld statt Karte, Warteliste statt Warenkorb.'],
+    ['Reue', 'Danach kommen Schuldgefühle, Scham oder Leere. Oft wird der Kauf versteckt.', 'Hier aussteigen: Mit jemandem darüber reden statt verstecken.'],
+    ['Neues Tief', 'Geldsorgen und Scham drücken die Stimmung. Der nächste Auslöser kommt schneller.', 'Hier aussteigen: Hilfe holen. Eine Beratung unterbricht den Kreislauf.']
+  ];
+  const kreisHTML = () => `<div class="kreis"><p class="note">So läuft der Kreislauf oft ab. Tipp die Schritte an.</p><div class="kreis-steps">${KREIS.map(([n], i) => `<button type="button" class="kstep" data-k="${i}" aria-pressed="${i === 0}"><b>${i + 1}</b>${esc(n)}</button><span class="karrow" aria-hidden="true">${i < KREIS.length - 1 ? '→' : '↺'}</span>`).join('')}</div><div class="kdetail" id="kdetail" aria-live="polite"></div></div>`;
+  function showKreis(i) {
+    $$('.kstep').forEach((b, j) => b.setAttribute('aria-pressed', j === i));
+    const [n, d, x] = KREIS[i];
+    $('#kdetail').innerHTML = `<p><strong>${i + 1}. ${esc(n)}:</strong> ${esc(d)}</p><p class="exit">${esc(x)}</p>`;
+  }
+
+  const GEFS = [['gestresst', 'gestresst'], ['traurig', 'traurig'], ['gelangweilt', 'gelangweilt'], ['einsam', 'einsam'], ['wuetend', 'wütend'], ['aufgedreht', 'aufgedreht']];
+  const IDEEN = {
+    gestresst: ['Atme 4 Sekunden ein, halte 4 Sekunden, atme 6 Sekunden aus. Fünfmal.', 'Geh 10 Minuten raus, ohne Handy in der Hand.', 'Schreib in einer Zeile auf, was dich gerade stresst.', 'Trink ein Glas kaltes Wasser, langsam.'],
+    traurig: ['Schreib jemandem eine Nachricht. Nicht über Einkäufe, nur um zu reden.', 'Leg dir eine Decke um und mach Musik an, die dir guttut.', 'Schreib drei Sätze darüber, was dich traurig macht.', 'Geh eine Runde um den Block.'],
+    gelangweilt: ['Räum eine Schublade auf. Danach siehst du, was du schon hast.', 'Mach etwas mit den Händen: kochen, zeichnen, reparieren.', 'Such dir eine kostenlose Sache in deiner Nähe für heute.', 'Leg das Handy für 20 Minuten in einen anderen Raum.'],
+    einsam: ['Schreib einer Person, an die du lange nicht gedacht hast.', 'Geh an einen Ort mit Menschen: Park, Bibliothek, Café.', 'Wenn gerade niemand da ist: Die Telefonseelsorge hört zu, 0800 111 0 111.', 'Verabrede dich für diese Woche.'],
+    wuetend: ['Beweg dich kräftig: Treppen, schnelles Gehen, Liegestütze.', 'Schreib alles auf, was dich wütend macht, und zerreiß den Zettel.', 'Lass kaltes Wasser über die Handgelenke laufen.', 'Triff keine Entscheidung, bis die Wut abgeklungen ist.'],
+    aufgedreht: ['Erzähl jemandem, worüber du dich freust, statt es mit einem Kauf zu feiern.', 'Schreib auf, was heute gut war.', 'Überweis den Betrag, den du ausgeben wolltest, aufs Sparkonto.', 'Plane eine Belohnung, die nichts kostet.']
+  };
+  const DUR = 20 * 60 * 1000;
+  let timerIv = null, ideaOff = 0;
+  function tick() {
+    const tEl = document.getElementById('w-time');
+    if (!tEl) { clearInterval(timerIv); timerIv = null; return; }
+    const end = store.get('w:end'), left = end ? Math.max(0, end - Date.now()) : DUR;
+    tEl.textContent = `${Math.floor(left / 60000)}:${String(Math.floor(left % 60000 / 1000)).padStart(2, '0')}`;
+    $('#w-ring').style.setProperty('--p', ((DUR - left) / DUR * 100).toFixed(1));
+    const g = store.get('w:gef'), list = IDEEN[g];
+    let msg;
+    if (end && left === 0) msg = 'Geschafft: 20 Minuten ohne Kauf. Ist der Drang noch da? Dann noch eine Runde, oder ruf jemanden an.';
+    else if (!list) msg = 'Wähl oben ein Gefühl, dann bekommst du passende Ideen für die Pause.';
+    else msg = list[(Math.floor((DUR - left) / 240000) + ideaOff) % list.length];
+    $('#w-idea').textContent = msg;
+    const sb = $('#w-start');
+    sb.disabled = !!(end && left > 0);
+    sb.textContent = end && left > 0 ? 'Läuft …' : end ? 'Noch eine Runde' : 'Pause starten';
+    if (end && left === 0 && timerIv) { clearInterval(timerIv); timerIv = null; }
+  }
+  function startTimer() {
+    clearInterval(timerIv); timerIv = null; tick();
+    const end = store.get('w:end');
+    if (end && end > Date.now()) timerIv = setInterval(tick, 1000);
+  }
+
+  const wv = (id, def) => { const v = store.get('w:' + id); return v == null ? def : v; };
+  const SL_ART = [['existenz', 'Miete / Strom'], ['inkasso', 'Mahnung / Inkasso'], ['raten', 'Raten / Rechnung'], ['dispo', 'Dispo / Kredit'], ['privat', 'Privat']];
+  const PRIO = {
+    existenz: [1, 'Zuerst', 'Sichert Wohnung, Strom und Versicherungsschutz.'],
+    inkasso: [2, 'Bald', 'Hier wachsen Gebühren am schnellsten. Prüf, ob Forderung und Kosten berechtigt sind, bevor du zahlst.'],
+    raten: [3, 'Danach', 'Ruf den Anbieter an und frag nach einer Ratenpause oder kleineren Raten.'],
+    dispo: [4, 'Danach', 'Teuer, aber ohne akuten Druck. Schritt für Schritt abbauen.'],
+    privat: [5, 'Offen ansprechen', 'Sprich mit der Person und vereinbart einen Plan, den du wirklich schaffst.']
+  };
+  let slList = null;
+  const field = (id, label, def, suffix, attrs = '') => `<div class="field"><label for="${id}">${label}</label>${suffix ? `<div class="suffix"><input type="text" id="${id}" value="${esc(wv(id, def))}" data-w ${attrs}><span>${suffix}</span></div>` : `<input type="text" id="${id}" value="${esc(wv(id, def))}" data-w ${attrs}>`}</div>`;
+  const select = (id, label, opts) => `<div class="field"><label for="${id}">${label}</label><select id="${id}" data-w>${opts.map((o, i) => `<option${wv(id, opts[0]) === o ? ' selected' : ''}>${esc(o)}</option>`).join('')}</select></div>`;
+
+  const WIDGETS = {
+    sale: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Sale-Check</h2><p class="note">Ist das wirklich ein Schnäppchen?</p>
+        <div class="row">${field('w-alt', 'Ursprünglicher Preis', '80', '€', 'inputmode="decimal"')}${field('w-neu', 'Sale-Preis', '49,99', '€', 'inputmode="decimal"')}</div>
+        <div class="field"><span class="lbl">Hättest du es auch zum vollen Preis gekauft?</span><div class="seg" role="radiogroup"><label><input type="radio" name="w-voll" value="ja" data-w${wv('w-voll', 'nein') === 'ja' ? ' checked' : ''}>Ja</label><label><input type="radio" name="w-voll" value="nein" data-w${wv('w-voll', 'nein') === 'nein' ? ' checked' : ''}>Nein</label></div></div>
+        <div id="w-out" aria-live="polite"></div>`,
+      calc() {
+        const alt = val('w-alt'), neu = val('w-neu'), voll = ($('input[name="w-voll"]:checked') || {}).value, out = $('#w-out');
+        if (!(alt > 0) || !(neu > 0)) { out.innerHTML = '<p class="note">Trag beide Preise ein.</p>'; return; }
+        if (neu >= alt) { out.innerHTML = '<div class="box warn">Der Sale-Preis ist nicht günstiger als der ursprüngliche. Das ist kein Angebot.</div>'; return; }
+        const rab = 1 - neu / alt;
+        out.innerHTML = voll === 'ja'
+          ? `<div class="box good">Das Schild sagt ${pct(rab)} Rabatt, und du hättest es sowieso gekauft. Dann sparst du wirklich <strong>${euro(alt - neu)}</strong>. Kauf es, wenn es in dein Budget passt.</div>`
+          : `<div class="box warn">Das Schild sagt <strong>${pct(rab)} gespart</strong>. In Wahrheit gibst du <strong>${euro(neu)}</strong> aus, die du ohne Sale nicht ausgegeben hättest. Lässt du es liegen, sparst du ${euro(neu)}.</div>`;
+      }
+    },
+    pakete: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Paket-Rechner</h2><p class="note">Was deine Bestellungen im Jahr kosten.</p>
+        <div class="field"><label for="w-pw">Pakete pro Woche: <b id="w-pw-v"></b></label><input type="range" id="w-pw" min="0" max="15" step="1" value="${esc(wv('w-pw', '4'))}" data-w></div>
+        ${field('w-wert', 'Durchschnittlicher Wert pro Paket', '35', '€', 'inputmode="decimal"')}
+        <div class="field"><label for="w-ret">Davon schickst du zurück: <b id="w-ret-v"></b></label><input type="range" id="w-ret" min="0" max="100" step="10" value="${esc(wv('w-ret', '30'))}" data-w></div>
+        <div id="w-out" aria-live="polite"></div>`,
+      calc() {
+        const pw = +$('#w-pw').value, ret = +$('#w-ret').value / 100, wert = val('w-wert') || 0;
+        $('#w-pw-v').textContent = pw; $('#w-ret-v').textContent = Math.round(ret * 100) + ' %';
+        const jahr = pw * 52, behalten = jahr * (1 - ret), summe = behalten * wert;
+        $('#w-out').innerHTML = rows([['Pakete im Jahr', fmt(jahr, 0)], ['Davon behalten', fmt(behalten, 0)], ['Ausgegeben im Jahr', euro(summe)], ['Pro Monat', euro(summe / 12)]]) +
+          (pw >= 2 ? `<div class="box plain" style="margin-top:12px">Mit einem festen Bestelltag pro Monat wären es 12 Bestellungen im Jahr statt ${fmt(jahr, 0)} Pakete.</div>` : '');
+      }
+    },
+    impuls: {
+      html: () => `<span class="kicker">Für den Moment</span><h2>Impuls-Pause</h2><p class="note">Wähl, wie du dich gerade fühlst, und starte 20 Minuten Pause. Der Drang zu kaufen wird in dieser Zeit meist deutlich schwächer.</p>
+        <div class="chips">${GEFS.map(([k, l]) => `<button type="button" class="chip" data-gef="${k}" aria-pressed="${store.get('w:gef') === k}">${l}</button>`).join('')}</div>
+        <div class="timer"><div class="ring" id="w-ring"><span id="w-time">20:00</span></div>
+          <div class="timer-side"><p class="idea" id="w-idea" aria-live="polite"></p><div class="actions"><button type="button" class="btn" id="w-start">Pause starten</button><button type="button" class="btn-ghost" id="w-next">Andere Idee</button><button type="button" class="btn-ghost" id="w-reset">Zurücksetzen</button></div></div></div>`,
+      click(e) {
+        const g = e.target.closest('[data-gef]');
+        if (g) { store.set('w:gef', g.dataset.gef); $$('[data-gef]').forEach(b => b.setAttribute('aria-pressed', b === g)); ideaOff = 0; tick(); return; }
+        if (e.target.id === 'w-start') { store.set('w:end', Date.now() + DUR); ideaOff = 0; startTimer(); }
+        else if (e.target.id === 'w-reset') { store.set('w:end', null); startTimer(); }
+        else if (e.target.id === 'w-next') { ideaOff++; tick(); }
+      },
+      wire() { startTimer(); },
+      calc() { tick(); }
+    },
+    schuldenliste: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Deine Schulden auf einen Blick</h2><p class="note">Trag alle offenen Beträge ein. Du bekommst eine Reihenfolge, in der du sie angehen solltest. Die Liste bleibt nur auf diesem Gerät.</p>
+        <div class="example"><span class="tag">Beispiel</span><button type="button" class="btn-ghost btn-small" id="w-sl-leeren">Liste leeren</button></div>
+        <div id="w-sl" class="posten"></div>
+        <div><button type="button" class="btn-ghost btn-small" id="w-sl-neu">+ Eintrag</button></div>
+        <div id="w-out" aria-live="polite"></div>
+        <details><summary>Brief-Vorlage: Ratenzahlung anfragen</summary>
+          <div class="brief">
+            <div class="row">${field('w-b-an', 'An wen?', 'Modehaus Beispiel GmbH', '')}${field('w-b-az', 'Kunden- oder Aktenzeichen', '', '')}</div>
+            <div class="row">${field('w-b-rate', 'Monatliche Rate', '25', '€', 'inputmode="decimal"')}${field('w-b-name', 'Dein Name', '', '')}</div>
+            <textarea class="out-text" id="w-b-text" readonly aria-label="Fertiger Brief"></textarea>
+            <div class="example"><button type="button" class="btn" data-copyval="w-b-text">Brief kopieren</button><span class="note">Biete nur eine Rate an, die du jeden Monat sicher zahlen kannst. Bei mehreren Gläubigern zuerst zur Schuldnerberatung.</span></div>
+          </div>
+        </details>`,
+      wire() {
+        slList = rowList({
+          sec: 'none', key: 'sl-rows', el: 'w-sl', add: 'w-sl-neu',
+          cols: 'minmax(0,1.4fr) minmax(0,.9fr) minmax(0,1.3fr) auto',
+          fields: [{ k: 'name', label: 'Wem schuldest du es?', cls: 'p-name' }, { k: 'betrag', label: 'Betrag', num: true, suffix: '€' }, { k: 'art', label: 'Art', type: 'select', options: SL_ART }],
+          defaults: [
+            { name: 'Online-Shop, später zahlen', betrag: '340', art: 'raten' },
+            { name: 'Modehaus, zweite Mahnung', betrag: '189', art: 'inkasso' },
+            { name: 'Dispo Girokonto', betrag: '1.200', art: 'dispo' },
+            { name: 'Stromnachzahlung', betrag: '210', art: 'existenz' }
+          ],
+          blank: { name: '', betrag: '', art: 'raten' },
+          empty: 'Noch keine Einträge.',
+          onChange: () => WIDGETS.schuldenliste.calc()
+        });
+        $('#w-sl-leeren').onclick = () => { slList.clear(); WIDGETS.schuldenliste.calc(); };
+      },
+      calc() {
+        if (!slList) return;
+        const items = slList.rows.map(r => ({ n: r.name || 'Ohne Namen', b: parseNum(r.betrag, true) || 0, a: r.art })).filter(i => i.b > 0)
+          .sort((x, y) => (PRIO[x.a] || [9])[0] - (PRIO[y.a] || [9])[0]);
+        const total = items.reduce((sum, i) => sum + i.b, 0);
+        $('#w-out').innerHTML = items.length
+          ? `<div style="display:grid;gap:12px"><div class="big">${euro(total)} <small>offen</small></div><span class="kicker">In dieser Reihenfolge angehen</span><ol class="prio">${items.map(i => { const pr = PRIO[i.a] || [9, 'Danach', '']; return `<li><div class="ptop"><span>${esc(i.n)}</span><span>${euro(i.b)}</span></div><small><b>${pr[1]}:</b> ${esc(pr[2])}</small></li>`; }).join('')}</ol></div>`
+          : '<p class="note">Trag deinen ersten offenen Betrag ein.</p>';
+        const an = $('#w-b-an').value.trim() || '[Gläubiger]', az = $('#w-b-az').value.trim() || '[Kunden- oder Aktenzeichen]', rate = val('w-b-rate'), name = $('#w-b-name').value.trim() || '[Dein Name]';
+        $('#w-b-text').value = `An: ${an}\nBetreff: Bitte um Ratenzahlung, ${az}\n\nSehr geehrte Damen und Herren,\n\ndie offene Forderung kann ich derzeit nicht auf einmal bezahlen. Ich möchte sie aber begleichen und biete Ihnen eine monatliche Rate von ${rate > 0 ? euro(rate) : '[Betrag]'} an, beginnend zum nächsten Monatsersten.\n\nBitte bestätigen Sie mir die Ratenzahlung schriftlich und sehen Sie in dieser Zeit von weiteren Mahnungen und Gebühren ab.\n\nMit freundlichen Grüßen\n${name}`;
+      }
+    },
+    gespraech: {
+      html: () => `<span class="kicker">Ausprobieren</span><h2>Gesprächsstarter</h2><p class="note">Ein ruhiger erster Satz macht es leichter. Füll die Lücken, der Text entsteht darunter.</p>
+        <div class="field"><label for="w-g-beob">Was ist dir aufgefallen?</label><textarea id="w-g-beob" rows="2" data-w>${esc(wv('w-g-beob', 'in letzter Zeit fast jeden Tag Pakete kommen und du danach oft still bist'))}</textarea></div>
+        <div class="row">${select('w-g-gef', 'Wie geht es dir damit?', ['mache mir Sorgen', 'bin verunsichert', 'bin traurig', 'fühle mich ausgeschlossen'])}${select('w-g-wunsch', 'Was wünschst du dir?', ['dass wir offen darüber reden können', 'dass wir uns gemeinsam Unterstützung holen', 'dass wir uns zusammen einen Überblick über unser Geld verschaffen', 'dass du mit einer Beratungsstelle sprichst'])}</div>
+        <textarea class="out-text" id="w-g-text" readonly aria-label="Dein Gesprächsstarter" style="min-height:120px"></textarea>
+        <div class="example"><button type="button" class="btn" data-copyval="w-g-text">Text kopieren</button><span class="note">Sag es in einem ruhigen Moment, nicht direkt nach einem Streit.</span></div>`,
+      calc() {
+        const beob = $('#w-g-beob').value.trim().replace(/[.!]+$/, '') || '…';
+        $('#w-g-text').value = `Mir ist aufgefallen, dass ${beob}. Ich ${$('#w-g-gef').value}, weil du mir wichtig bist. Ich wünsche mir, ${$('#w-g-wunsch').value}. Ich bin für dich da, wenn du magst.`;
+      }
+    }
+  };
+
+  /* ---------- Mein Plan ---------- */
+  let plan = store.get('plan') || [];
+  const inPlan = (t, x) => plan.some(q => q.t === t && q.x === x);
+  function togglePlan(t, x) {
+    plan = inPlan(t, x) ? plan.filter(q => !(q.t === t && q.x === x)) : plan.concat([{ t, x, done: false }]);
+    store.set('plan', plan);
+  }
+  function renderPlan() {
+    const sec = $('#v-plan'), done = plan.filter(q => q.done).length;
+    const groups = TOPICS.filter(t => plan.some(q => q.t === t.id));
+    sec.innerHTML = `<div class="wrap page">
+      <a class="back" href="#start" data-back>← Zurück</a>
+      <header class="phead">${icon('plan')}<h1>Mein Plan</h1><p class="lead">Die Schritte, die du dir vorgenommen hast. Hak ab, was du geschafft hast. Der Plan bleibt nur auf diesem Gerät.</p></header>
+      ${plan.length ? `<div class="block"><span class="lbl">${done} von ${plan.length} erledigt</span><div class="progress" aria-hidden="true"><div style="width:${done / plan.length * 100}%"></div></div>${done === plan.length ? '<div class="box good">Alles erledigt. Stark. Nimm dir den nächsten Schritt vor, oder bleib bei dem, was dir hilft.</div>' : ''}</div>` +
+        groups.map(t => `<section class="block"><h2>${esc(t.name)}</h2><ul class="plan-list">${plan.map((q, i) => [q, i]).filter(([q]) => q.t === t.id).map(([q, i]) => `<li class="${q.done ? 'done' : ''}"><input type="checkbox" id="pl-${i}" data-pl="${i}"${q.done ? ' checked' : ''}><label for="pl-${i}">${esc(q.x)}</label><button type="button" class="x" data-pl-del="${i}" aria-label="Aus dem Plan nehmen">×</button></li>`).join('')}</ul></section>`).join('')
+        : `<div class="box plain">Noch nichts im Plan. Auf den Themenseiten kannst du Tipps mit „+ Plan“ hinzufügen.</div><div class="next2">${['laden', 'online', 'gefuehle', 'schulden'].map(id => `<a class="action" href="#${id}">${icon(id)}<span><b>${esc(T[id].name)}</b></span></a>`).join('')}</div>`}
+    </div>`;
+    sec.onchange = e => { const c = e.target.closest('[data-pl]'); if (!c) return; plan[+c.dataset.pl].done = c.checked; store.set('plan', plan); renderPlan(); };
+    sec.onclick = e => { const d = e.target.closest('[data-pl-del]'); if (!d) return; plan.splice(+d.dataset.plDel, 1); store.set('plan', plan); renderPlan(); };
+  }
+
+  /* ---------- Ratgeber-Ansicht ---------- */
+  function renderGuide(t) {
+    const ex = EXTRA[t.id] || {}, W = WIDGETS[ex.widget];
+    const extra = (t.tools || []).filter(id => id !== 'kassensturz' && id !== 'hilfe').map(id => T[id]).filter(Boolean);
+    const picked = store.get('k:' + t.id) || [];
+    const tipLi = arr => arr.map(x => { const on = inPlan(t.id, x); return `<li><span>${esc(x)}</span><button type="button" class="plan-btn" data-tip="${esc(x)}" aria-pressed="${on}">${on ? '✓ Im Plan' : '+ Plan'}</button></li>`; }).join('');
+    const sec = $('#v-thema');
+    sec.dataset.c = t.cat;
+    sec.innerHTML = `
+      <div class="wrap page">
+        <a class="back" href="#start" data-back>← Zurück</a>
+        <header class="phead">${icon(t.id)}<h1>${esc(t.titel)}</h1><p class="lead">${esc(t.kurz)}</p></header>
+        <section class="block"><h2>Kennst du das?</h2><p class="note">Tipp an, was auf dich zutrifft.</p>
+          <div class="picks">${t.kennst.map((x, i) => `<button type="button" class="pick" data-pick="${i}" aria-pressed="${picked.includes(i)}"><span class="bx"></span><span>${esc(x)}</span></button>`).join('')}</div>
+          <p class="fb" id="pick-fb" aria-live="polite"></p></section>
+        <section class="block"><h2>Warum das passiert</h2><p>${esc(t.warum)}</p>${ex.kreis ? kreisHTML() : ''}</section>
+        <section class="block"><h2>Was sofort hilft</h2><p class="note">Nimm dir mit „+ Plan“ vor, was du ausprobieren willst.</p><ul class="list tips">${tipLi(t.sofort)}</ul></section>
+        <p class="mantra">„${esc(t.moment)}“</p>
+        ${W ? `<section class="panel widget">${W.html()}</section>` : ''}
+        <section class="block"><h2>Was auf Dauer hilft</h2><ul class="list tips">${tipLi(t.spaeter)}</ul></section>
+        ${ex.faq ? `<section class="block faq"><h2>Gut zu wissen</h2>${ex.faq.map(([q, a]) => `<details><summary>${esc(q)}</summary><p>${esc(a)}</p></details>`).join('')}</section>` : ''}
+        <section class="block">
+          <h2>Nächster Schritt</h2>
+          <div class="next2">
+            <a class="action" href="#kassensturz" data-c="werkzeuge">${icon('kassensturz')}<span><b>Rechner</b><small>Einkommen und Ausgaben durchrechnen</small></span></a>
+            <a class="action" href="#hilfe" data-c="hilfe">${icon('hilfe')}<span><b>Hilfe &amp; Beratung</b><small>Kostenlos und vertraulich</small></span></a>
+          </div>
+          <p class="more"><a href="#plan">Mein Plan (<span id="plan-count">${plan.length}</span>)</a>${extra.length ? ` · Auch hilfreich: ${extra.map(x => `<a href="#${x.id}">${esc(x.name)}</a>`).join(' · ')}` : ''}</p>
+        </section>
+        ${t.krise ? '<p class="sos-line">Geht es dir gerade richtig schlecht? Die Telefonseelsorge ist kostenlos und rund um die Uhr da: <a href="tel:08001110111">0800 111 0 111</a></p>' : ''}
+      </div>`;
+
+    const n = t.kennst.length;
+    const fb = () => {
+      const k = $$('.pick[aria-pressed="true"]', sec).length;
+      $('#pick-fb').textContent = k === 0 ? '' : k <= 2
+        ? `${k} von ${n} kennst du. Die Tipps unten helfen dir, früh gegenzusteuern.`
+        : `${k} von ${n} kennst du gut. Fang mit einem Tipp aus „Was sofort hilft“ an und nimm ihn in deinen Plan.`;
+    };
+    fb();
+    if (ex.kreis) showKreis(0);
+    if (W && W.wire) W.wire();
+    if (W) W.calc();
+    sec.onclick = e => {
+      const pk = e.target.closest('.pick');
+      if (pk) {
+        pk.setAttribute('aria-pressed', pk.getAttribute('aria-pressed') !== 'true');
+        store.set('k:' + t.id, $$('.pick', sec).map((b, i) => b.getAttribute('aria-pressed') === 'true' ? i : -1).filter(i => i >= 0));
+        fb(); return;
+      }
+      const pb = e.target.closest('.plan-btn');
+      if (pb) {
+        togglePlan(t.id, pb.dataset.tip);
+        const on = inPlan(t.id, pb.dataset.tip);
+        pb.setAttribute('aria-pressed', on); pb.textContent = on ? '✓ Im Plan' : '+ Plan';
+        $('#plan-count').textContent = plan.length; return;
+      }
+      const ks = e.target.closest('.kstep');
+      if (ks) { showKreis(+ks.dataset.k); return; }
+      if (W && W.click) W.click(e);
+    };
+    const onW = e => {
+      if (!e.target.matches('[data-w]')) return;
+      const el = e.target;
+      store.set('w:' + (el.type === 'radio' ? el.name : el.id), el.value);
+      W.calc();
+    };
+    sec.oninput = W ? onW : null;
+    sec.onchange = W ? onW : null;
+  }
+
+  /* ---------- Speichern & Zurücksetzen ---------- */
+  const ROWLISTS = {};
+  function saveTool(sec) {
+    const data = {};
+    $$('[data-save]', sec).forEach(el => { data[el.id] = (el.type === 'checkbox' || el.type === 'radio') ? el.checked : el.value; });
+    store.set('f:' + sec.id, data);
+  }
+  function loadTool(sec) {
+    const data = store.get('f:' + sec.id); if (!data) return;
+    $$('[data-save]', sec).forEach(el => {
+      if (!(el.id in data)) return;
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = !!data[el.id]; else el.value = data[el.id];
+    });
+  }
+  function resetTool(sec) {
+    $$('[data-save]', sec).forEach(el => {
+      if (el.type === 'checkbox' || el.type === 'radio') el.checked = el.defaultChecked;
+      else if (el.tagName === 'SELECT') $$('option', el).forEach(o => { o.selected = o.defaultSelected; });
+      else el.value = el.defaultValue;
+    });
+    (ROWLISTS[sec.id] || []).forEach(l => l.reset());
+    store.set('f:' + sec.id, null);
+  }
+
+  /* ---------- Listen mit Zeilen ---------- */
+  const clone = x => JSON.parse(JSON.stringify(x));
+  function rowList(o) {
+    const el = document.getElementById(o.el);
+    const self = {
+      rows: store.get(o.key) || clone(o.defaults),
+      render() {
+        const head = `<div class="posten-row posten-head" style="--cols:${o.cols}" aria-hidden="true">${o.fields.map(f => `<span>${esc(f.label)}</span>`).join('')}<span></span></div>`;
+        el.innerHTML = (self.rows.length ? head : `<p class="note">${esc(o.empty || 'Noch keine Einträge.')}</p>`) + self.rows.map((r, i) => `<div class="posten-row" style="--cols:${o.cols}" data-i="${i}">` + o.fields.map(f => {
+          const id = `${o.key}-${f.k}-${i}`, aria = `aria-label="${esc(f.label)}, Zeile ${i + 1}"`;
+          if (f.type === 'select') return `<select id="${id}" ${aria} data-k="${f.k}"${f.cls ? ` class="${f.cls}"` : ''}>${f.options.map(([v, t]) => `<option value="${esc(v)}"${r[f.k] === v ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select>`;
+          const inp = `<input type="text" id="${id}" ${aria} data-k="${f.k}" value="${esc(r[f.k] == null ? '' : r[f.k])}"${f.num ? ' inputmode="decimal"' : ''} placeholder="${esc(f.ph || f.label)}">`;
+          return f.suffix ? `<div class="suffix${f.cls ? ' ' + f.cls : ''}">${inp}<span>${f.suffix}</span></div>` : `<div${f.cls ? ` class="${f.cls}"` : ''}>${inp}</div>`;
+        }).join('') + `<button type="button" aria-label="Zeile ${i + 1} entfernen" data-del="${i}">×</button></div>`).join('');
+      },
+      reset() { self.rows = clone(o.defaults); store.set(o.key, null); self.render(); },
+      clear() { self.rows = []; store.set(o.key, self.rows); self.render(); }
+    };
+    const upd = e => {
+      const row = e.target.closest('[data-i]'); if (!row || !e.target.dataset.k) return;
+      self.rows[+row.dataset.i][e.target.dataset.k] = e.target.value;
+      store.set(o.key, self.rows); o.onChange();
+    };
+    el.addEventListener('input', upd);
+    el.addEventListener('change', upd);
+    el.addEventListener('click', e => {
+      const b = e.target.closest('[data-del]'); if (!b) return;
+      self.rows.splice(+b.dataset.del, 1); store.set(o.key, self.rows); self.render(); o.onChange();
+    });
+    document.getElementById(o.add).addEventListener('click', () => {
+      self.rows.push(typeof o.blank === 'function' ? o.blank() : clone(o.blank)); store.set(o.key, self.rows); self.render(); o.onChange();
+      const f = el.querySelector(`[data-i="${self.rows.length - 1}"] input, [data-i="${self.rows.length - 1}"] select`); if (f) f.focus();
+    });
+    (ROWLISTS[o.sec] = ROWLISTS[o.sec] || []).push(self);
+    self.render();
+    return self;
+  }
+
+  /* ---------- Selbstcheck ---------- */
+  const SC = [
+    ['Ich kaufe Dinge, die ich nicht brauche oder nie benutze.', 'kaufbremse'],
+    ['Nach dem Kaufen fühle ich mich kurz gut, später schlecht oder schuldig.', 'gefuehle'],
+    ['Ich kaufe, um mich von Stress, Traurigkeit oder Langeweile abzulenken.', 'gefuehle'],
+    ['Ich gebe mehr aus, als ich mir leisten kann.', 'kassensturz'],
+    ['Ich verstecke Einkäufe oder sage nicht, was etwas gekostet hat.', 'gefuehle'],
+    ['Ich denke oft ans Einkaufen, auch wenn ich nichts brauche.', 'kaufbremse'],
+    ['Ich habe schon versucht, weniger zu kaufen, und es nicht geschafft.', 'hilfe'],
+    ['Wegen meiner Einkäufe gibt es Streit mit Partnerin, Partner, Familie oder Freunden.', 'hilfe'],
+    ['Bei mir liegen ungeöffnete Pakete oder Kleidung mit Etikett.', 'gefuehle'],
+    ['Ich habe wegen Einkäufen Schulden, Mahnungen oder einen ausgereizten Dispo.', 'schulden']
+  ];
+  $('#sc-fragen').innerHTML = SC.map(([q], i) => `
+    <div class="q" role="radiogroup" aria-labelledby="sc-l${i}">
+      <p id="sc-l${i}">${i + 1}. ${esc(q)}</p>
+      <div class="seg">${['Nie', 'Manchmal', 'Oft'].map((l, v) => `<label><input type="radio" name="sc-${i}" id="sc-${i}-${v}" value="${v}" data-save>${l}</label>`).join('')}</div>
+    </div>`).join('');
+  function calcSC() {
+    const out = $('#sc-out');
+    const ans = SC.map((_, i) => { const c = $(`input[name="sc-${i}"]:checked`); return c ? +c.value : null; });
+    const done = ans.filter(a => a !== null).length;
+    const bar = `<div class="progress" aria-hidden="true"><div style="width:${done * 10}%"></div></div>`;
+    if (done < SC.length) {
+      out.innerHTML = `<div style="display:grid;gap:14px"><span class="kicker">Dein Ergebnis</span><div class="big">${done} <small>von ${SC.length} beantwortet</small></div>${bar}<p class="note">Beantworte alle Aussagen, dann siehst du hier deine Einschätzung. Deine Antworten bleiben nur auf diesem Gerät.</p></div>`;
+      return;
+    }
+    const score = ans.reduce((s, a) => s + a, 0);
+    let pill, text;
+    if (score <= 5) { pill = '<span class="pill good">Wenig Warnzeichen</span>'; text = 'Dein Kaufverhalten wirkt im Moment im Rahmen. Wenn dich einzelne Punkte trotzdem beschäftigen, schau dir die passende Karte an.'; }
+    else if (score <= 11) { pill = '<span class="pill warn">Einige Warnzeichen</span>'; text = 'Du kennst einige Muster, die bei Kaufsucht typisch sind. Jetzt ist ein guter Zeitpunkt gegenzusteuern: Kauftagebuch, Kauf-Bremse und ein festes Budget helfen. Ein Gespräch mit einer Suchtberatung ist kostenlos und unverbindlich.'; }
+    else { pill = '<span class="pill bad">Deutliche Warnzeichen</span>'; text = 'Viele deiner Antworten passen zu einem Kaufverhalten, das schwer zu steuern ist. Das ist kein Grund für Scham, aber ein guter Grund, dir Unterstützung zu holen. Eine Suchtberatungsstelle hilft kostenlos und vertraulich, auch ohne Diagnose.'; }
+    const links = [...new Set(SC.map(([, t], i) => ans[i] === 2 ? t : null).filter(Boolean))].map(id => T[id]).filter(Boolean).slice(0, 3);
+    out.innerHTML = `<div style="display:grid;gap:16px">
+      <span class="kicker">Dein Ergebnis</span>
+      <div class="big">${score} <small>von 20 Punkten</small></div>
+      <div>${pill}</div>
+      <p>${text}</p>
+      ${links.length ? `<span class="kicker">Passend zu deinen Antworten mit „oft“</span><div class="lrows">${links.map(x => `<a class="lrow" href="#${x.id}" data-c="${x.cat}">${icon(x.id)}<span>${esc(x.name)}<small>${esc(x.titel)}</small></span></a>`).join('')}</div>` : ''}
+      ${score > 5 ? '<a class="btn" href="#hilfe">Beratung finden</a>' : ''}
+      <p class="note">Dieser Selbstcheck ist kein medizinischer Test und ersetzt keine Diagnose. Er soll dir helfen, ehrlich hinzuschauen.</p></div>`;
+  }
+
+  /* ---------- Kassensturz ---------- */
+  let ksState = null;
+  function updateWhatIf() {
+    const box = $('#ks-whatif');
+    box.hidden = !ksState || !(ksState.K > 0);
+    if (box.hidden) return;
+    const r = +$('#ks-reduce').value / 100, { rest, K, debt } = ksState;
+    $('#ks-reduce-v').textContent = Math.round(r * 100) + ' %';
+    const neu = rest + K * r, monate = debt > 0 && neu > 0 ? Math.ceil(debt / neu) : null;
+    $('#ks-whatif-out').innerHTML = `<div class="box ${neu > 0 ? 'good' : 'warn'}">Du kaufst für ${euro(K * (1 - r))} statt ${euro(K)} ein. Am Monatsende bleiben <strong>${euro(neu)}</strong>, im Jahr sind das ${euro(K * r * 12)} mehr.${monate ? ` Deine Schulden wären in etwa <strong>${monate} ${monate === 1 ? 'Monat' : 'Monaten'}</strong> abbezahlt.` : debt > 0 ? ' Für den Schuldenabbau reicht das noch nicht.' : ''}</div>`;
+  }
+  $('#ks-reduce').addEventListener('input', updateWhatIf);
+  function calcKS() {
+    const out = $('#ks-out');
+    const sum = g => $$(`[data-ks="${g}"]`).reduce((s, el) => s + (parseNum(el.value, true) || 0), 0);
+    const E = sum('ein'), F = sum('fix'), K = sum('kauf');
+    if (!(E > 0)) { out.innerHTML = errBox(['Trag ein, wie viel jeden Monat reinkommt.']); ksState = null; updateWhatIf(); return; }
+    const dispo = val('ks-dispo') || 0, zins = val('ks-zins') || 0, offen = val('ks-offen') || 0, andere = val('ks-andere') || 0;
+    const debt = dispo + offen + andere, zinsJahr = dispo * zins / 100;
+    const rest = E - F - K, base = Math.max(E, F + K);
+    const w = x => (Math.max(0, x) / base * 100).toFixed(2) + '%';
+    const kaufAnteil = K / E;
+    let pill;
+    if (rest < 0) pill = `<span class="pill bad">Jeden Monat ${euro(-rest)} im Minus</span>`;
+    else if (kaufAnteil > 0.2 || rest < E * 0.05) pill = '<span class="pill warn">Knapp</span>';
+    else pill = '<span class="pill good">Im grünen Bereich</span>';
+    let budget = Math.max(0, Math.min(E * 0.3, (E - F) - E * 0.2));
+    if (debt > 0) budget /= 2;
+    out.innerHTML = `
+      <span class="kicker">Am Monatsende übrig</span>
+      <div class="big">${euro(rest)}</div>
+      <div>${pill}</div>
+      <div class="bar-wrap" aria-hidden="true"><div class="bar"><span style="width:${w(F)};background:var(--ink-soft)"></span><span style="width:${w(K)};background:var(--warn)"></span><span style="width:${w(rest)};background:var(--good)"></span></div></div>
+      <div class="legend">
+        <span style="--c:var(--ink-soft)">Feste Kosten: ${euro(F)} · ${pct(F / E)}</span>
+        <span style="--c:var(--warn)">Einkäufe: ${euro(K)} · ${pct(kaufAnteil)}</span>
+        <span style="--c:var(--good)">Übrig: ${euro(Math.max(0, rest))}</span>
+      </div>
+      ${rows([
+        ['Einkäufe aufs Jahr', euro(K * 12)],
+        ['Einkäufe in fünf Jahren', euro(K * 60)],
+        ['Schulden gesamt', euro(debt)],
+        dispo > 0 && zins > 0 ? ['Dispozinsen pro Jahr', euro(zinsJahr)] : null
+      ])}
+      <div class="box plain"><strong>Dein Vorschlag für ein festes Kaufbudget:</strong> ${budget > 0 ? `${euro(budget)} im Monat, also <strong>${euro(budget / 4.33)} pro Woche</strong>. Heb den Wochenbetrag in bar ab. Ist er weg, ist Kaufpause bis Montag.` : 'Im Moment ist kein Spielraum für Einkäufe über das Nötige hinaus. Eine Schuldnerberatung hilft dir, die festen Kosten und Schulden zu ordnen.'}${debt > 0 && budget > 0 ? ' Solange Schulden offen sind, ist das Budget halbiert.' : ''}</div>
+      <p class="note">Faustregel: Für Wünsche höchstens 30 % des Einkommens, mindestens 20 % zum Sparen oder für Schulden.</p>`;
+    ksState = { rest, K, debt };
+    updateWhatIf();
+  }
+
+  /* ---------- Kauf-Bremse ---------- */
+  let kbWait = 0;
+  function calcKB() {
+    const out = $('#kb-out');
+    const preis = val('kb-preis'), netto = val('kb-netto'), std = val('kb-stunden');
+    const q = n => $('#kb-q' + n).checked;
+    const err = [];
+    if (!(preis > 0)) err.push('Was kostet es?');
+    if (!(netto > 0)) err.push('Trag dein Netto im Monat ein.');
+    if (!(std > 0)) err.push('Wie viele Stunden arbeitest du pro Woche?');
+    if (err.length) { out.innerHTML = errBox(err); return; }
+    const lohn = netto / (std * 52 / 12), h = preis / lohn, tage = h / (std / 5);
+    const risk = (q(1) ? 1 : 0) + (q(6) ? 1 : 0) + (q(2) ? 0 : 1) + (q(3) ? 0 : 1) + (q(5) ? 0 : 1);
+    let pill, text;
+    if (!q(4)) { kbWait = 30; pill = '<span class="pill bad">Nicht kaufen</span>'; text = 'Was du nicht sofort bezahlen kannst, kannst du dir gerade nicht leisten. Setz es auf die Warteliste und spar es erst an.'; }
+    else if (risk >= 4) { kbWait = 30; pill = '<span class="pill bad">30 Tage warten</span>'; text = 'Vieles spricht für einen Impulskauf. Setz es auf die Warteliste. Willst du es in 30 Tagen noch, kannst du neu entscheiden.'; }
+    else if (risk >= 2) { kbWait = 7; pill = '<span class="pill warn">7 Tage warten</span>'; text = 'Ein paar Punkte sprechen dagegen. Eine Woche Abstand zeigt dir, ob es ein echter Wunsch ist.'; }
+    else if (risk === 1) { kbWait = 1; pill = '<span class="pill warn">Eine Nacht drüber schlafen</span>'; text = 'Fast alles spricht dafür. Schlaf trotzdem eine Nacht drüber.'; }
+    else { kbWait = 0; pill = '<span class="pill good">Klingt durchdacht</span>'; text = 'Das wirkt wie ein geplanter Kauf. Kauf es, wenn es in dein Budget passt.'; }
+    out.innerHTML = `
+      <span class="kicker">${esc($('#kb-was').value.trim() || 'Dein Wunsch')} kostet dich</span>
+      <div class="big">${fmt(h, 1)} <small>Stunden Arbeit</small></div>
+      ${rows([['Preis', euro(preis)], ['Dein Stundenlohn netto', euro(lohn)], ['Das sind etwa', fmt(tage, 1) + (Math.abs(tage - 1) < 0.05 ? ' Arbeitstag' : ' Arbeitstage')]])}
+      <div>${pill}</div>
+      <p>${text}</p>
+      ${kbWait > 0 ? `<button type="button" class="btn" id="kb-add">Auf die Warteliste (${kbWait} ${kbWait === 1 ? 'Tag' : 'Tage'})</button>` : ''}`;
+  }
+  let kbList = store.get('kb-liste') || [];
+  let kbSaved = store.get('kb-gespart') || 0;
+  function renderKBList() {
+    const t = today();
+    const items = kbList.map((x, i) => {
+      const bis = parseISO(x.bis), left = Math.round((bis - t) / 864e5);
+      const when = left > 0 ? `noch ${left} ${left === 1 ? 'Tag' : 'Tage'}, bis ${dm(bis)}` : 'Wartezeit vorbei. Willst du es noch?';
+      return `<li><div><b>${esc(x.was)}</b> · ${euro(x.preis || 0)}<div class="when">${when}</div></div><div class="btns"><button type="button" class="btn-ghost btn-small" data-kb-no="${i}">Will ich nicht mehr</button>${left <= 0 ? `<button type="button" class="btn-ghost btn-small" data-kb-yes="${i}">Gekauft</button>` : ''}</div></li>`;
+    }).join('');
+    $('#kb-liste').innerHTML = (kbList.length ? `<ul class="wl">${items}</ul>` : '<p class="note">Noch nichts auf der Warteliste.</p>') +
+      (kbSaved > 0 ? `<div class="box good" style="margin-top:12px">Durch Warten nicht ausgegeben: <strong>${euro(kbSaved)}</strong></div>` : '');
+  }
+  document.addEventListener('click', e => {
+    if (e.target.id === 'kb-add') {
+      kbList.push({ was: $('#kb-was').value.trim() || 'Wunsch', preis: val('kb-preis') || 0, bis: iso(addDays(today(), kbWait)) });
+      store.set('kb-liste', kbList); renderKBList();
+      e.target.textContent = 'Steht auf der Warteliste'; e.target.disabled = true;
+      return;
+    }
+    const no = e.target.closest('[data-kb-no]'), yes = e.target.closest('[data-kb-yes]');
+    if (no) { kbSaved += kbList[+no.dataset.kbNo].preis || 0; kbList.splice(+no.dataset.kbNo, 1); store.set('kb-gespart', kbSaved); }
+    else if (yes) kbList.splice(+yes.dataset.kbYes, 1);
+    else return;
+    store.set('kb-liste', kbList); renderKBList();
+  });
+
+  /* ---------- Kauftagebuch ---------- */
+  const GEF = [['gestresst', 'gestresst'], ['traurig', 'traurig'], ['gelangweilt', 'gelangweilt'], ['einsam', 'einsam'], ['wütend', 'wütend'], ['gut gelaunt', 'gut gelaunt'], ['neutral', 'neutral']];
+  const tbList = rowList({
+    sec: 'v-tagebuch', key: 'tb-rows', el: 'tb-rows', add: 'tb-neu',
+    cols: 'minmax(0,1.5fr) minmax(0,.95fr) minmax(0,.75fr) minmax(0,1.1fr) minmax(0,1fr) auto',
+    fields: [
+      { k: 'was', label: 'Was', cls: 'p-name' },
+      { k: 'betrag', label: 'Betrag', num: true, suffix: '€' },
+      { k: 'datum', label: 'Datum', ph: 'TT.MM.' },
+      { k: 'gefuehl', label: 'Gefühl davor', type: 'select', options: GEF },
+      { k: 'geplant', label: 'Geplant?', type: 'select', options: [['nein', 'spontan'], ['ja', 'geplant']] }
+    ],
+    defaults: [
+      { was: 'Pullover', betrag: '49,99', datum: '12.11.', gefuehl: 'gestresst', geplant: 'nein' },
+      { was: 'Kopfhörer', betrag: '89', datum: '14.11.', gefuehl: 'gelangweilt', geplant: 'nein' },
+      { was: 'Geschenk für Mama', betrag: '35', datum: '15.11.', gefuehl: 'neutral', geplant: 'ja' },
+      { was: 'Drogerie-Sachen', betrag: '27,40', datum: '17.11.', gefuehl: 'traurig', geplant: 'nein' },
+      { was: 'Sneaker im Sale', betrag: '74,95', datum: '18.11.', gefuehl: 'gestresst', geplant: 'nein' }
+    ],
+    blank: () => ({ was: '', betrag: '', datum: dm(today()) + '.', gefuehl: 'neutral', geplant: 'nein' }),
+    empty: 'Noch keine Käufe eingetragen. Leg mit „+ Kauf eintragen“ los.',
+    onChange: () => calcTB()
+  });
+  $('#tb-leeren').addEventListener('click', () => { tbList.clear(); calcTB(); });
+  function calcTB() {
+    const out = $('#tb-out');
+    const items = tbList.rows.map(r => ({ b: parseNum(r.betrag, true) || 0, g: r.gefuehl, spontan: r.geplant !== 'ja' })).filter(i => i.b > 0);
+    if (!items.length) { out.innerHTML = '<span class="kicker">Auswertung</span><p class="note">Sobald du Käufe einträgst, siehst du hier, wie viel spontan war und welche Gefühle dahinterstecken.</p>'; return; }
+    const total = items.reduce((s, i) => s + i.b, 0), sp = items.filter(i => i.spontan), spSum = sp.reduce((s, i) => s + i.b, 0);
+    const cnt = {}; sp.forEach(i => { cnt[i.g] = (cnt[i.g] || 0) + 1; });
+    const topG = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0];
+    const schwer = ['gestresst', 'traurig', 'gelangweilt', 'einsam', 'wütend'];
+    let insight = '';
+    if (topG && schwer.includes(topG)) insight = `<div class="box warn">Deine spontanen Käufe passieren am häufigsten, wenn du <strong>${esc(topG)}</strong> bist. Genau da lohnt es sich anzusetzen. <a href="#gefuehle">Tipps dazu →</a></div>`;
+    else if (topG === 'gut gelaunt') insight = '<div class="box plain">Bei dir sind es oft Belohnungskäufe aus guter Laune. Plane Belohnungen, die nichts kosten, oder leg dafür ein festes kleines Budget fest.</div>';
+    out.innerHTML = `
+      <span class="kicker">Auswertung</span>
+      <div class="big">${euro(total)} <small>in ${items.length} ${items.length === 1 ? 'Kauf' : 'Käufen'}</small></div>
+      ${rows([['Davon spontan', `${euro(spSum)} · ${pct(spSum / total)}`], ['Spontane Käufe', `${sp.length} von ${items.length}`], topG ? ['Häufigstes Gefühl davor', esc(topG)] : null])}
+      ${insight}
+      <p class="note">Tipp: Trag Käufe gleich danach ein, nicht am Ende der Woche. Dann erinnerst du dich noch an das Gefühl.</p>`;
+  }
+
+  /* ---------- Abo-Check ---------- */
+  const TAKT = { w: 52 / 12, m: 1, q: 1 / 3, j: 1 / 12 };
+  const abList = rowList({
+    sec: 'v-abos', key: 'ab-rows', el: 'ab-rows', add: 'ab-neu',
+    cols: 'minmax(0,1.5fr) minmax(0,1fr) minmax(0,1fr) minmax(0,1fr) auto',
+    fields: [
+      { k: 'name', label: 'Abo', cls: 'p-name' },
+      { k: 'preis', label: 'Preis', num: true, suffix: '€' },
+      { k: 'takt', label: 'alle', type: 'select', options: [['m', 'Monat'], ['j', 'Jahr'], ['q', 'Quartal'], ['w', 'Woche']] },
+      { k: 'nutzung', label: 'Nutze ich', type: 'select', options: [['oft', 'oft'], ['selten', 'selten'], ['nie', 'fast nie']] }
+    ],
+    defaults: [
+      { name: 'Video-Streaming', preis: '13,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Zweiter Streamingdienst', preis: '9,99', takt: 'm', nutzung: 'selten' },
+      { name: 'Musik-Streaming', preis: '11,99', takt: 'm', nutzung: 'oft' },
+      { name: 'Fitnessstudio', preis: '34,90', takt: 'm', nutzung: 'selten' },
+      { name: 'Mode-Box im Abo', preis: '39', takt: 'm', nutzung: 'nie' },
+      { name: 'Spiele-Abo', preis: '16,99', takt: 'm', nutzung: 'nie' },
+      { name: 'Zeitschrift', preis: '89', takt: 'j', nutzung: 'nie' }
+    ],
+    blank: { name: '', preis: '', takt: 'm', nutzung: 'oft' },
+    empty: 'Noch keine Abos eingetragen.',
+    onChange: () => calcAB()
+  });
+  function calcAB() {
+    const out = $('#ab-out');
+    const items = abList.rows.map(r => ({ name: r.name || 'Ohne Namen', y: (parseNum(r.preis, true) || 0) * (TAKT[r.takt] || 1) * 12, u: r.nutzung })).filter(i => i.y > 0);
+    if (!items.length) { out.innerHTML = '<p class="note">Trag dein erstes Abo ein.</p>'; return; }
+    const year = items.reduce((s, i) => s + i.y, 0), spar = items.filter(i => i.u !== 'oft').reduce((s, i) => s + i.y, 0);
+    const pillFor = u => u === 'oft' ? '' : ` <span class="pill ${u === 'nie' ? 'bad' : 'warn'}">${u === 'nie' ? 'fast nie' : 'selten'}</span>`;
+    out.innerHTML = `
+      <span class="kicker">Deine Abos kosten im Jahr</span>
+      <div class="big">${euro(year)}</div>
+      ${rows([['Pro Monat', euro(year / 12)], ['Anzahl', items.length]])}
+      ${spar > 0 ? `<div class="box good">Kündigst du, was du selten oder fast nie nutzt, sparst du <strong>${euro(spar)} im Jahr</strong>.</div>` : '<div class="box good">Du nutzt alles oft. Prüf trotzdem einmal im Jahr, ob es günstiger geht.</div>'}
+      ${rows(items.sort((a, b) => b.y - a.y).map(i => [esc(i.name) + pillFor(i.u), euro(i.y)]))}`;
+  }
+
+  /* ---------- Verdrahtung ---------- */
+  const CALC = { 'v-selbstcheck': calcSC, 'v-kassensturz': calcKS, 'v-kaufbremse': calcKB, 'v-tagebuch': calcTB, 'v-abos': calcAB };
+  $$('[data-tool]').forEach(sec => {
+    loadTool(sec);
+    const run = CALC[sec.id];
+    const onChange = e => { if (!e.target.matches('[data-save]')) return; saveTool(sec); run(); };
+    sec.addEventListener('input', onChange);
+    sec.addEventListener('change', onChange);
+    $$('[data-reset]', sec).forEach(b => b.addEventListener('click', () => { resetTool(sec); run(); }));
+  });
+  $('#loeschen').addEventListener('click', () => {
+    store.clear();
+    $$('[data-tool]').forEach(sec => resetTool(sec));
+    kbList = []; kbSaved = 0; renderKBList(); plan = [];
+    Object.values(CALC).forEach(f => f());
+    $('#geloescht').textContent = 'Gelöscht. Alles ist wieder im Ausgangszustand.';
+  });
+  TOPICS.filter(t => t.tool).forEach(t => {
+    const sec = document.getElementById('v-' + t.id); if (!sec) return;
+    sec.dataset.c = t.cat;
+    const head = $('.tool-head, .phead', sec); if (head) head.insertAdjacentHTML('afterbegin', icon(t.id));
+  });
+  renderTiles(); renderKBList();
+  Object.values(CALC).forEach(f => f());
+
+  /* ---------- Ansichten über die Adresse ---------- */
+  let current = null;
+  const trail = [];
+  function track(k) {
+    if (k === 'start') { trail.length = 0; trail.push('start'); return; }
+    if (trail.length > 1 && trail[trail.length - 2] === k) trail.pop();
+    else if (trail[trail.length - 1] !== k) trail.push(k);
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-back]'); if (!b) return;
+    if (trail.length > 1) { e.preventDefault(); location.hash = trail[trail.length - 2]; }
+  });
+  function route() {
+    const h0 = location.hash.slice(1), h = ALIAS[h0] || h0;
+    track(document.getElementById('v-' + h) || T[h] ? h : 'start');
+    const t = T[h];
+    if (t && !t.tool) { renderGuide(t); show('thema', h, t.titel); return; }
+    if (h === 'plan') renderPlan();
+    show(document.getElementById('v-' + h) ? h : 'start', h, t ? t.titel : ({ impressum: 'Impressum', datenschutz: 'Datenschutz', plan: 'Mein Plan' })[h]);
+  }
+  function show(view, key, name) {
+    $$('[data-view]').forEach(s => { s.hidden = s.id !== 'v-' + view; });
+    document.body.dataset.page = view;
+    document.title = view === 'start' ? "Wo hakt's beim Kaufen?" : `${name || ''} · Wo hakt's?`;
+    const k = view === 'start' ? 'start' : (key || view);
+    if (current !== null && current !== k) window.scrollTo(0, 0);
+    current = k;
+  }
+  window.addEventListener('hashchange', route);
+  route();
+})();
+</script>
+</body>
+</html>

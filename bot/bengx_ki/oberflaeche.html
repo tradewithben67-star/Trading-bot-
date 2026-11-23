@@ -171,7 +171,8 @@ dl.paare dd { margin: 0; }
   .nav-titel { display: none; }
   nav a { flex: none; padding: 6px 10px; }
   nav a .zahl { display: none; }
-  .unten { display: none; }
+  .unten { margin-top: 0; }
+  .unten .token-karte, .unten .thema { display: none; }
   main { padding: 22px 16px 60px; }
   .r2, .r3, .r4 { grid-template-columns: 1fr 1fr; }
   .r2.immer-voll, .r3.immer-voll { grid-template-columns: 1fr; }
@@ -385,7 +386,7 @@ async function ausfuehren(knopf, pfad, body, danach) {
   knopf.disabled = true; knopf.innerHTML = '<span class="lade"></span> Läuft …';
   try { const e = await api(pfad, body || {}); await laden(); await danach(e); }
   catch (err) { toast(err.message); if (err.grenze) await laden().then(() => modellwahlNeu()); }
-  finally { if (document.body.contains(knopf)) { knopf.disabled = false; knopf.innerHTML = alt; } }
+  finally { if (document.body.contains(knopf)) { knopf.disabled = false; knopf.innerHTML = alt; } modellwahlNeu(); }
 }
 
 /* ---------- Modellwahl ---------- */
@@ -413,15 +414,15 @@ function wahlInhalt() {
   }).join("");
 }
 function modellwahlNeu() {
+  // Die Wahl bleibt stehen, auch wenn das Modell gerade nicht geht: der Knopf sagt dann, warum.
   const w = $("#wahl"); if (!w) return;
-  if (!modellStatus(gewaehlt).frei) gewaehlt = MREIHE.find(m => modellStatus(m).frei) || gewaehlt;
   w.innerHTML = wahlInhalt();
   w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { gewaehlt = b.dataset.m; merken("modell", gewaehlt); modellwahlNeu(); });
   const [kid, ktext] = wahlKnopf, k = $("#" + kid);
   if (k) {
-    const frei = modellStatus(gewaehlt).frei;
-    k.disabled = !frei;
-    k.innerHTML = `${ktext} <small>· ${STAND.modelle[gewaehlt].name} · ${tok(STAND.nutzung.kosten[wahlAktion][gewaehlt])}</small>`;
+    const s = modellStatus(gewaehlt);
+    k.disabled = !s.frei;
+    k.innerHTML = `${ktext} <small>· ${STAND.modelle[gewaehlt].name} · ${s.frei ? tok(STAND.nutzung.kosten[wahlAktion][gewaehlt]) : s.text.split(" · ")[0]}</small>`;
   }
 }
 
@@ -709,12 +710,29 @@ const ANSICHT = {
       catch (err) { toast(err.message); } };
     $$("[data-abo]").forEach(s => s.onchange = async () => {
       try { await api("/api/nutzer/abo", {id: s.dataset.abo, abo: s.value}); toast("Abo geändert."); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
-    $$("[data-pw]").forEach(k => k.onclick = async () => {
-      const pw = prompt(`Neues Passwort für ${k.dataset.name} (mind. 8 Zeichen):`); if (!pw) return;
-      try { await api("/api/nutzer/passwort", {id: k.dataset.pw, passwort: pw}); toast("Passwort geändert. Bestehende Anmeldungen sind beendet."); } catch (err) { toast(err.message); } });
+    // Passwort: kleines Formular im Seitenblatt statt Browser-Dialog.
+    $$("[data-pw]").forEach(k => k.onclick = () => {
+      $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
+          <div><span class="marke-klein">Passwort</span><h1 style="font-size:22px;margin-top:10px">${esc(k.dataset.name)}</h1>
+          <p class="unter">Neues Passwort setzen. Bestehende Anmeldungen enden.</p></div>
+          <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>
+        <form id="pwform"><label class="etikett" for="pwneu" style="display:block;margin-bottom:6px">Neues Passwort (mind. 8 Zeichen)</label>
+          <input class="feld" id="pwneu" type="password" minlength="8" required autocomplete="new-password" style="width:100%">
+          <button class="knopf" type="submit" style="margin-top:16px">Passwort setzen</button></form>`;
+      $("#detail").classList.add("offen");
+      $("#pwneu").focus();
+      $("#pwform").onsubmit = async e => { e.preventDefault();
+        try { await api("/api/nutzer/passwort", {id: k.dataset.pw, passwort: $("#pwneu").value}); zu(); toast("Passwort geändert. Bestehende Anmeldungen sind beendet."); }
+        catch (err) { toast(err.message); } };
+    });
+    // Löschen: erster Klick fragt nach, zweiter Klick löscht.
     $$("[data-weg]").forEach(k => k.onclick = async () => {
-      if (!confirm(`${k.dataset.name} wirklich löschen? Der Verlauf bleibt.`)) return;
-      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast("Gelöscht."); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
+      if (k.dataset.sicher !== "1") {
+        k.dataset.sicher = "1"; k.classList.add("an"); k.textContent = "Wirklich löschen?";
+        setTimeout(() => { if (document.body.contains(k)) { k.dataset.sicher = ""; k.classList.remove("an"); k.textContent = "Löschen"; } }, 4000);
+        return;
+      }
+      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast(`${k.dataset.name} gelöscht. Der Verlauf bleibt.`); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
   },
 };
 

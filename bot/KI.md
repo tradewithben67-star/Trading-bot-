@@ -74,7 +74,7 @@ dich selbst. Danach braucht jeder Name und Passwort.
 | **Verlauf** | jede Aktion mit allen Details; Kunden sehen nur ihre eigenen |
 | **Modelle** | Steckbrief jedes Modells; der Inhaber trainiert hier mit Live-Protokoll |
 | **Nutzung & Abo** | Kontingent je Modell, Abos im Vergleich, Kosten, Buchungen |
-| **Nutzer** | nur Inhaber: Nutzer anlegen, Abo ändern, Passwort setzen, löschen |
+| **Nutzer** | nur Inhaber: Nutzer anlegen, Abo ändern, Passwort setzen, löschen; Namen antippen zeigt Nutzung, Verlauf und Buchungen dieses Nutzers |
 
 Die Oberfläche ist schwarz-weiß, mit hellem und dunklem Modus, und läuft auch
 auf dem Handy-Bildschirm.

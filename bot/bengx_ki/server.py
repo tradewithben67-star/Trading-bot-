@@ -28,6 +28,7 @@ Schnittstelle (alles JSON, alles außer Anmeldung nur angemeldet):
   nur Inhaber:
     GET  /api/training     POST /api/training      {"modell", "epochen"}
     GET  /api/nutzer       POST /api/nutzer        {"name", "passwort", "abo"}
+    GET  /api/nutzer/<id>  Kontingente, Buchungen und Verlauf eines Nutzers
     POST /api/nutzer/abo   {"id", "abo"}
     POST /api/nutzer/passwort {"id", "passwort"}
     POST /api/nutzer/loeschen {"id"}
@@ -187,6 +188,16 @@ class App:
                                    nutzer=n, modell=modell)
             t.beenden("fehler")
 
+    def nutzer_detail(self, nid: str) -> dict | None:
+        """Alles über einen Nutzer: Kontingente, Buchungen, Verlauf."""
+        n = self.nutzer.holen(nid)
+        if n is None:
+            return None
+        return {"nutzer": n, "stand": self.nutzung.stand(n),
+                "buchungen": self.nutzung.buchungen(nid),
+                "verlauf": self.verlauf.liste(anzahl=200, nutzer=nid),
+                "zaehler": self.verlauf.zaehlen(nid)}
+
     def nutzer_liste(self) -> list[dict]:
         raus = []
         for n in self.nutzer.liste():
@@ -331,6 +342,10 @@ def handler_fuer(app: App):
                 elif pfad == "/api/nutzer":
                     self._inhaber()
                     self._json(app.nutzer_liste())
+                elif pfad.startswith("/api/nutzer/"):
+                    self._inhaber()
+                    d = app.nutzer_detail(pfad.rsplit("/", 1)[1])
+                    self._json(d or {"fehler": "Nicht gefunden"}, 200 if d else 404)
                 else:
                     self._json({"fehler": "Nicht gefunden"}, 404)
             except Exception as exc:

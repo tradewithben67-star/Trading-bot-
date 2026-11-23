@@ -220,6 +220,9 @@ dl.paare dd { margin: 0; }
 select.feld { width: auto; appearance: none; padding-right: 28px; cursor: pointer;
   background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
   background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.namelink { border: 0; background: none; padding: 0; font-weight: 650; cursor: pointer; text-align: left;
+            text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
+.namelink:hover { text-decoration-color: var(--fg); }
 .abmelden { border: 0; background: none; color: var(--muted); font-size: 12.5px; cursor: pointer; padding: 0; }
 .abmelden:hover { color: var(--fg); text-decoration: underline; }
 .formular { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; }
@@ -490,8 +493,8 @@ function zeigeEintrag(e) {
     + `<h2 style="margin-top:26px">Protokoll</h2><div class="konsole">${esc((d.protokoll || []).join("\n"))}</div>`;
   return `<pre class="mono">${esc(JSON.stringify(d, null, 2))}</pre>`;
 }
-function eintragZeile(e) {
-  const wer = inhaber() && e.nutzer_name && e.nutzer !== ICH.id ? esc(e.nutzer_name) + " · " : "";
+function eintragZeile(e, mitName = true) {
+  const wer = mitName && inhaber() && e.nutzer_name && e.nutzer !== ICH.id ? esc(e.nutzer_name) + " · " : "";
   return `<div class="liste-eintrag" onclick="detail('${e.id}')">
     <div class="symbol">${icon(e.bereich)}</div>
     <div style="min-width:0"><div class="titel">${esc(e.titel)}</div><div class="kurz">${wer}${esc(e.kurz)}</div></div>
@@ -499,7 +502,7 @@ function eintragZeile(e) {
 }
 async function detail(id) {
   const e = await api("/api/verlauf/" + id);
-  $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start">
+  $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
       <div><span class="marke-klein">${esc(BEREICH[e.bereich] || e.bereich)}</span>
       <h1 style="font-size:22px;margin-top:10px">${esc(e.titel)}</h1>
       <p class="unter">${zeit(e.zeit)}${e.tokens ? " · " + tok(e.tokens) : ""}${e.nutzer_name ? " · " + esc(e.nutzer_name) : ""}</p></div>
@@ -507,6 +510,30 @@ async function detail(id) {
   $("#detail").classList.add("offen");
 }
 function zu() { $("#detail").classList.remove("offen"); }
+
+async function nutzerDetail(id) {
+  const d = await api("/api/nutzer/" + id), u = d.nutzer, n = d.stand;
+  const summe = Object.values(d.zaehler).reduce((a, b) => a + b, 0);
+  $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
+      <div><span class="marke-klein ${u.rolle === "inhaber" ? "voll" : ""}">${esc(n.abo_name)}</span>
+      <h1 style="font-size:24px;margin-top:10px">${esc(u.name)}</h1>
+      <p class="unter">seit ${datum(u.erstellt)} · ${ganz(summe)} Aktionen${n.unbegrenzt ? "" : " · frei ab " + datum(n.auffuellung)}</p></div>
+      <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>
+    <h2>Nutzung diesen Monat</h2>
+    <div class="raster r3 drei">${MREIHE.map(id => { const m = n.modelle[id];
+      const breite = m.limit ? Math.min(100, 100 * m.verbraucht / m.limit) : 0;
+      return `<div class="karte" style="padding:14px"><div class="etikett">${esc(m.name)}</div>
+        <div class="wert num" style="font-size:20px">${m.gesperrt ? "–" : ganz(m.verbraucht)}</div>
+        <div class="leiste"><i style="width:${breite}%"></i></div>
+        <div class="etikett">${m.gesperrt ? "gesperrt" : m.limit == null ? "ohne Grenze" : m.rest === 0 ? "Limit erreicht" : ganz(m.rest) + " übrig"}</div></div>`; }).join("")}</div>
+    <div class="zeile" style="gap:8px;margin-top:14px">${Object.entries(BEREICH).map(([b, name]) => `<span class="chip" style="cursor:default">${name} · ${ganz(d.zaehler[b] || 0)}</span>`).join("")}</div>
+    <h2 style="margin-top:28px">Verlauf</h2>
+    ${d.verlauf.length ? d.verlauf.map(e => eintragZeile(e, false)).join("") : `<div class="leer">Noch keine Aktionen.</div>`}
+    <h2 style="margin-top:28px">Buchungen</h2>
+    ${d.buchungen.length ? `<div class="tabelle"><table><tbody>${d.buchungen.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}</tbody></table></div>` : `<div class="leer">Noch keine.</div>`}`;
+  $("#detail").classList.add("offen");
+  $("#blatt").scrollTop = 0;
+}
 document.addEventListener("keydown", e => { if (e.key === "Escape") zu(); });
 
 /* ---------- Seiten ---------- */
@@ -670,12 +697,13 @@ const ANSICHT = {
         <div><label for="na">Abo</label><select class="feld" id="na">${Object.entries(abos).map(([id, a]) => `<option value="${id}">${esc(a.name)}</option>`).join("")}</select></div>
         <div><button class="knopf" type="submit">Anlegen</button></div></form></div>
       <div class="karte"><div class="tabelle"><table><thead><tr><th>Name</th><th>Abo</th>${MREIHE.map(id => `<th>${esc(STAND.modelle[id].name)}</th>`).join("")}<th class="r">Aktionen</th><th></th></tr></thead><tbody>
-        ${liste.map(u => `<tr><td><b>${esc(u.name)}</b><div class="etikett">seit ${datum(u.erstellt)}</div></td>
+        ${liste.map(u => `<tr><td><button class="namelink" data-zeig="${u.id}">${esc(u.name)}</button><div class="etikett">seit ${datum(u.erstellt)}</div></td>
           <td>${u.rolle === "inhaber" ? `<span class="marke-klein voll">Inhaber</span>` : `<select class="feld" data-abo="${u.id}" style="height:34px">${Object.entries(abos).map(([id, a]) => `<option value="${id}" ${id === u.abo ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>`}</td>
           ${MREIHE.map(id => { const m = u.modelle[id]; return `<td class="num" style="white-space:nowrap">${m.gesperrt ? `<span style="color:var(--faint)">gesperrt</span>` : m.limit == null ? ganz(m.verbraucht) + (u.rolle === "inhaber" ? "" : " / ∞") : `${ganz(m.verbraucht)} / ${ganz(m.limit)}${m.rest === 0 ? " ●" : ""}`}</td>`; }).join("")}
           <td class="r num">${ganz(u.aktionen)}</td>
           <td class="r" style="white-space:nowrap">${u.rolle === "inhaber" ? "" : `<button class="chip" data-pw="${u.id}" data-name="${esc(u.name)}">Passwort</button> <button class="chip" data-weg="${u.id}" data-name="${esc(u.name)}">Löschen</button>`}</td></tr>`).join("")}
-        </tbody></table></div><p class="hinweis">● = Limit erreicht. Das Abo gilt sofort; schon Verbrauchtes zählt im Monat weiter.</p></div>`;
+        </tbody></table></div><p class="hinweis">Namen antippen für Nutzung, Verlauf und Buchungen. ● = Limit erreicht. Das Abo gilt sofort; schon Verbrauchtes zählt im Monat weiter.</p></div>`;
+    $$("[data-zeig]").forEach(k => k.onclick = () => nutzerDetail(k.dataset.zeig));
     $("#neu").onsubmit = async e => { e.preventDefault();
       try { await api("/api/nutzer", {name: $("#nn").value, passwort: $("#np").value, abo: $("#na").value}); toast("Angelegt."); ANSICHT.nutzer(); }
       catch (err) { toast(err.message); } };

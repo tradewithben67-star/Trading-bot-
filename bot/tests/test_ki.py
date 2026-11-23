@@ -296,6 +296,18 @@ class TestServer(unittest.TestCase):
         for _ in range(12):
             self.assertEqual(self.rufen("/api/analyse", {"modell": "max"}, chef)[0], 200)
 
+    def test_nutzung_pro_nutzer_nur_fuer_inhaber(self):
+        chef, kunde = self.einrichten()
+        self.rufen("/api/indikatoren", {}, kunde)
+        anna = next(u for u in self.rufen("/api/nutzer", keks=chef)[1] if u["name"] == "Anna")
+        status, d, _ = self.rufen(f"/api/nutzer/{anna['id']}", keks=chef)
+        self.assertEqual(status, 200)
+        self.assertEqual((d["nutzer"]["name"], len(d["verlauf"])), ("Anna", 1))
+        self.assertTrue(d["stand"]["modelle"]["max"]["gesperrt"])
+        self.assertNotIn("hash", d["nutzer"])
+        self.assertEqual(self.rufen(f"/api/nutzer/{anna['id']}", keks=kunde)[0], 403)
+        self.assertEqual(self.rufen("/api/nutzer/gibtsnicht", keks=chef)[0], 404)
+
     def test_abmelden(self):
         chef, _ = self.einrichten()
         self.rufen("/api/abmelden", {}, chef)

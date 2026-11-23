@@ -20,6 +20,7 @@ from . import lernprobe
 from .auswertung import kennzahlen
 from .gehirn import Gehirn
 from .merkmale import HOCH, KLASSEN, MERKMALE, RUNTER
+from .modelle import MODELLE, pruefe
 from .training import (daten_fuer, erste_stelle, laden, normieren, tabelle_bauen,
                        wahrscheinlichkeiten)
 
@@ -63,8 +64,9 @@ class Quelle:
 class Modellablage:
     """Das gespeicherte Gehirn. Neu geladen nur, wenn die Datei sich ändert."""
 
-    def __init__(self, pfad: str | Path) -> None:
+    def __init__(self, pfad: str | Path, name: str = "Das Modell") -> None:
         self.pfad = Path(pfad)
+        self.name = name
         self._cache: tuple[float, Gehirn, dict] | None = None
 
     def vorhanden(self) -> bool:
@@ -72,7 +74,7 @@ class Modellablage:
 
     def holen(self) -> tuple[Gehirn, dict]:
         if not self.pfad.exists():
-            raise FileNotFoundError("Noch kein Modell. Erst unter Strategie trainieren.")
+            raise FileNotFoundError(f"{self.name} ist noch nicht trainiert.")
         stempel = self.pfad.stat().st_mtime
         if self._cache is None or self._cache[0] != stempel:
             g, p = laden(self.pfad)
@@ -95,6 +97,24 @@ class Modellablage:
             "merkmale": p["merkmale"],
             "ergebnis": p.get("ergebnis"),
         }
+
+
+class Modelle:
+    """Die drei Modelle Mini, Standard und Max, je eine Datei im Ordner."""
+
+    def __init__(self, ordner: str | Path) -> None:
+        self.ordner = Path(ordner)
+        self.ablagen = {m: Modellablage(self.ordner / f"{m}.pt", info["name"])
+                        for m, info in MODELLE.items()}
+
+    def __getitem__(self, modell: str) -> Modellablage:
+        return self.ablagen[pruefe(modell)]
+
+    def info(self) -> dict:
+        return {m: {"name": MODELLE[m]["name"], "text": MODELLE[m]["text"],
+                    "faktor": MODELLE[m]["faktor"], "bauplan": MODELLE[m]["plan"],
+                    **a.info()}
+                for m, a in self.ablagen.items()}
 
 
 def _atr_jetzt(kerzen: Sequence[Candle]) -> list[float | None]:
@@ -201,4 +221,4 @@ def strategie(kerzen: Sequence[Candle], gehirn: Gehirn, paket: dict) -> dict:
     return z
 
 
-__all__ = ["Quelle", "Modellablage", "analyse", "indikatoren", "strategie", "MERKMALE"]
+__all__ = ["Quelle", "Modellablage", "Modelle", "analyse", "indikatoren", "strategie", "MERKMALE"]

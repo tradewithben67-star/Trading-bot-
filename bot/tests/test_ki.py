@@ -81,66 +81,94 @@ class TestTraining(unittest.TestCase):
             self.assertTrue(torch.allclose(p2.sum(dim=1), torch.ones(20), atol=1e-5))
 
 
-class TestKonto(unittest.TestCase):
-    """Tokens brauchen kein PyTorch."""
+class TestNutzung(unittest.TestCase):
+    """Grenzen je Modell. Braucht kein PyTorch."""
 
     def setUp(self):
         import tempfile
         from datetime import datetime, timezone
         self.tmp = tempfile.TemporaryDirectory()
         self.jetzt = datetime(2026, 11, 20, tzinfo=timezone.utc)
-        self.pfad = Path(self.tmp.name) / "konto.json"
+        self.pfad = Path(self.tmp.name) / "nutzung.json"
+        self.kunde = {"id": "k1", "name": "Anna", "rolle": "kunde", "abo": "start"}
+        self.chef = {"id": "i1", "name": "Ben", "rolle": "inhaber", "abo": "start"}
 
     def tearDown(self):
         self.tmp.cleanup()
 
-    def konto(self):
-        from bengx_ki.konto import Konto
-        return Konto(self.pfad, uhr=lambda: self.jetzt)
+    def nutzung(self):
+        from bengx_ki.konto import Nutzung
+        return Nutzung(self.pfad, uhr=lambda: self.jetzt)
 
-    def test_start_mit_monatsguthaben(self):
-        s = self.konto().stand()
-        self.assertEqual((s["abo"], s["abo_rest"], s["extra"]), ("start", 200, 0))
-        self.assertEqual(s["auffuellung"], "2026-12-01")
+    def test_staerkere_modelle_kosten_mehr(self):
+        from bengx_ki.konto import kosten
+        self.assertEqual([kosten("analyse", m) for m in ("mini", "standard", "max")], [1, 3, 10])
+        self.assertEqual(kosten("strategie", "max"), 50)
 
-    def test_erst_abo_dann_extra(self):
-        k = self.konto()
-        k.aufladen(10)
-        for _ in range(4):
-            k.abbuchen("training")           # 4 × 50 = 200, leert das Abo
-        k.abbuchen("analyse")                # 5 kommen aus dem Extra
-        s = k.stand()
-        self.assertEqual((s["abo_rest"], s["extra"]), (0, 5))
+    def test_limit_stoppt_nur_dieses_modell(self):
+        from bengx_ki.konto import Grenze
+        n = self.nutzung()
+        for _ in range(10):                      # Start: Standard 30 Tokens = 10 Analysen
+            n.abbuchen(self.kunde, "standard", "analyse")
+        with self.assertRaises(Grenze) as fehler:
+            n.abbuchen(self.kunde, "standard", "analyse")
+        self.assertIn("01.12.2026", str(fehler.exception))
+        n.abbuchen(self.kunde, "mini", "analyse")  # Mini läuft weiter
+        s = n.stand(self.kunde)["modelle"]
+        self.assertEqual((s["standard"]["rest"], s["mini"]["verbraucht"]), (0, 1))
 
-    def test_zu_wenig(self):
-        from bengx_ki.konto import ZuWenigTokens
-        k = self.konto()
-        for _ in range(4):
-            k.abbuchen("training")
-        with self.assertRaises(ZuWenigTokens):
-            k.abbuchen("strategie")
-        self.assertEqual(k.stand()["gesamt"], 0)
+    def test_gesperrtes_modell(self):
+        from bengx_ki.konto import Grenze
+        with self.assertRaises(Grenze):
+            self.nutzung().abbuchen(self.kunde, "max", "analyse")   # Max nicht in Start
 
-    def test_neuer_monat_fuellt_auf_extra_bleibt(self):
+    def test_inhaber_ohne_grenzen_aber_gezaehlt(self):
+        n = self.nutzung()
+        for _ in range(200):
+            n.abbuchen(self.chef, "max", "strategie")
+        s = n.stand(self.chef)
+        self.assertTrue(s["unbegrenzt"])
+        self.assertEqual((s["modelle"]["max"]["limit"], s["modelle"]["max"]["verbraucht"]),
+                         (None, 10000))
+
+    def test_neuer_monat_gibt_frei_und_erstattung(self):
         from datetime import datetime, timezone
-        k = self.konto()
-        k.aufladen(7)
-        k.abbuchen("training")
+        n = self.nutzung()
+        n.abbuchen(self.kunde, "mini", "strategie")
+        n.erstatten(self.kunde, "mini", "strategie", "kaputt")
+        self.assertEqual(n.stand(self.kunde)["modelle"]["mini"]["verbraucht"], 0)
+        n.abbuchen(self.kunde, "mini", "strategie")
         self.jetzt = datetime(2026, 12, 2, tzinfo=timezone.utc)
-        s = self.konto().stand()             # auch nach Neustart
-        self.assertEqual((s["abo_rest"], s["extra"]), (200, 7))
+        s = self.nutzung().stand(self.kunde)          # auch nach Neustart
+        self.assertEqual(s["modelle"]["mini"]["verbraucht"], 0)
         self.assertEqual(s["auffuellung"], "2027-01-01")
 
-    def test_abo_wechsel_und_buchungen(self):
-        k = self.konto()
-        k.abo_wechseln("pro")
-        self.assertEqual(k.stand()["abo_rest"], 2000)
-        with self.assertRaises(ValueError):
-            k.abo_wechseln("gibtsnicht")
-        with self.assertRaises(ValueError):
-            k.aufladen(-5)
-        arten = [b["art"] for b in k.buchungen()]
-        self.assertEqual(arten, ["abo", "monat"])
+    def test_abo_wechsel_hebt_grenze(self):
+        n = self.nutzung()
+        self.assertTrue(n.stand(self.kunde)["modelle"]["max"]["gesperrt"])
+        self.kunde["abo"] = "pro"
+        self.assertEqual(n.stand(self.kunde)["modelle"]["max"]["rest"], 200)
+
+
+class TestNutzer(unittest.TestCase):
+    def test_erster_ist_inhaber_passwort_gehasht(self):
+        import tempfile
+        from bengx_ki.nutzer import Nutzerliste
+        with tempfile.TemporaryDirectory() as tmp:
+            liste = Nutzerliste(Path(tmp) / "n.json")
+            ben = liste.anlegen("Ben", "geheim123")
+            anna = liste.anlegen("Anna", "passwort9", "pro")
+            self.assertEqual((ben["rolle"], anna["rolle"]), ("inhaber", "kunde"))
+            self.assertNotIn("geheim123", (Path(tmp) / "n.json").read_text())
+            self.assertEqual(liste.pruefen("anna", "passwort9")["id"], anna["id"])
+            self.assertIsNone(liste.pruefen("Anna", "falsch"))
+            self.assertIsNone(liste.pruefen("Niemand", "x"))
+            with self.assertRaises(ValueError):
+                liste.anlegen("anna", "nochmal123")          # Name schon vergeben
+            with self.assertRaises(ValueError):
+                liste.anlegen("Kurz", "1234")                # Passwort zu kurz
+            with self.assertRaises(ValueError):
+                liste.loeschen(ben["id"])                    # Inhaber bleibt
 
 
 class TestVerlauf(unittest.TestCase):
@@ -170,8 +198,7 @@ class TestServer(unittest.TestCase):
         from bengx_ki.dienste import Quelle
         from bengx_ki.server import App, handler_fuer
         self.tmp = tempfile.TemporaryDirectory()
-        ordner = Path(self.tmp.name)
-        self.app = App(Quelle(None, nur_lernprobe=True), ordner / "m.pt", ordner)
+        self.app = App(Quelle(None, nur_lernprobe=True), Path(self.tmp.name))
         self.server = ThreadingHTTPServer(("127.0.0.1", 0), handler_fuer(self.app))
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.basis = f"http://127.0.0.1:{self.server.server_port}"
@@ -181,47 +208,98 @@ class TestServer(unittest.TestCase):
         self.server.server_close()
         self.tmp.cleanup()
 
-    def rufen(self, pfad, body=None):
+    def rufen(self, pfad, body=None, keks=None):
         import json
         import urllib.error
         import urllib.request
         daten = None if body is None else json.dumps(body).encode()
-        req = urllib.request.Request(self.basis + pfad, data=daten,
-                                     headers={"Content-Type": "application/json"})
+        kopf = {"Content-Type": "application/json"}
+        if keks:
+            kopf["Cookie"] = keks
+        req = urllib.request.Request(self.basis + pfad, data=daten, headers=kopf)
         try:
             with urllib.request.urlopen(req) as r:
-                return r.status, r.read().decode()
+                return r.status, json.loads(r.read() or b"null") if pfad != "/" else None, \
+                    (r.headers.get("Set-Cookie") or "").split(";")[0]
         except urllib.error.HTTPError as e:
-            return e.code, e.read().decode()
+            return e.code, json.loads(e.read() or b"null"), ""
 
-    def test_seite_und_stand(self):
-        import json
-        status, html = self.rufen("/")
-        self.assertEqual(status, 200)
-        self.assertIn("BENGX", html)
-        status, roh = self.rufen("/api/stand")
-        d = json.loads(roh)
-        self.assertEqual(d["konto"]["gesamt"], 200)
-        self.assertFalse(d["modell"]["vorhanden"])
+    def einrichten(self):
+        _, _, chef = self.rufen("/api/einrichten", {"name": "Ben", "passwort": "geheim123"})
+        self.rufen("/api/nutzer", {"name": "Anna", "passwort": "passwort9", "abo": "start"}, chef)
+        _, _, kunde = self.rufen("/api/anmelden", {"name": "Anna", "passwort": "passwort9"})
+        return chef, kunde
 
-    def test_indikatoren_kosten_und_verlauf(self):
-        import json
-        status, roh = self.rufen("/api/indikatoren", {})
-        self.assertEqual(status, 200)
-        self.assertEqual(json.loads(roh)["tokens"], 1)
-        self.assertEqual(self.app.konto.stand()["gesamt"], 199)
-        self.assertEqual(len(json.loads(self.rufen("/api/verlauf")[1])), 1)
+    def test_ohne_anmeldung_nichts(self):
+        self.assertEqual(self.rufen("/")[0], 200)
+        status, d, _ = self.rufen("/api/ich")
+        self.assertTrue(d["einrichten"])
+        self.assertEqual(self.rufen("/api/stand")[0], 401)
+        self.assertEqual(self.rufen("/api/indikatoren", {})[0], 401)
 
-    def test_ohne_modell_wird_nichts_abgebucht(self):
-        status, _ = self.rufen("/api/analyse", {})
-        self.assertEqual(status, 400)
-        self.assertEqual(self.app.konto.stand()["gesamt"], 200)
+    def test_einrichten_nur_einmal(self):
+        chef, _ = self.einrichten()
+        status, _, _ = self.rufen("/api/einrichten", {"name": "Eve", "passwort": "boese1234"})
+        self.assertEqual(status, 403)
+        self.assertEqual(self.rufen("/api/ich", keks=chef)[1]["nutzer"]["rolle"], "inhaber")
 
-    def test_ohne_tokens_402(self):
-        for _ in range(4):
-            self.app.konto.abbuchen("training")
-        status, _ = self.rufen("/api/indikatoren", {})
-        self.assertEqual(status, 402)
+    def test_falsches_passwort_und_bremse(self):
+        self.einrichten()
+        for _ in range(5):
+            self.assertEqual(self.rufen("/api/anmelden", {"name": "Anna", "passwort": "x"})[0], 400)
+        status, _, _ = self.rufen("/api/anmelden", {"name": "Anna", "passwort": "passwort9"})
+        self.assertEqual(status, 409)                       # erst nach einer Minute wieder
+
+    def test_kunde_darf_nicht_verwalten_und_nicht_trainieren(self):
+        _, kunde = self.einrichten()
+        self.assertEqual(self.rufen("/api/nutzer", keks=kunde)[0], 403)
+        self.assertEqual(self.rufen("/api/training", {"modell": "mini"}, kunde)[0], 403)
+        self.assertEqual(self.rufen("/api/nutzer", {"name": "X", "passwort": "12345678"}, kunde)[0], 403)
+
+    def test_nur_json_posts(self):
+        import urllib.error
+        import urllib.request
+        req = urllib.request.Request(self.basis + "/api/anmelden", data=b"name=a",
+                                     headers={"Content-Type": "application/x-www-form-urlencoded"})
+        with self.assertRaises(urllib.error.HTTPError) as e:
+            urllib.request.urlopen(req)
+        self.assertEqual(e.exception.code, 400)
+
+    def test_indikatoren_frei_und_verlauf_getrennt(self):
+        chef, kunde = self.einrichten()
+        self.assertEqual(self.rufen("/api/indikatoren", {}, kunde)[0], 200)
+        self.assertEqual(self.rufen("/api/indikatoren", {}, chef)[0], 200)
+        eigene = self.rufen("/api/verlauf", keks=kunde)[1]
+        alle = self.rufen("/api/verlauf", keks=chef)[1]
+        self.assertEqual((len(eigene), len(alle)), (1, 2))
+        fremd = next(e for e in alle if e["nutzer_name"] == "Ben")
+        self.assertEqual(self.rufen(f"/api/verlauf/{fremd['id']}", keks=kunde)[0], 404)
+
+    def test_grenze_429_und_inhaber_frei(self):
+        from bengx_ki import lernprobe
+        from bengx_ki.gehirn import Bauplan
+        from bengx_ki.training import Einstellungen, speichern, trainieren
+        chef, kunde = self.einrichten()
+        # ohne Modell: Fehler, aber nichts verbraucht
+        self.assertEqual(self.rufen("/api/analyse", {"modell": "standard"}, kunde)[0], 400)
+        paket = trainieren(lernprobe.kerzen(1200, zufall=2),
+                           Bauplan(fenster=16, breite=16, koepfe=2, schichten=1),
+                           Einstellungen(epochen=1), melden=lambda s: None)
+        for m in ("standard", "max"):
+            speichern(paket, self.app.modelle[m].pfad)
+        self.assertEqual(self.rufen("/api/analyse", {"modell": "max"}, kunde)[0], 429)
+        for _ in range(10):
+            self.assertEqual(self.rufen("/api/analyse", {"modell": "standard"}, kunde)[0], 200)
+        status, d, _ = self.rufen("/api/analyse", {"modell": "standard"}, kunde)
+        self.assertEqual(status, 429)
+        self.assertIn("Limit", d["fehler"])
+        for _ in range(12):
+            self.assertEqual(self.rufen("/api/analyse", {"modell": "max"}, chef)[0], 200)
+
+    def test_abmelden(self):
+        chef, _ = self.einrichten()
+        self.rufen("/api/abmelden", {}, chef)
+        self.assertEqual(self.rufen("/api/stand", keks=chef)[0], 401)
 
 
 if __name__ == "__main__":

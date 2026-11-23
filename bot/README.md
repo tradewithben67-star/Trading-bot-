@@ -231,8 +231,9 @@ kurze Antworten. Über `BENGX_MODEL` und `BENGX_EFFORT` änderbar.
 
 Im Ordner `bengx_ki/` steckt ein eigenes neuronales Netz (Transformer), von
 Grund auf gebaut. Es lernt aus derselben Kurs-CSV, ob vom Schluss einer Kerze
-aus zuerst Ziel oder Stop erreicht wird. Es ist getrennt vom Bot und braucht als
-einziger Teil PyTorch. Start per `KI.bat` oder `python3 -m bengx_ki`; alles
+aus zuerst Ziel oder Stop erreicht wird, in drei Größen (Mini, Standard, Max).
+Dazu kommen eine Oberfläche mit Anmeldung und Abos mit Grenzen je Modell. Die KI ist
+getrennt vom Bot und braucht als einziger Teil PyTorch. Start per `KI.bat` oder `python3 -m bengx_ki`; alles
 Weitere steht in [KI.md](KI.md).
 
 ## Risiko steht über der Strategie

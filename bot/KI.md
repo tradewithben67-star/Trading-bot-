@@ -31,6 +31,29 @@ Die Kursdatei ist dieselbe CSV wie für den Backtest des Bots: Spalten Zeit,
 Open, High, Low, Close und optional Volumen, z. B. als Export aus MT5. Je mehr
 Kerzen, desto besser. Unter etwa 10.000 Stundenkerzen lernt sie kaum etwas.
 
+## Drei Modelle
+
+| Modell | Blick | Aufbau | Gewichte | Verbrauch |
+| --- | --- | --- | --- | --- |
+| **Mini** | 32 Kerzen | 2 Blöcke · 2 Köpfe · Breite 32 | ca. 27.000 | × 1 |
+| **Standard** | 64 Kerzen | 3 Blöcke · 4 Köpfe · Breite 64 | ca. 155.000 | × 3 |
+| **Max** | 128 Kerzen | 4 Blöcke · 6 Köpfe · Breite 96 | ca. 461.000 | × 10 |
+
+Alle drei sind derselbe Transformer, nur verschieden groß. Ein größeres Modell
+kann längere und feinere Muster erfassen, braucht aber mehr Daten und lernt auf
+zu wenig Daten eher auswendig. Ob Max auf deinen Kursen wirklich besser ist,
+zeigt nur der Vergleich unter **Strategie**. Max trainiert auch deutlich
+länger: auf 4 Rechenkernen etwa 30 s pro Durchgang je 4.000 Beispiele.
+
+```bash
+python3 -m bengx_ki trainieren --csv data/xauusd_h1.csv --modell mini
+python3 -m bengx_ki trainieren --csv data/xauusd_h1.csv --modell max
+```
+
+Die Modelle liegen in `ki/modelle/mini.pt`, `standard.pt` und `max.pt`. Ein
+Modell aus der ersten Fassung (`ki/modell.pt`) wird beim nächsten Start
+automatisch zu Standard.
+
 ## Oberfläche
 
 ```bash
@@ -39,54 +62,74 @@ python3 -m bengx_ki oberflaeche --lernprobe          # ohne CSV, zum Ausprobiere
 ```
 
 Unter Windows: `KI.bat`, Punkt 5. Der Browser öffnet sich unter
-`http://127.0.0.1:8765/`. Die Oberfläche ist schwarz-weiß, mit hellem und
-dunklem Modus, und läuft auch auf dem Handy-Bildschirm.
+`http://127.0.0.1:8765/`. Beim **ersten Öffnen legst du den Inhaber an**, also
+dich selbst. Danach braucht jeder Name und Passwort.
 
 | Bereich | Was dort passiert |
 | --- | --- |
-| **Übersicht** | Tokens, Modellstand, letzter Kurs, letzte Analyse, letzte Aktionen |
-| **Analyse** | Einschätzung der KI für die jüngste Kerze, mit Einstieg, Stop und Ziel |
-| **Indikatoren** | Kurve mit EMA 50/200, dazu RSI, ADX, ATR und 20er-Kanal mit Deutung |
-| **Strategie** | die Regeln der KI, Test auf unbekannten Kerzen, neu trainieren mit Live-Protokoll |
-| **Verlauf** | jede Aktion der KI mit allen Details, filterbar; Antippen öffnet sie |
-| **Modell** | Steckbrief des Gehirns und seine Prüfung nach dem Training |
-| **Tokens & Abo** | Guthaben, Abos, was was kostet, Aufladen, alle Buchungen |
+| **Übersicht** | Abo, bereite Modelle, letzter Kurs, letzte Analyse, letzte Aktionen |
+| **Analyse** | Modell wählen (Mini, Standard, Max), Einschätzung mit Einstieg, Stop und Ziel |
+| **Indikatoren** | Kurve mit EMA 50/200, dazu RSI, ADX, ATR und 20er-Kanal, frei |
+| **Strategie** | Modell wählen und auf unbekannten Kerzen testen, alle drei im Vergleich |
+| **Verlauf** | jede Aktion mit allen Details; Kunden sehen nur ihre eigenen |
+| **Modelle** | Steckbrief jedes Modells; der Inhaber trainiert hier mit Live-Protokoll |
+| **Nutzung & Abo** | Kontingent je Modell, Abos im Vergleich, Kosten, Buchungen |
+| **Nutzer** | nur Inhaber: Nutzer anlegen, Abo ändern, Passwort setzen, löschen |
 
-Der Server hört nur auf dem eigenen Rechner (127.0.0.1) und hat noch keine
-Anmeldung. Bevor Abonnenten ihn nutzen, braucht er Anmeldung, ein Konto je
-Nutzer und eine Bezahlung.
+Die Oberfläche ist schwarz-weiß, mit hellem und dunklem Modus, und läuft auch
+auf dem Handy-Bildschirm.
 
-## Tokens und Abos
+## Inhaber und Kunden
 
-Jede Aktion kostet Tokens:
+* Der **Inhaber** hat keine Grenzen. Er trainiert, verwaltet Nutzer und sieht
+  den Verlauf aller. Seine Nutzung wird trotzdem gezählt.
+* **Kunden** haben ein Abo. Jedes Modell hat darin sein eigenes
+  Monatskontingent. Ist es aufgebraucht, **hört dieses Modell auf**, bis zum
+  Monatsersten. Die anderen Modelle laufen weiter. Steht 0 im Abo, ist das
+  Modell gesperrt.
 
-| Aktion | Tokens |
-| --- | --- |
-| Indikatoren lesen | 1 |
-| KI-Analyse | 5 |
-| Strategie testen | 10 |
-| KI neu trainieren | 50 |
+| Tokens im Monat | Start | Pro | Elite |
+| --- | --- | --- | --- |
+| Mini | 100 | 1.000 | unbegrenzt |
+| Standard | 30 | 600 | 3.000 |
+| Max | – | 200 | 1.000 |
+| Preis | folgt | folgt | folgt |
 
-| Abo | Tokens im Monat | Preis |
-| --- | --- | --- |
-| Start | 200 | folgt |
-| Pro | 2.000 | folgt |
-| Elite | 10.000 | folgt |
+| Kosten | Mini | Standard | Max |
+| --- | --- | --- | --- |
+| KI-Analyse | 1 | 3 | 10 |
+| Strategie-Test | 5 | 15 | 50 |
+| Indikatoren | frei | frei | frei |
 
-* Das **Abo-Guthaben** wird zu jedem Monatsbeginn neu gesetzt. Der Rest verfällt.
-* **Aufgeladene** Tokens verfallen nie. Abgebucht wird zuerst vom Abo.
-* Fehlt etwas, z. B. das Modell, wird gar nicht erst abgebucht. Scheitert eine
-  Aktion unterwegs, kommen die Tokens zurück.
-* Mengen, Kosten und Preise stehen oben in `bengx_ki/konto.py`.
+Mit Start sind das also 100 Analysen mit Mini und 10 mit Standard im Monat.
+Fehlt etwas, etwa ein trainiertes Modell, wird nichts verbraucht. Scheitert
+eine Aktion unterwegs, kommt der Verbrauch zurück. Mengen, Kosten und Preise
+stehen oben in `bengx_ki/konto.py`, die Modelle in `bengx_ki/modelle.py`.
+
+Nutzer gehen auch über die Kommandozeile:
 
 ```bash
-python3 -m bengx_ki tokens                   # Stand und letzte Buchungen
-python3 -m bengx_ki tokens --aufladen 500
-python3 -m bengx_ki tokens --abo pro
+python3 -m bengx_ki nutzer                            # alle, mit Verbrauch
+python3 -m bengx_ki nutzer anlegen Anna --abo pro     # fragt nach dem Passwort
+python3 -m bengx_ki nutzer abo Anna elite
+python3 -m bengx_ki nutzer passwort Anna
+python3 -m bengx_ki nutzer loeschen Anna
 ```
 
-Modell, Tokens (`konto.json`) und Verlauf (`verlauf.jsonl`) liegen im Ordner
-`ki/`. Er wird nicht eingecheckt.
+## Sicherheit und Betrieb im Netz
+
+* Passwörter werden nur als PBKDF2-Hash gespeichert. Nach 5 Fehlversuchen
+  pausiert die Anmeldung für diesen Namen eine Minute.
+* Die Sitzung steckt in einem Cookie (`HttpOnly`, `SameSite=Strict`). Nach
+  einem Neustart des Servers meldet man sich neu an.
+* Ohne `--offen` ist der Server nur auf dem eigenen Rechner erreichbar. Mit
+  `--offen` hört er im ganzen Netz. **Fürs Internet nur hinter HTTPS** (z. B.
+  Caddy oder nginx davor), sonst gehen Passwörter offen über die Leitung.
+* Den Inhaber kann man nur am eigenen Rechner anlegen, nie aus dem Netz.
+* Bezahlung gibt es noch nicht: Abos vergibt der Inhaber.
+
+Alles Laufende liegt im Ordner `ki/`: `modelle/`, `nutzer.json`,
+`nutzung.json`, `verlauf.jsonl`. Der Ordner wird nicht eingecheckt.
 
 ## Was die KI lernt
 
@@ -110,8 +153,10 @@ Wochentag.
 | `auswertung.py` | Prüfen | Trefferquote gegen Raten, Handel gegen „immer kaufen“ |
 | `lernprobe.py` | Beweis | erfundene Kurse mit verstecktem Muster |
 | `dienste.py` | Aktionen | Analyse, Indikatoren, Strategie-Test als Daten |
-| `konto.py` | Tokens | Guthaben, Abos, Buchungen |
-| `verlauf.py` | Historie | jede Aktion als Zeile in `ki/verlauf.jsonl` |
+| `modelle.py` | Modellfamilie | Mini, Standard, Max: Größe und Verbrauch |
+| `konto.py` | Nutzung | Kontingente je Modell und Abo, Buchungen |
+| `nutzer.py` | Nutzer | Konten, Passwort-Hashes, Sitzungen |
+| `verlauf.py` | Historie | jede Aktion mit Nutzer und Modell in `ki/verlauf.jsonl` |
 | `server.py`, `oberflaeche.html` | Oberfläche | Webserver und Seite, ohne weitere Abhängigkeiten |
 
 ## Warum man den Ergebnissen trauen kann

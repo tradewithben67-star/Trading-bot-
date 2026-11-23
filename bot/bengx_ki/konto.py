@@ -1,17 +1,19 @@
-"""Tokens und Abos.
+"""Nutzung und Abos: jedes Modell hat sein eigenes Monatskontingent.
 
-Jede Aktion der KI kostet Tokens. Es gibt zwei Töpfe:
+* Jede Aktion verbraucht Tokens: Grundkosten × Faktor des Modells
+  (Mini 1, Standard 3, Max 10). Eine Analyse mit Max kostet also zehnmal so
+  viel wie mit Mini.
+* Das Abo legt **pro Modell** fest, wie viele Tokens im Monat zur Verfügung
+  stehen. Ist das Kontingent eines Modells aufgebraucht, hört genau dieses
+  Modell auf, bis zum Monatsersten. Die anderen laufen weiter.
+* Steht bei einem Modell 0, ist es in diesem Abo gesperrt.
+* Der **Inhaber** hat keine Grenzen. Seine Nutzung wird trotzdem gezählt,
+  damit er sie sehen kann.
+* Indikatoren brauchen kein Modell und kosten nichts. Trainieren darf nur der
+  Inhaber.
 
-* **Abo-Guthaben** — wird zu jedem Monatsbeginn auf die Menge des Abos
-  zurückgesetzt. Was übrig bleibt, verfällt.
-* **Extra-Guthaben** — aufgeladene Tokens. Sie verfallen nicht.
-
-Abgebucht wird zuerst vom Abo, dann vom Extra. Jede Bewegung steht als
-Buchung im Konto, nichts verschwindet stillschweigend.
-
-Bezahlung gibt es noch nicht: Abos wechseln und Aufladen geht nur über den
-Inhaber (Oberfläche auf dem eigenen Rechner oder `python -m bengx_ki tokens`).
-Preise stehen in `ABOS` und sind bewusst noch leer.
+Mengen, Kosten und Preise stehen hier oben und lassen sich frei ändern.
+Bezahlung gibt es noch nicht: Abos vergibt der Inhaber.
 """
 
 from __future__ import annotations
@@ -22,60 +24,60 @@ import threading
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .modelle import MODELLE, pruefe
+
+# Tokens im Monat je Modell. None = unbegrenzt, 0 = gesperrt.
 ABOS: dict[str, dict] = {
-    "start": {"name": "Start", "tokens_monat": 200, "preis": None,
-              "text": "Zum Kennenlernen: tägliche Analysen und Indikatoren."},
-    "pro": {"name": "Pro", "tokens_monat": 2000, "preis": None,
-            "text": "Für aktiven Handel: Analysen, Strategie-Tests, Training."},
-    "elite": {"name": "Elite", "tokens_monat": 10000, "preis": None,
-              "text": "Ohne Grenzen im Alltag: regelmäßig neu trainieren."},
+    "start": {"name": "Start", "preis": None,
+              "text": "Zum Kennenlernen.",
+              "limits": {"mini": 100, "standard": 30, "max": 0}},
+    "pro": {"name": "Pro", "preis": None,
+            "text": "Für aktiven Handel, mit Zugang zu Max.",
+            "limits": {"mini": 1000, "standard": 600, "max": 200}},
+    "elite": {"name": "Elite", "preis": None,
+              "text": "Mini ohne Grenze, viel Max.",
+              "limits": {"mini": None, "standard": 3000, "max": 1000}},
 }
+INHABER_ABO = {"name": "Inhaber", "preis": None, "text": "Keine Grenzen.",
+               "limits": {m: None for m in MODELLE}}
 
-KOSTEN: dict[str, int] = {
-    "indikatoren": 1,
-    "analyse": 5,
-    "strategie": 10,
-    "training": 50,
-}
-
-AKTIONEN = {
-    "indikatoren": "Indikatoren lesen",
-    "analyse": "KI-Analyse",
-    "strategie": "Strategie testen",
-    "training": "KI neu trainieren",
-}
+KOSTEN: dict[str, int] = {"analyse": 1, "strategie": 5}
+AKTIONEN = {"analyse": "KI-Analyse", "strategie": "Strategie-Test"}
 
 
-class ZuWenigTokens(Exception):
-    def __init__(self, noetig: int, vorhanden: int) -> None:
-        super().__init__(f"Zu wenig Tokens: {noetig} nötig, {vorhanden} vorhanden.")
-        self.noetig = noetig
-        self.vorhanden = vorhanden
+def kosten(aktion: str, modell: str) -> int:
+    return KOSTEN[aktion] * MODELLE[pruefe(modell)]["faktor"]
 
 
 def _jetzt() -> datetime:
     return datetime.now(timezone.utc)
 
 
-def _monat(t: datetime) -> str:
-    return t.strftime("%Y-%m")
+def naechster_monat(t: datetime) -> str:
+    return datetime(t.year + (t.month == 12), t.month % 12 + 1, 1).date().isoformat()
 
 
-class Konto:
+class Grenze(Exception):
+    """Diese Nutzung ist nicht (mehr) erlaubt."""
+
+    def __init__(self, text: str, modell: str) -> None:
+        super().__init__(text)
+        self.modell = modell
+
+
+def abo_von(nutzer: dict) -> dict:
+    if nutzer.get("rolle") == "inhaber":
+        return INHABER_ABO
+    return ABOS.get(nutzer.get("abo", "start"), ABOS["start"])
+
+
+class Nutzung:
     def __init__(self, pfad: str | Path, uhr=_jetzt) -> None:
         self.pfad = Path(pfad)
         self._uhr = uhr
         self._sperre = threading.Lock()
-        if self.pfad.exists():
-            self._d = json.loads(self.pfad.read_text(encoding="utf-8"))
-        else:
-            self._d = {"abo": "start", "monat": "", "abo_rest": 0, "extra": 0,
-                       "buchungen": []}
-        with self._sperre:
-            self._monat_pruefen()
-            self._sichern()
-
-    # -- intern ---------------------------------------------------------
+        self._d: dict = (json.loads(self.pfad.read_text(encoding="utf-8"))
+                         if self.pfad.exists() else {})
 
     def _sichern(self) -> None:
         self.pfad.parent.mkdir(parents=True, exist_ok=True)
@@ -83,88 +85,77 @@ class Konto:
         tmp.write_text(json.dumps(self._d, ensure_ascii=False, indent=1), encoding="utf-8")
         os.replace(tmp, self.pfad)
 
-    def _buchen(self, art: str, menge: int, text: str) -> dict:
-        b = {"zeit": self._uhr().isoformat(timespec="seconds"), "art": art,
-             "menge": menge, "text": text, "stand": self._gesamt()}
-        self._d["buchungen"].append(b)
-        return b
+    def _eintrag(self, nid: str) -> dict:
+        monat = self._uhr().strftime("%Y-%m")
+        e = self._d.setdefault(nid, {"monat": monat, "verbraucht": {}, "buchungen": []})
+        if e["monat"] != monat:                     # neuer Monat: alles wieder frei
+            e["monat"], e["verbraucht"] = monat, {}
+        return e
 
-    def _gesamt(self) -> int:
-        return self._d["abo_rest"] + self._d["extra"]
+    def _modelle(self, nutzer: dict, e: dict) -> dict:
+        limits = abo_von(nutzer)["limits"]
+        raus = {}
+        for m, info in MODELLE.items():
+            limit = limits.get(m, 0)
+            verbraucht = e["verbraucht"].get(m, 0)
+            raus[m] = {
+                "name": info["name"], "faktor": info["faktor"],
+                "limit": limit, "verbraucht": verbraucht,
+                "rest": None if limit is None else max(0, limit - verbraucht),
+                "gesperrt": limit == 0,
+            }
+        return raus
 
-    def _monat_pruefen(self) -> None:
-        m = _monat(self._uhr())
-        if self._d["monat"] != m:
-            self._d["monat"] = m
-            self._d["abo_rest"] = ABOS[self._d["abo"]]["tokens_monat"]
-            self._buchen("monat", self._d["abo_rest"],
-                         f"Monatsguthaben {ABOS[self._d['abo']]['name']}")
-
-    # -- öffentlich -----------------------------------------------------
-
-    def stand(self) -> dict:
+    def stand(self, nutzer: dict) -> dict:
         with self._sperre:
-            self._monat_pruefen()
-            abo = ABOS[self._d["abo"]]
-            jetzt = self._uhr()
-            naechster = (datetime(jetzt.year + (jetzt.month == 12),
-                                  jetzt.month % 12 + 1, 1, tzinfo=timezone.utc))
+            e = self._eintrag(nutzer["id"])
+            abo = abo_von(nutzer)
             return {
-                "abo": self._d["abo"],
+                "abo": "inhaber" if nutzer.get("rolle") == "inhaber" else nutzer.get("abo"),
                 "abo_name": abo["name"],
-                "abo_monat": abo["tokens_monat"],
-                "abo_rest": self._d["abo_rest"],
-                "extra": self._d["extra"],
-                "gesamt": self._gesamt(),
-                "auffuellung": naechster.date().isoformat(),
-                "kosten": KOSTEN,
+                "unbegrenzt": nutzer.get("rolle") == "inhaber",
+                "modelle": self._modelle(nutzer, e),
+                "auffuellung": naechster_monat(self._uhr()),
+                "kosten": {a: {m: kosten(a, m) for m in MODELLE} for a in KOSTEN},
                 "aktionen": AKTIONEN,
                 "abos": ABOS,
             }
 
-    def buchungen(self, anzahl: int = 300) -> list[dict]:
+    def abbuchen(self, nutzer: dict, modell: str, aktion: str) -> int:
+        k = kosten(aktion, modell)
         with self._sperre:
-            return list(reversed(self._d["buchungen"][-anzahl:]))
-
-    def abbuchen(self, aktion: str) -> dict:
-        kosten = KOSTEN[aktion]
-        with self._sperre:
-            self._monat_pruefen()
-            if self._gesamt() < kosten:
-                raise ZuWenigTokens(kosten, self._gesamt())
-            vom_abo = min(kosten, self._d["abo_rest"])
-            self._d["abo_rest"] -= vom_abo
-            self._d["extra"] -= kosten - vom_abo
-            b = self._buchen("verbrauch", -kosten, AKTIONEN[aktion])
+            e = self._eintrag(nutzer["id"])
+            m = self._modelle(nutzer, e)[modell]
+            if m["gesperrt"]:
+                raise Grenze(f"{m['name']} ist im Abo {abo_von(nutzer)['name']} nicht "
+                             "enthalten.", modell)
+            if m["rest"] is not None and m["rest"] < k:
+                tag = datetime.fromisoformat(naechster_monat(self._uhr())).strftime("%d.%m.%Y")
+                raise Grenze(f"Limit für {m['name']} erreicht ({m['verbraucht']} von "
+                             f"{m['limit']} Tokens). Wieder frei am {tag}.", modell)
+            e["verbraucht"][modell] = m["verbraucht"] + k
+            self._buchen(e, -k, f"{AKTIONEN[aktion]} · {m['name']}")
             self._sichern()
-            return b
+            return k
 
-    def erstatten(self, aktion: str, grund: str) -> dict:
-        """Zurück aufs Extra-Guthaben, wenn eine bezahlte Aktion scheitert."""
+    def erstatten(self, nutzer: dict, modell: str, aktion: str, grund: str) -> None:
+        k = kosten(aktion, modell)
         with self._sperre:
-            self._d["extra"] += KOSTEN[aktion]
-            b = self._buchen("erstattung", KOSTEN[aktion], f"Erstattung: {grund}")
+            e = self._eintrag(nutzer["id"])
+            e["verbraucht"][modell] = max(0, e["verbraucht"].get(modell, 0) - k)
+            self._buchen(e, k, f"Erstattung · {MODELLE[modell]['name']}: {grund}")
             self._sichern()
-            return b
 
-    def aufladen(self, menge: int, text: str = "Aufgeladen") -> dict:
-        if menge <= 0 or menge > 1_000_000:
-            raise ValueError("Menge muss zwischen 1 und 1.000.000 liegen.")
-        with self._sperre:
-            self._d["extra"] += menge
-            b = self._buchen("aufladung", menge, text)
-            self._sichern()
-            return b
+    def _buchen(self, e: dict, menge: int, text: str) -> None:
+        e["buchungen"].append({"zeit": self._uhr().isoformat(timespec="seconds"),
+                               "menge": menge, "text": text})
+        del e["buchungen"][:-1000]
 
-    def abo_wechseln(self, abo: str) -> dict:
-        if abo not in ABOS:
-            raise ValueError(f"Unbekanntes Abo: {abo}. Möglich: {', '.join(ABOS)}")
+    def buchungen(self, nid: str, anzahl: int = 300) -> list[dict]:
         with self._sperre:
-            if abo != self._d["abo"]:
-                self._d["abo"] = abo
-                # Der neue Monatstopf gilt sofort, der alte verfällt.
-                self._d["abo_rest"] = ABOS[abo]["tokens_monat"]
-                self._buchen("abo", ABOS[abo]["tokens_monat"],
-                             f"Abo gewechselt zu {ABOS[abo]['name']}")
+            return list(reversed(self._d.get(nid, {}).get("buchungen", [])[-anzahl:]))
+
+    def vergessen(self, nid: str) -> None:
+        with self._sperre:
+            if self._d.pop(nid, None) is not None:
                 self._sichern()
-        return self.stand()

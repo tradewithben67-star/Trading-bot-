@@ -190,27 +190,49 @@ dl.paare dd { margin: 0; }
   .kopf { flex-direction: column; }
   .rechtsblock { text-align: left; }
 }
+
+/* ---------- Anmeldung ---------- */
+.tor { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.tor .karte { width: min(400px, 100%); padding: 32px; }
+.tor h1 { font-size: 24px; margin: 22px 0 6px; }
+.tor label { display: block; font-size: 13px; color: var(--muted); margin: 16px 0 6px; }
+.tor .feld { width: 100%; }
+.tor .knopf { width: 100%; margin-top: 22px; }
+.tor .fehler { color: var(--fg); font-size: 13.5px; margin-top: 14px; min-height: 20px; }
+
+/* ---------- Modellwahl ---------- */
+.wahl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wahl button { text-align: left; border: 1px solid var(--line); background: var(--bg);
+               border-radius: 12px; padding: 14px; cursor: pointer; display: flex;
+               flex-direction: column; gap: 4px; min-width: 0; }
+.wahl button:hover:not(:disabled) { background: var(--hover); }
+.wahl button.an { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.wahl button:disabled { cursor: not-allowed; opacity: .45; }
+.wahl .n { font-weight: 650; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
+.wahl .t { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.wahl .s { font-size: 12px; margin-top: 6px; color: var(--fg); }
+.punkte { display: inline-flex; gap: 3px; align-items: center; }
+.punkte i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--fg); }
+.punkte i.v { background: var(--fg); }
+.nutzung-zeile { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; align-items: center;
+                 font-size: 12px; color: var(--muted); margin-top: 6px; }
+.nutzung-zeile .leiste { margin: 0; }
+select.feld { width: auto; appearance: none; padding-right: 28px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.abmelden { border: 0; background: none; color: var(--muted); font-size: 12.5px; cursor: pointer; padding: 0; }
+.abmelden:hover { color: var(--fg); text-decoration: underline; }
+.formular { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; }
+.formular label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 6px; }
+.formular .feld { width: 100%; }
+@media (max-width: 860px) {
+  .wahl { grid-template-columns: 1fr; }
+  .formular { grid-template-columns: 1fr 1fr; }
+}
 </style>
 </head>
 <body>
-<div class="app">
-  <aside class="seite">
-    <div class="marke">BENGX <span>KI</span></div>
-    <nav id="nav"></nav>
-    <div class="unten">
-      <div class="token-karte" onclick="geh('konto')">
-        <div class="klein">Tokens</div>
-        <div class="gross num" id="sb-tokens">–</div>
-        <div class="leiste"><i id="sb-leiste" style="width:0"></i></div>
-        <div class="klein" id="sb-abo">–</div>
-      </div>
-      <div class="thema" id="thema">
-        <button data-t="light">Hell</button><button data-t="auto">Auto</button><button data-t="dark">Dunkel</button>
-      </div>
-    </div>
-  </aside>
-  <main id="haupt"></main>
-</div>
+<div id="wurzel"></div>
 <div class="detail" id="detail" onclick="if(event.target===this)zu()"><div class="blatt" id="blatt"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -223,19 +245,23 @@ const ICON = {
   strategie: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
   training: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>',
   verlauf: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
-  modell: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
-  konto: '<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5c0-1 1.3-1.8 3-1.8s3 .8 3 2-1.3 1.7-3 2.1-3 1-3 2.2 1.3 2 3 2 3-.8 3-1.8"/>',
-  aufladung: '<path d="M12 5v14M5 12h14"/>',
+  modelle: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
+  nutzung: '<path d="M4 19h16M6 15V9M12 15V5M18 15v-3"/>',
+  nutzer: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
 };
 const SEITEN = [
   ["uebersicht", "Übersicht"],
   ["#KI"],
   ["analyse", "Analyse"], ["indikatoren", "Indikatoren"], ["strategie", "Strategie"],
   ["#Daten"],
-  ["verlauf", "Verlauf"], ["modell", "Modell"], ["konto", "Tokens & Abo"],
+  ["verlauf", "Verlauf"], ["modelle", "Modelle"], ["nutzung", "Nutzung & Abo"],
+  ["#Inhaber", null, "inhaber"],
+  ["nutzer", "Nutzer", "inhaber"],
 ];
+const MREIHE = ["mini", "standard", "max"];
 const icon = n => `<svg viewBox="0 0 24 24">${ICON[n] || ICON.verlauf}</svg>`;
 const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 const zahl = (x, n = 2) => x == null ? "–" : Number(x).toLocaleString("de-DE", {minimumFractionDigits: n, maximumFractionDigits: n});
 const ganz = x => x == null ? "–" : Number(x).toLocaleString("de-DE");
@@ -243,68 +269,157 @@ const pz = (x, n = 0) => x == null ? "–" : (x * 100).toLocaleString("de-DE", {
 const rr = x => x == null ? "–" : (x >= 0 ? "+" : "−") + zahl(Math.abs(x), 1) + " R";
 const zeit = s => s ? new Date(s).toLocaleString("de-DE", {day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "–";
 const datum = s => s ? new Date(s).toLocaleDateString("de-DE") : "–";
+const tok = n => `${ganz(n)} ${n === 1 ? "Token" : "Tokens"}`;
 const BEREICH = {analyse: "Analyse", indikatoren: "Indikatoren", strategie: "Strategie", training: "Training"};
+const merken = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
+const lesen = (k, d) => { try { return localStorage.getItem(k) || d; } catch (_) { return d; } };
 
-let STAND = null;
-let seite = "uebersicht";
+let ICH = null, STAND = null, seite = "uebersicht";
+let gewaehlt = lesen("modell", "standard");
+const inhaber = () => ICH && ICH.rolle === "inhaber";
 
 /* ---------- Netz ---------- */
 async function api(pfad, body) {
   const r = await fetch(pfad, body === undefined ? {} :
     {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
   const d = await r.json().catch(() => ({fehler: "Keine Antwort vom Server."}));
+  if (r.status === 401 && d.anmelden) { ICH = null; tor(); }
   if (!r.ok) throw Object.assign(new Error(d.fehler || "Fehler"), d);
   return d;
 }
 function toast(text) {
   const t = $("#toast"); t.textContent = text; t.classList.add("zeigen");
-  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("zeigen"), 3800);
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("zeigen"), 4200);
+}
+
+/* ---------- Anmeldung ---------- */
+async function start() {
+  const d = await api("/api/ich");
+  ICH = d.nutzer;
+  if (!ICH) return tor(d.einrichten);
+  geruest();
+  zeigen();
+}
+function tor(einrichten = false) {
+  $("#wurzel").innerHTML = `<div class="tor"><form class="karte" id="torform">
+    <div class="marke" style="padding:0">BENGX <span>KI</span></div>
+    <h1>${einrichten ? "Willkommen" : "Anmelden"}</h1>
+    <p class="unter" style="margin:0">${einrichten ? "Lege dein Inhaber-Konto an. Als Inhaber hast du keine Grenzen und verwaltest alle anderen." : "Mit deinem Namen und Passwort."}</p>
+    <label for="tn">Name</label><input class="feld" id="tn" autocomplete="username" required>
+    <label for="tp">Passwort</label><input class="feld" id="tp" type="password" autocomplete="${einrichten ? "new-password" : "current-password"}" required minlength="${einrichten ? 8 : 1}">
+    ${einrichten ? `<p class="etikett" style="margin:8px 0 0">Mindestens 8 Zeichen.</p>` : ""}
+    <button class="knopf" type="submit">${einrichten ? "Inhaber anlegen" : "Anmelden"}</button>
+    <div class="fehler" id="tf"></div></form></div>`;
+  $("#tn").focus();
+  $("#torform").onsubmit = async e => {
+    e.preventDefault();
+    try {
+      const d = await api(einrichten ? "/api/einrichten" : "/api/anmelden", {name: $("#tn").value, passwort: $("#tp").value});
+      ICH = d.nutzer; geruest(); location.hash = "uebersicht"; zeigen();
+    } catch (err) { $("#tf").textContent = err.message; }
+  };
+}
+async function abmelden() { await api("/api/abmelden", {}); ICH = null; tor(); }
+
+/* ---------- Gerüst ---------- */
+function geruest() {
+  $("#wurzel").innerHTML = `<div class="app">
+    <aside class="seite">
+      <div class="marke">BENGX <span>KI</span></div>
+      <nav id="nav"></nav>
+      <div class="unten">
+        <div class="token-karte" onclick="geh('nutzung')">
+          <div class="zeile weit"><b style="font-size:14px">${esc(ICH.name)}</b><span class="marke-klein ${inhaber() ? "voll" : ""}" id="sb-abo">–</span></div>
+          <div id="sb-nutzung" style="margin-top:6px"></div>
+        </div>
+        <div class="zeile weit" style="padding:0 4px"><button class="abmelden" onclick="abmelden()">Abmelden</button></div>
+        <div class="thema" id="thema">
+          <button data-t="light">Hell</button><button data-t="auto">Auto</button><button data-t="dark">Dunkel</button>
+        </div>
+      </div>
+    </aside>
+    <main id="haupt"></main></div>`;
+  $$("#thema button").forEach(b => b.onclick = () => thema(b.dataset.t));
+  thema(lesen("thema", "auto"));
 }
 async function laden() {
   STAND = await api("/api/stand");
-  const k = STAND.konto;
-  $("#sb-tokens").textContent = ganz(k.gesamt);
-  $("#sb-leiste").style.width = Math.min(100, 100 * k.abo_rest / Math.max(1, k.abo_monat)) + "%";
-  $("#sb-abo").textContent = `${k.abo_name} · ${ganz(k.abo_rest)} von ${ganz(k.abo_monat)} im Monat`;
+  const n = STAND.nutzung;
+  $("#sb-abo").textContent = n.abo_name;
+  $("#sb-nutzung").innerHTML = MREIHE.map(m => nutzungZeile(n.modelle[m])).join("");
   navZeichnen();
 }
-
-/* ---------- Navigation ---------- */
+function nutzungZeile(m) {
+  const breite = m.limit == null ? 0 : Math.min(100, 100 * m.verbraucht / Math.max(1, m.limit));
+  const text = m.gesperrt ? "gesperrt" : m.limit == null ? (inhaber() ? ganz(m.verbraucht) : "∞") : `${ganz(m.verbraucht)}/${ganz(m.limit)}`;
+  return `<div class="nutzung-zeile"><span>${esc(m.name)}</span><div class="leiste"><i style="width:${breite}%"></i></div><span class="num">${text}</span></div>`;
+}
 function navZeichnen() {
   const z = STAND ? STAND.zaehler : {};
-  $("#nav").innerHTML = SEITEN.map(([id, name]) => id.startsWith("#")
+  const summe = Object.values(z).reduce((a, b) => a + b, 0);
+  $("#nav").innerHTML = SEITEN.filter(([, , r]) => !r || inhaber()).map(([id, name]) => id.startsWith("#")
     ? `<div class="nav-titel">${id.slice(1)}</div>`
     : `<a href="#${id}" class="${id === seite ? "aktiv" : ""}">${icon(id)}${name}${
-        z[id] ? `<span class="zahl">${z[id]}</span>` : id === "verlauf" && STAND ? `<span class="zahl">${Object.values(z).reduce((a, b) => a + b, 0) || ""}</span>` : ""}</a>`).join("");
+        id === "verlauf" && summe ? `<span class="zahl">${summe}</span>` : z[id] ? `<span class="zahl">${z[id]}</span>` :
+        id === "nutzer" && STAND && STAND.nutzerzahl ? `<span class="zahl">${STAND.nutzerzahl}</span>` : ""}</a>`).join("");
 }
 function geh(id) { location.hash = id; }
-window.addEventListener("hashchange", zeigen);
-
+window.addEventListener("hashchange", () => ICH && zeigen());
 async function zeigen() {
-  seite = (location.hash.slice(1) || "uebersicht");
-  if (!SEITEN.some(([id]) => id === seite)) seite = "uebersicht";
-  navZeichnen();
-  window.scrollTo(0, 0);
-  try { await (ANSICHT[seite])(); }
-  catch (e) { $("#haupt").innerHTML = kopf("Fehler", e.message); }
+  seite = location.hash.slice(1) || "uebersicht";
+  const eintrag = SEITEN.find(([id]) => id === seite);
+  if (!eintrag || (eintrag[2] && !inhaber())) seite = "uebersicht";
+  navZeichnen(); zu(); window.scrollTo(0, 0);
+  try { await ANSICHT[seite](); }
+  catch (e) { if (!e.anmelden) $("#haupt").innerHTML = kopf("Fehler", esc(e.message)); }
 }
 const kopf = (titel, unter = "", rechts = "") => `<div class="kopf"><div><h1>${titel}</h1>${unter ? `<p class="unter">${unter}</p>` : ""}</div>${rechts}</div>`;
-const tokenPille = () => STAND ? `<span class="pille num"><i></i>${ganz(STAND.konto.gesamt)} Tokens</span>` : "";
-const kosten = a => STAND ? STAND.konto.kosten[a] : "?";
-const tok = n => `${ganz(n)} ${n === 1 ? "Token" : "Tokens"}`;
+const pille = () => STAND ? `<span class="pille"><i></i>${esc(STAND.nutzung.abo_name)}</span>` : "";
 
 /* ---------- Aktionen ---------- */
 async function ausfuehren(knopf, pfad, body, danach) {
   const alt = knopf.innerHTML;
   knopf.disabled = true; knopf.innerHTML = '<span class="lade"></span> Läuft …';
-  try {
-    const e = await api(pfad, body || {});
-    await laden();
-    danach(e);
-  } catch (err) {
-    toast(err.message);
-    if (err.tokens) setTimeout(() => geh("konto"), 1200);
-  } finally { knopf.disabled = false; knopf.innerHTML = alt; }
+  try { const e = await api(pfad, body || {}); await laden(); await danach(e); }
+  catch (err) { toast(err.message); if (err.grenze) await laden().then(() => modellwahlNeu()); }
+  finally { if (document.body.contains(knopf)) { knopf.disabled = false; knopf.innerHTML = alt; } }
+}
+
+/* ---------- Modellwahl ---------- */
+function modellStatus(id) {
+  const n = STAND.nutzung.modelle[id], m = STAND.modelle[id];
+  if (n.gesperrt) return {frei: false, text: "Nicht im Abo " + STAND.nutzung.abo_name};
+  if (!m.vorhanden) return {frei: false, text: "Noch nicht trainiert"};
+  if (n.limit == null) return {frei: true, text: inhaber() ? "Unbegrenzt" : "Ohne Grenze"};
+  if (n.rest <= 0) return {frei: false, text: "Limit erreicht · frei am " + datum(STAND.nutzung.auffuellung)};
+  return {frei: true, text: `${ganz(n.rest)} von ${ganz(n.limit)} übrig`};
+}
+let wahlAktion = "analyse", wahlKnopf = null;
+function modellwahl(aktion, knopfId, knopfText) {
+  wahlAktion = aktion; wahlKnopf = [knopfId, knopfText];
+  if (!modellStatus(gewaehlt).frei) gewaehlt = MREIHE.find(m => modellStatus(m).frei) || gewaehlt;
+  return `<div class="wahl" id="wahl">${wahlInhalt()}</div>`;
+}
+function wahlInhalt() {
+  return MREIHE.map((id, i) => {
+    const m = STAND.modelle[id], s = modellStatus(id), k = STAND.nutzung.kosten[wahlAktion][id];
+    return `<button data-m="${id}" class="${id === gewaehlt ? "an" : ""}" ${s.frei ? "" : "disabled"}>
+      <span class="n">${esc(m.name)}<span class="punkte" title="Stärke">${[0, 1, 2].map(j => `<i class="${j <= i ? "v" : ""}"></i>`).join("")}</span></span>
+      <span class="t">${esc(m.text)}</span>
+      <span class="s">${tok(k)} · ${esc(s.text)}</span></button>`;
+  }).join("");
+}
+function modellwahlNeu() {
+  const w = $("#wahl"); if (!w) return;
+  if (!modellStatus(gewaehlt).frei) gewaehlt = MREIHE.find(m => modellStatus(m).frei) || gewaehlt;
+  w.innerHTML = wahlInhalt();
+  w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { gewaehlt = b.dataset.m; merken("modell", gewaehlt); modellwahlNeu(); });
+  const [kid, ktext] = wahlKnopf, k = $("#" + kid);
+  if (k) {
+    const frei = modellStatus(gewaehlt).frei;
+    k.disabled = !frei;
+    k.innerHTML = `${ktext} <small>· ${STAND.modelle[gewaehlt].name} · ${tok(STAND.nutzung.kosten[wahlAktion][gewaehlt])}</small>`;
+  }
 }
 
 /* ---------- Darstellungen ---------- */
@@ -319,7 +434,7 @@ function zeigeAnalyse(d) {
     </div><div class="rechtsblock"><div class="etikett">Schluss</div><div class="wert num">${zahl(d.schluss)}</div></div></div>
     <div style="margin-top:18px">${["hoch", "seitwärts", "runter"].map(k => `
       <div class="balken ${p[k] === max ? "" : "blass"}"><span>${k[0].toUpperCase() + k.slice(1)}</span>
-      <div class="spur"><i style="width:${(p[k] * 100).toFixed(1)}%"></i></div><span class="num r" style="text-align:right">${pz(p[k], 1)}</span></div>`).join("")}
+      <div class="spur"><i style="width:${(p[k] * 100).toFixed(1)}%"></i></div><span class="num" style="text-align:right">${pz(p[k], 1)}</span></div>`).join("")}
     </div>
     ${i ? `<div class="raster r3 drei" style="margin-top:18px">
       <div><div class="etikett">Einstieg</div><div class="wert num" style="font-size:20px">${zahl(i.einstieg)}</div></div>
@@ -328,7 +443,6 @@ function zeigeAnalyse(d) {
       : `<p class="etikett" style="margin-top:14px">Weder hoch noch runter erreicht ${pz(d.schwelle)} Sicherheit. Die KI hält sich zurück.</p>`}
     <p class="hinweis">Stop und Ziel je ${zahl(d.abstand)} entfernt · Blick ${d.horizont} Kerzen nach vorn · Schwelle ${pz(d.schwelle)}</p>`;
 }
-
 function kurve(v) {
   const W = 800, H = 220, P = 6;
   const alle = [...v.schluss, ...v.ema50, ...v.ema200].filter(x => x != null);
@@ -344,31 +458,29 @@ function kurve(v) {
     <span>━ Kurs</span><span>┅ EMA 50</span><span style="color:var(--faint)">━ EMA 200</span>
     <span style="margin-left:auto">${datum(v.zeit[0])} – ${datum(v.zeit[n - 1])}</span></div>`;
 }
-
 function zeigeIndikatoren(d) {
-  return `<div class="zeile weit" style="margin-bottom:14px"><div><div class="etikett">Gesamtbild</div>
-      <div class="urteil" style="font-size:26px;margin-top:4px">${esc(d.gesamt)}</div></div></div>
+  return `<div style="margin-bottom:14px"><div class="etikett">Gesamtbild</div>
+      <div class="urteil" style="font-size:26px;margin-top:4px">${esc(d.gesamt)}</div></div>
     ${kurve(d.verlauf)}
     <div class="tabelle" style="margin-top:20px"><table><thead><tr><th>Indikator</th><th class="r">Wert</th><th>Deutung</th></tr></thead><tbody>
     ${d.liste.map(x => `<tr><td>${esc(x.name)}</td><td class="r num">${zahl(x.wert)}</td><td style="color:var(--muted)">${esc(x.deutung)}</td></tr>`).join("")}
     </tbody></table></div>`;
 }
-
+const rTrade = x => (x >= 0 ? "+" : "−") + zahl(Math.abs(x), 3);
 function zeigeKennzahlen(d) {
   return `<div class="raster r3">
       <div><div class="etikett">KI richtig</div><div class="wert num">${pz(d.treffer, 1)}</div></div>
       <div><div class="etikett">Raten („${esc(d.raten_klasse)}“)</div><div class="wert num" style="color:var(--muted)">${pz(d.raten, 1)}</div></div>
       <div><div class="etikett">Geprüfte Kerzen</div><div class="wert num">${ganz(d.kerzen)}</div></div></div>
     <div class="tabelle" style="margin-top:22px"><table><thead><tr><th>Handeln ab Sicherheit</th><th class="r">Trades</th><th class="r">Treffer</th><th class="r">Summe</th><th class="r">je Trade</th><th class="r">Einbruch</th></tr></thead><tbody>
-    ${d.schwellen.map(s => `<tr><td>${pz(s.schwelle)}</td><td class="r num">${ganz(s.trades)}</td><td class="r num">${s.trades ? pz(s.treffer, 1) : "–"}</td><td class="r num"><b>${s.trades ? rr(s.summe_r) : "–"}</b></td><td class="r num">${s.trades ? (s.schnitt_r >= 0 ? "+" : "−") + zahl(Math.abs(s.schnitt_r), 3) : "–"}</td><td class="r num">${s.trades ? rr(s.einbruch_r) : "–"}</td></tr>`).join("")}
-    <tr><td style="color:var(--muted)">Vergleich: immer kaufen</td><td class="r num">${ganz(d.immer_kaufen.trades)}</td><td class="r num">${pz(d.immer_kaufen.treffer, 1)}</td><td class="r num">${rr(d.immer_kaufen.summe_r)}</td><td class="r num">${(d.immer_kaufen.schnitt_r >= 0 ? "+" : "−") + zahl(Math.abs(d.immer_kaufen.schnitt_r), 3)}</td><td class="r num">${rr(d.immer_kaufen.einbruch_r)}</td></tr>
+    ${d.schwellen.map(s => `<tr><td>${pz(s.schwelle)}</td><td class="r num">${ganz(s.trades)}</td><td class="r num">${s.trades ? pz(s.treffer, 1) : "–"}</td><td class="r num"><b>${s.trades ? rr(s.summe_r) : "–"}</b></td><td class="r num">${s.trades ? rTrade(s.schnitt_r) : "–"}</td><td class="r num">${s.trades ? rr(s.einbruch_r) : "–"}</td></tr>`).join("")}
+    <tr><td style="color:var(--muted)">Vergleich: immer kaufen</td><td class="r num">${ganz(d.immer_kaufen.trades)}</td><td class="r num">${pz(d.immer_kaufen.treffer, 1)}</td><td class="r num">${rr(d.immer_kaufen.summe_r)}</td><td class="r num">${rTrade(d.immer_kaufen.schnitt_r)}</td><td class="r num">${rr(d.immer_kaufen.einbruch_r)}</td></tr>
     </tbody></table></div>
     <div class="tabelle" style="margin-top:22px"><table><thead><tr><th>Wenn die KI sagt …</th><th class="r">so oft</th><th class="r">stimmt es</th></tr></thead><tbody>
     ${d.klassen.map(k => `<tr><td>${esc(k.name)}</td><td class="r num">${ganz(k.gesagt)}</td><td class="r num">${k.stimmt == null ? "–" : pz(k.stimmt, 1)}</td></tr>`).join("")}
     </tbody></table></div>
     <p class="hinweis">Nur Kerzen ab ${datum(d.ab)}, die die KI beim Lernen nie gesehen hat. Ohne Gebühren und Spread.</p>`;
 }
-
 function zeigeEintrag(e) {
   const d = e.daten;
   if (e.bereich === "analyse") return zeigeAnalyse(d);
@@ -378,21 +490,20 @@ function zeigeEintrag(e) {
     + `<h2 style="margin-top:26px">Protokoll</h2><div class="konsole">${esc((d.protokoll || []).join("\n"))}</div>`;
   return `<pre class="mono">${esc(JSON.stringify(d, null, 2))}</pre>`;
 }
-
 function eintragZeile(e) {
+  const wer = inhaber() && e.nutzer_name && e.nutzer !== ICH.id ? esc(e.nutzer_name) + " · " : "";
   return `<div class="liste-eintrag" onclick="detail('${e.id}')">
     <div class="symbol">${icon(e.bereich)}</div>
-    <div style="min-width:0"><div class="titel">${esc(e.titel)}</div><div class="kurz">${esc(e.kurz)}</div></div>
+    <div style="min-width:0"><div class="titel">${esc(e.titel)}</div><div class="kurz">${wer}${esc(e.kurz)}</div></div>
     <div class="rechts"><div>${zeit(e.zeit)}</div><div class="num">${e.tokens ? "−" + tok(e.tokens) : ""}</div></div></div>`;
 }
-
 async function detail(id) {
   const e = await api("/api/verlauf/" + id);
   $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start">
       <div><span class="marke-klein">${esc(BEREICH[e.bereich] || e.bereich)}</span>
       <h1 style="font-size:22px;margin-top:10px">${esc(e.titel)}</h1>
-      <p class="unter">${zeit(e.zeit)}${e.tokens ? " · " + e.tokens + " Tokens" : ""} · #${esc(e.id)}</p></div>
-      <button class="x" onclick="zu()">×</button></div>${zeigeEintrag(e)}`;
+      <p class="unter">${zeit(e.zeit)}${e.tokens ? " · " + tok(e.tokens) : ""}${e.nutzer_name ? " · " + esc(e.nutzer_name) : ""}</p></div>
+      <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>${zeigeEintrag(e)}`;
   $("#detail").classList.add("offen");
 }
 function zu() { $("#detail").classList.remove("offen"); }
@@ -402,24 +513,25 @@ document.addEventListener("keydown", e => { if (e.key === "Escape") zu(); });
 const ANSICHT = {
   async uebersicht() {
     await laden();
-    const s = STAND, k = s.konto, m = s.modell, q = s.quelle;
-    const gesamt = Object.values(s.zaehler).reduce((a, b) => a + b, 0);
-    $("#haupt").innerHTML = kopf("Übersicht", "Alles, was deine KI weiß, kann und getan hat.", tokenPille()) + `
+    const s = STAND, q = s.quelle;
+    const bereit = MREIHE.filter(m => s.modelle[m].vorhanden).length;
+    const summe = Object.values(s.zaehler).reduce((a, b) => a + b, 0);
+    $("#haupt").innerHTML = kopf(`Hallo, ${esc(ICH.name)}`, "Alles, was deine KI weiß, kann und getan hat.", pille()) + `
       <div class="raster r4">
-        <div class="karte"><div class="etikett">Tokens</div><div class="wert num">${ganz(k.gesamt)}</div><div class="etikett">${esc(k.abo_name)} · neu am ${datum(k.auffuellung)}</div></div>
-        <div class="karte"><div class="etikett">Modell</div><div class="wert">${m.vorhanden ? "Bereit" : "Leer"}</div><div class="etikett">${m.vorhanden ? "trainiert " + datum(m.erstellt) : "noch nicht trainiert"}</div></div>
+        <div class="karte"><div class="etikett">Abo</div><div class="wert">${esc(s.nutzung.abo_name)}</div><div class="etikett">${inhaber() ? "keine Grenzen" : "frei ab " + datum(s.nutzung.auffuellung)}</div></div>
+        <div class="karte"><div class="etikett">Modelle</div><div class="wert num">${bereit} / 3</div><div class="etikett">trainiert und bereit</div></div>
         <div class="karte"><div class="etikett">Letzter Kurs</div><div class="wert num">${q.fehler ? "–" : zahl(q.schluss)}</div><div class="etikett">${q.fehler ? "keine Daten" : zeit(q.bis)}</div></div>
-        <div class="karte"><div class="etikett">Aktionen</div><div class="wert num">${ganz(gesamt)}</div><div class="etikett">im Verlauf</div></div>
+        <div class="karte"><div class="etikett">${inhaber() ? "Aktionen aller" : "Deine Aktionen"}</div><div class="wert num">${ganz(summe)}</div><div class="etikett">${inhaber() ? ganz(s.nutzerzahl) + " Nutzer" : "im Verlauf"}</div></div>
       </div>
       ${q.fehler ? `<div class="karte"><b>Keine Kursdaten.</b> <span class="etikett">${esc(q.fehler)}</span></div>` : ""}
       <div class="raster r3 aktionen">
-        ${[["analyse", "Analyse", "Was die KI jetzt erwartet"], ["indikatoren", "Indikatoren", "EMA, RSI, ADX, ATR, Kanal"], ["strategie", "Strategie", "Testen und neu trainieren"]].map(([id, t, u]) => `
+        ${[["analyse", "Analyse", "Was die KI jetzt erwartet"], ["indikatoren", "Indikatoren", "EMA, RSI, ADX, ATR, Kanal"], ["strategie", "Strategie", "Wie gut die KI handelt"]].map(([id, t, u]) => `
         <a class="karte" href="#${id}" style="text-decoration:none;color:inherit;display:block">
           <div class="symbol">${icon(id)}</div><div style="font-weight:600;margin-top:14px">${t}</div>
-          <div class="etikett u">${u}</div><div class="etikett kosten" style="margin-top:10px">${tok(kosten(id))}</div></a>`).join("")}
+          <div class="etikett u">${u}</div><div class="etikett kosten" style="margin-top:10px">${id === "indikatoren" ? "frei" : "ab " + tok(s.nutzung.kosten[id].mini)}</div></a>`).join("")}
       </div>
       <div class="raster r2 immer-voll">
-        <div class="karte"><div class="zeile weit"><h2>Letzte Analyse</h2>${s.letzte_analyse ? `<span class="etikett">${zeit(s.letzte_analyse.zeit)}</span>` : ""}</div>
+        <div class="karte"><div class="zeile weit"><h2>Letzte Analyse</h2>${s.letzte_analyse ? `<span class="etikett">${esc(s.modelle[s.letzte_analyse.modell]?.name || "")} · ${zeit(s.letzte_analyse.zeit)}</span>` : ""}</div>
           ${s.letzte_analyse ? zeigeAnalyse(s.letzte_analyse.daten) : `<div class="leer">Noch keine Analyse.<br><br><a class="knopf" href="#analyse">Zur Analyse</a></div>`}</div>
         <div class="karte"><div class="zeile weit"><h2>Zuletzt</h2><a href="#verlauf" class="etikett" style="color:inherit">Alles ansehen →</a></div>
           ${s.neueste.length ? s.neueste.map(eintragZeile).join("") : `<div class="leer">Hier erscheint alles, was die KI tut.</div>`}</div>
@@ -428,160 +540,179 @@ const ANSICHT = {
 
   async analyse() {
     await laden();
-    const m = STAND.modell;
-    $("#haupt").innerHTML = kopf("Analyse", "Die KI schaut auf die letzten Kerzen und schätzt, ob zuerst das Ziel oben oder der Stop unten kommt.", tokenPille()) + `
-      <div class="karte"><div class="zeile weit">
-        <div class="zeile"><span class="etikett">Handeln ab</span>
-          ${[0.5, 0.6, 0.7].map(s => `<button class="chip ${s === 0.5 ? "an" : ""}" data-s="${s}">${pz(s)}</button>`).join("")}
-          <span class="etikett">Sicherheit</span></div>
-        <button class="knopf" id="los" ${m.vorhanden ? "" : "disabled"}>Analysieren <small>· ${tok(kosten("analyse"))}</small></button>
-      </div>${m.vorhanden ? "" : `<p class="etikett">Noch kein Modell. Zuerst unter <a href="#strategie" style="color:inherit">Strategie</a> trainieren.</p>`}</div>
+    $("#haupt").innerHTML = kopf("Analyse", "Die KI schaut auf die letzten Kerzen und schätzt, ob zuerst das Ziel oben oder der Stop unten kommt.", pille()) + `
+      <div class="karte"><h2>Modell</h2>${modellwahl("analyse", "los", "Analysieren")}
+        <div class="zeile weit" style="margin-top:16px">
+          <div class="zeile"><span class="etikett">Handeln ab</span>
+            ${[0.5, 0.6, 0.7].map(s => `<button class="chip ${s === 0.5 ? "an" : ""}" data-s="${s}">${pz(s)}</button>`).join("")}
+            <span class="etikett">Sicherheit</span></div>
+          <button class="knopf" id="los">Analysieren</button></div></div>
       <div class="karte" id="ergebnis">${STAND.letzte_analyse ? zeigeAnalyse(STAND.letzte_analyse.daten) : `<div class="leer">Noch keine Analyse.</div>`}</div>
       <div class="karte"><h2>Frühere Analysen</h2><div id="frueher"></div></div>`;
+    modellwahlNeu();
     let schwelle = 0.5;
-    document.querySelectorAll("[data-s]").forEach(c => c.onclick = () => {
-      schwelle = +c.dataset.s; document.querySelectorAll("[data-s]").forEach(x => x.classList.toggle("an", x === c)); });
+    $$("[data-s]").forEach(c => c.onclick = () => { schwelle = +c.dataset.s; $$("[data-s]").forEach(x => x.classList.toggle("an", x === c)); });
     const frueher = async () => { const l = await api("/api/verlauf?bereich=analyse");
       $("#frueher").innerHTML = l.length ? l.slice(0, 30).map(eintragZeile).join("") : `<div class="leer">Noch keine.</div>`; };
-    $("#los").onclick = e => ausfuehren(e.currentTarget, "/api/analyse", {schwelle}, r => {
-      $("#ergebnis").innerHTML = zeigeAnalyse(r.daten); frueher(); });
+    $("#los").onclick = e => ausfuehren(e.currentTarget, "/api/analyse", {modell: gewaehlt, schwelle}, async r => {
+      $("#ergebnis").innerHTML = zeigeAnalyse(r.daten); modellwahlNeu(); await frueher(); });
     frueher();
   },
 
   async indikatoren() {
     await laden();
     const l = STAND.letzte_indikatoren;
-    $("#haupt").innerHTML = kopf("Indikatoren", "Die klassischen Werkzeuge des Bots auf den aktuellen Kerzen.", tokenPille()) + `
+    $("#haupt").innerHTML = kopf("Indikatoren", "Die klassischen Werkzeuge des Bots auf den aktuellen Kerzen. Ohne KI, deshalb frei.", pille()) + `
       <div class="karte"><div class="zeile weit"><span class="etikett">${l ? "Zuletzt gelesen " + zeit(l.zeit) : "Noch nicht gelesen"}</span>
-        <button class="knopf" id="los">Neu lesen <small>· ${tok(kosten("indikatoren"))}</small></button></div></div>
+        <button class="knopf" id="los">Neu lesen <small>· frei</small></button></div></div>
       <div class="karte" id="ergebnis">${l ? zeigeIndikatoren(l.daten) : `<div class="leer">Einmal lesen, dann erscheinen hier Kurve und Werte.</div>`}</div>`;
     $("#los").onclick = e => ausfuehren(e.currentTarget, "/api/indikatoren", {}, r => { $("#ergebnis").innerHTML = zeigeIndikatoren(r.daten); });
   },
 
   async strategie() {
     await laden();
-    const m = STAND.modell;
+    const m = STAND.modelle[gewaehlt];
     const letzter = (await api("/api/verlauf?bereich=strategie"))[0];
-    $("#haupt").innerHTML = kopf("Strategie", "Nach welchen Regeln die KI handelt, wie gut das auf unbekannten Kerzen war, und neu lernen.", tokenPille()) + `
+    $("#haupt").innerHTML = kopf("Strategie", "Nach welchen Regeln die KI handelt und wie gut das auf Kerzen war, die sie nie gesehen hat.", pille()) + `
+      <div class="karte"><h2>Modell</h2>${modellwahl("strategie", "test", "Strategie testen")}
+        <div class="zeile weit" style="margin-top:16px"><span class="etikett">Prüft auf allen Kerzen nach dem Lernzeitraum des Modells. Nur dort ist das Ergebnis ehrlich.</span>
+        <button class="knopf" id="test">Strategie testen</button></div></div>
       <div class="raster r2 immer-voll">
-        <div class="karte"><h2>Regeln</h2>${m.vorhanden ? `<dl class="paare">
+        <div class="karte"><h2>Regeln</h2><dl class="paare">
           <dt>Frage</dt><dd>Kommt zuerst das Ziel oben oder der Stop unten?</dd>
-          <dt>Stop / Ziel</dt><dd>je ${zahl(m.abstand_atr, 1)} × ATR, also 1 : 1</dd>
-          <dt>Zeit</dt><dd>höchstens ${m.horizont} Kerzen, sonst „seitwärts“</dd>
-          <dt>Blick</dt><dd>die letzten ${m.plan.fenster} Kerzen</dd>
-          <dt>Position</dt><dd>immer nur eine zur Zeit</dd></dl>` : `<div class="leer">Erst nach dem Training.</div>`}</div>
-        <div class="karte"><h2>Testen</h2><p class="etikett" style="margin-top:0">Prüft die KI auf allen Kerzen nach ihrem Lernzeitraum${m.vorhanden ? " (ab " + datum(m.test_ab) + ")" : ""}. Nur dort ist das Ergebnis ehrlich.</p>
-          <button class="knopf" id="test" ${m.vorhanden ? "" : "disabled"}>Strategie testen <small>· ${tok(kosten("strategie"))}</small></button></div>
-      </div>
-      <div class="karte" id="ergebnis">${letzter ? `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${zeit(letzter.zeit)}</span></div><div id="erg-inhalt"></div>`
-        : m.ergebnis ? `<h2>Ergebnis aus dem Training</h2>${zeigeKennzahlen({...m.ergebnis, ab: m.test_ab})}` : `<div class="leer">Noch kein Test.</div>`}</div>
-      <div class="karte"><div class="zeile weit"><div><h2 style="margin:0">Neu trainieren</h2>
-          <p class="etikett" style="margin:6px 0 0">Lernt von vorn aus den aktuellen Kursdaten. Das alte Modell wird ersetzt.</p></div>
-        <button class="knopf" id="train">Training starten <small>· ${tok(kosten("training"))}</small></button></div>
-        <div class="konsole" id="log" style="margin-top:16px"></div></div>`;
+          <dt>Stop / Ziel</dt><dd>je ${zahl(m.abstand_atr ?? 1.5, 1)} × ATR, also 1 : 1</dd>
+          <dt>Zeit</dt><dd>höchstens ${m.horizont ?? 24} Kerzen, sonst „seitwärts“</dd>
+          <dt>Position</dt><dd>immer nur eine zur Zeit</dd></dl></div>
+        <div class="karte"><h2>Die Modelle im Vergleich</h2><table><thead><tr><th>Modell</th><th class="r">Richtig</th><th class="r">Raten</th><th class="r">bestes R</th></tr></thead><tbody>
+          ${MREIHE.map(id => { const x = STAND.modelle[id], e = x.ergebnis; const best = e ? Math.max(...e.schwellen.filter(s => s.trades).map(s => s.summe_r), -1e9) : null;
+            return `<tr><td>${esc(x.name)}</td><td class="r num">${e ? pz(e.treffer, 1) : "–"}</td><td class="r num" style="color:var(--muted)">${e ? pz(e.raten, 1) : "–"}</td><td class="r num">${e && best > -1e9 ? rr(best) : "–"}</td></tr>`; }).join("")}
+          </tbody></table><p class="hinweis">Aus der Prüfung direkt nach dem Training.</p></div></div>
+      <div class="karte" id="ergebnis">${letzter ? `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${esc(letzter.titel)} · ${zeit(letzter.zeit)}</span></div><div id="erg-inhalt"></div>` : `<div class="leer">Noch kein Test.</div>`}</div>`;
+    modellwahlNeu();
     if (letzter) { const e = await api("/api/verlauf/" + letzter.id); $("#erg-inhalt").innerHTML = zeigeKennzahlen(e.daten); }
-    $("#test").onclick = e => ausfuehren(e.currentTarget, "/api/strategie", {}, r => {
-      $("#ergebnis").innerHTML = `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${zeit(r.zeit)}</span></div>` + zeigeKennzahlen(r.daten); });
-    $("#train").onclick = e => ausfuehren(e.currentTarget, "/api/training", {}, () => beobachten());
-    beobachten();
+    $("#test").onclick = e => ausfuehren(e.currentTarget, "/api/strategie", {modell: gewaehlt}, r => {
+      modellwahlNeu();
+      $("#ergebnis").innerHTML = `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${esc(r.titel)} · ${zeit(r.zeit)}</span></div>` + zeigeKennzahlen(r.daten); });
   },
 
   async verlauf() {
     await laden();
     let filter = ""; try { filter = sessionStorage.getItem("filter") || ""; } catch (_) {}
-    $("#haupt").innerHTML = kopf("Verlauf", "Jede Aktion der KI, mit allen Details. Antippen zum Öffnen.", tokenPille()) + `
+    $("#haupt").innerHTML = kopf("Verlauf", inhaber() ? "Jede Aktion aller Nutzer, mit allen Details." : "Jede deiner Aktionen, mit allen Details.", pille()) + `
       <div class="zeile" style="margin-bottom:16px">${[["", "Alle"], ...Object.entries(BEREICH)].map(([id, n]) =>
         `<button class="chip ${id === filter ? "an" : ""}" data-f="${id}">${n}${id && STAND.zaehler[id] ? " · " + STAND.zaehler[id] : ""}</button>`).join("")}</div>
       <div class="karte" id="liste"><div class="leer"><span class="lade"></span></div></div>`;
-    document.querySelectorAll("[data-f]").forEach(c => c.onclick = () => {
-      try { sessionStorage.setItem("filter", c.dataset.f); } catch (_) {} ANSICHT.verlauf(); });
+    $$("[data-f]").forEach(c => c.onclick = () => { try { sessionStorage.setItem("filter", c.dataset.f); } catch (_) {} ANSICHT.verlauf(); });
     const l = await api("/api/verlauf" + (filter ? "?bereich=" + filter : ""));
     $("#liste").innerHTML = l.length ? l.map(eintragZeile).join("") : `<div class="leer">Noch nichts passiert.</div>`;
   },
 
-  async modell() {
+  async modelle() {
     await laden();
-    const m = STAND.modell, q = STAND.quelle;
-    $("#haupt").innerHTML = kopf("Modell", "Das Gehirn: ein Transformer, von Grund auf gebaut und nur aus deinen Daten gelernt.", tokenPille()) + (!m.vorhanden
-      ? `<div class="karte"><div class="leer">Noch kein Modell.<br><br><a class="knopf" href="#strategie">Jetzt trainieren</a></div></div>` : `
-      <div class="raster r4">
-        <div class="karte"><div class="etikett">Gewichte</div><div class="wert num">${ganz(m.gewichte)}</div></div>
-        <div class="karte"><div class="etikett">Schichten</div><div class="wert num">${m.plan.schichten}</div></div>
-        <div class="karte"><div class="etikett">Aufmerksamkeits-Köpfe</div><div class="wert num">${m.plan.koepfe}</div></div>
-        <div class="karte"><div class="etikett">Kerzen pro Blick</div><div class="wert num">${m.plan.fenster}</div></div></div>
-      <div class="raster r2 immer-voll">
-        <div class="karte"><h2>Steckbrief</h2><dl class="paare">
-          <dt>Trainiert</dt><dd>${zeit(m.erstellt)}</dd><dt>Bester Stand</dt><dd>Epoche ${m.beste_epoche ?? "–"}</dd>
-          <dt>Test ab</dt><dd>${datum(m.test_ab)}</dd><dt>Innere Breite</dt><dd>${m.plan.breite}</dd>
-          <dt>Dropout</dt><dd>${pz(m.plan.vergessen)}</dd><dt>Antworten</dt><dd>runter · seitwärts · hoch</dd></dl></div>
-        <div class="karte"><h2>Was sie pro Kerze sieht</h2><div class="zeile" style="gap:8px">${m.merkmale.map(x => `<span class="chip" style="cursor:default">${esc(x.replace("_", " "))}</span>`).join("")}</div>
-          <p class="hinweis">Alles im Verhältnis zur ATR, nie in Dollar. So passt das Gelernte auch, wenn Gold auf einem ganz anderen Niveau steht.</p></div></div>
-      ${m.ergebnis ? `<div class="karte"><h2>Prüfung nach dem Training</h2>${zeigeKennzahlen({...m.ergebnis, ab: m.test_ab})}</div>` : ""}`) + `
-      <div class="karte"><h2>Daten</h2><dl class="paare"><dt>Quelle</dt><dd class="mono">${esc(q.name)}</dd>
-        ${q.fehler ? `<dt>Fehler</dt><dd>${esc(q.fehler)}</dd>` : `<dt>Kerzen</dt><dd class="num">${ganz(q.kerzen)}</dd><dt>Zeitraum</dt><dd>${datum(q.von)} – ${datum(q.bis)}</dd>`}</dl></div>`;
+    const s = STAND;
+    $("#haupt").innerHTML = kopf("Modelle", "Drei Gehirne derselben Bauart, verschieden groß. Größer erfasst mehr, braucht aber mehr Daten.", pille()) + `
+      <div class="raster r3">${MREIHE.map((id, i) => { const m = s.modelle[id], n = s.nutzung.modelle[id], b = m.bauplan;
+        return `<div class="karte"><div class="zeile weit"><b style="font-size:17px">${esc(m.name)}</b><span class="punkte">${[0, 1, 2].map(j => `<i class="${j <= i ? "v" : ""}"></i>`).join("")}</span></div>
+          <p class="etikett" style="min-height:38px">${esc(m.text)}</p>
+          <dl class="paare" style="font-size:13.5px">
+            <dt>Status</dt><dd>${m.vorhanden ? "trainiert " + datum(m.erstellt) : "noch nicht trainiert"}</dd>
+            <dt>Gewichte</dt><dd class="num">${m.vorhanden ? ganz(m.gewichte) : "–"}</dd>
+            <dt>Blick</dt><dd>${b.fenster} Kerzen</dd>
+            <dt>Aufbau</dt><dd>${b.schichten} Blöcke · ${b.koepfe} Köpfe · Breite ${b.breite}</dd>
+            <dt>Verbrauch</dt><dd>× ${m.faktor}</dd>
+            <dt>Prüfung</dt><dd>${m.ergebnis ? pz(m.ergebnis.treffer, 1) + " richtig · Raten " + pz(m.ergebnis.raten, 1) : "–"}</dd>
+            <dt>Dein Stand</dt><dd>${n.gesperrt ? "nicht im Abo" : n.limit == null ? "ohne Grenze" : ganz(n.verbraucht) + " von " + ganz(n.limit)}</dd></dl>
+          ${inhaber() ? `<div class="zeile" style="margin-top:18px"><button class="knopf ${m.vorhanden ? "hell" : ""}" data-train="${id}">${m.vorhanden ? "Neu trainieren" : "Trainieren"}</button></div>` : ""}</div>`; }).join("")}</div>
+      ${inhaber() ? `<div class="karte"><div class="zeile weit"><h2 style="margin:0">Training</h2><span class="etikett" id="trainstatus"></span></div>
+        <p class="etikett">Ein Training zur Zeit. Max lernt deutlich länger als Mini. Nur du als Inhaber kannst trainieren; es kostet nichts.</p>
+        <div class="konsole" id="log"></div></div>` : ""}
+      <div class="karte"><h2>Daten</h2><dl class="paare"><dt>Quelle</dt><dd class="mono">${esc(s.quelle.name)}</dd>
+        ${s.quelle.fehler ? `<dt>Fehler</dt><dd>${esc(s.quelle.fehler)}</dd>` : `<dt>Kerzen</dt><dd class="num">${ganz(s.quelle.kerzen)}</dd><dt>Zeitraum</dt><dd>${datum(s.quelle.von)} – ${datum(s.quelle.bis)}</dd>`}</dl></div>`;
+    $$("[data-train]").forEach(k => k.onclick = e => ausfuehren(e.currentTarget, "/api/training", {modell: k.dataset.train}, () => { setTimeout(beobachten, 0); }));
+    if (inhaber()) beobachten();
   },
 
-  async konto() {
+  async nutzung() {
     await laden();
-    const {stand: k, buchungen: b} = await api("/api/konto");
-    $("#haupt").innerHTML = kopf("Tokens & Abo", "Jede Aktion der KI kostet Tokens. Das Abo füllt sie jeden Monat auf.", tokenPille()) + `
-      <div class="raster r3">
-        <div class="karte"><div class="etikett">Verfügbar</div><div class="wert num" style="font-size:34px">${ganz(k.gesamt)}</div><div class="etikett">Tokens</div></div>
-        <div class="karte"><div class="etikett">Aus dem Abo</div><div class="wert num">${ganz(k.abo_rest)} <span class="etikett">/ ${ganz(k.abo_monat)}</span></div>
-          <div class="leiste"><i style="width:${Math.min(100, 100 * k.abo_rest / Math.max(1, k.abo_monat))}%"></i></div><div class="etikett">neu am ${datum(k.auffuellung)}, Rest verfällt</div></div>
-        <div class="karte"><div class="etikett">Extra</div><div class="wert num">${ganz(k.extra)}</div><div class="etikett">aufgeladen, verfällt nie</div></div></div>
+    const {stand: n, buchungen: b} = await api("/api/nutzung");
+    $("#haupt").innerHTML = kopf("Nutzung & Abo", n.unbegrenzt ? "Du bist Inhaber: für dich gibt es keine Grenzen. Gezählt wird trotzdem." :
+        `Jedes Modell hat sein eigenes Kontingent. Ist es aufgebraucht, pausiert dieses Modell bis zum ${datum(n.auffuellung)}.`, pille()) + `
+      <div class="raster r3">${MREIHE.map(id => { const m = n.modelle[id];
+        const breite = m.limit ? Math.min(100, 100 * m.verbraucht / m.limit) : 0;
+        return `<div class="karte"><div class="zeile weit"><b>${esc(m.name)}</b>${m.gesperrt ? `<span class="marke-klein">gesperrt</span>` : m.rest === 0 ? `<span class="marke-klein voll">Limit erreicht</span>` : ""}</div>
+          <div class="wert num" style="margin-top:10px">${m.gesperrt ? "–" : ganz(m.verbraucht)} <span class="etikett">${m.gesperrt ? "nicht im Abo" : m.limit == null ? "verbraucht · ohne Grenze" : "von " + ganz(m.limit) + " Tokens"}</span></div>
+          <div class="leiste"><i style="width:${breite}%"></i></div>
+          <div class="etikett">${m.gesperrt ? "Ab Abo Pro verfügbar" : m.limit == null ? "Analyse kostet " + tok(n.kosten.analyse[id]) : ganz(m.rest) + " übrig · Analyse kostet " + tok(n.kosten.analyse[id])}</div></div>`; }).join("")}</div>
       <h2 style="margin-top:34px">Abos</h2>
-      <div class="raster r3">${Object.entries(k.abos).map(([id, a]) => `
-        <div class="karte abo ${id === k.abo ? "aktuell" : ""}"><div class="zeile weit"><b>${esc(a.name)}</b>${id === k.abo ? `<span class="marke-klein voll">Aktuell</span>` : ""}</div>
-          <div class="wert num" style="margin-top:12px">${ganz(a.tokens_monat)}</div><div class="etikett">Tokens im Monat</div>
-          <p class="etikett" style="min-height:40px">${esc(a.text)}</p>
-          <div class="zeile weit"><span class="etikett">${a.preis == null ? "Preis folgt" : esc(a.preis)}</span>
-          ${id === k.abo ? "" : `<button class="knopf hell" data-abo="${id}">Wechseln</button>`}</div></div>`).join("")}</div>
+      <div class="karte"><div class="tabelle"><table><thead><tr><th>Tokens im Monat</th>${Object.entries(n.abos).map(([id, a]) => `<th class="r">${esc(a.name)}${id === n.abo ? " ●" : ""}</th>`).join("")}</tr></thead><tbody>
+        ${MREIHE.map(id => `<tr><td>${esc(n.modelle[id].name)}</td>${Object.values(n.abos).map(a => { const l = a.limits[id]; return `<td class="r num">${l === 0 ? "–" : l == null ? "unbegrenzt" : ganz(l)}</td>`; }).join("")}</tr>`).join("")}
+        <tr><td style="color:var(--muted)">Preis</td>${Object.values(n.abos).map(a => `<td class="r" style="color:var(--muted)">${a.preis == null ? "folgt" : esc(a.preis)}</td>`).join("")}</tr>
+        </tbody></table></div>
+        <p class="hinweis">${n.unbegrenzt ? "Abos vergibst du unter Nutzer." : "Das Abo ändert der Inhaber. Bezahlung kommt später."}</p></div>
       <div class="raster r2 immer-voll">
-        <div class="karte"><h2>Was kostet was</h2><table><tbody>${Object.entries(k.kosten).map(([a, n]) =>
-          `<tr><td>${esc(k.aktionen[a])}</td><td class="r num">${n} ${n === 1 ? "Token" : "Tokens"}</td></tr>`).join("")}</tbody></table>
-          <p class="hinweis">Scheitert eine Aktion, kommen die Tokens zurück.</p></div>
-        <div class="karte"><h2>Aufladen</h2><p class="etikett" style="margin-top:0">Nur für dich als Inhaber. Bezahlung für Abonnenten kommt später.</p>
-          <div class="zeile"><input class="feld num" id="menge" type="number" min="1" value="500"><button class="knopf" id="auf">Aufladen</button></div></div></div>
-      <div class="karte"><h2>Buchungen</h2>${b.length ? `<div class="tabelle"><table><thead><tr><th>Zeit</th><th>Vorgang</th><th class="r">Tokens</th><th class="r">Stand</th></tr></thead><tbody>
-        ${b.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td><td class="r num">${ganz(x.stand)}</td></tr>`).join("")}
-        </tbody></table></div>` : `<div class="leer">Noch keine Buchungen.</div>`}</div>`;
-    $("#auf").onclick = e => ausfuehren(e.currentTarget, "/api/konto/aufladen", {menge: +$("#menge").value}, () => { toast("Aufgeladen."); ANSICHT.konto(); });
-    document.querySelectorAll("[data-abo]").forEach(x => x.onclick = e =>
-      ausfuehren(e.currentTarget, "/api/konto/abo", {abo: x.dataset.abo}, () => { toast("Abo gewechselt."); ANSICHT.konto(); }));
+        <div class="karte"><h2>Was kostet was</h2><table><thead><tr><th>Aktion</th>${MREIHE.map(id => `<th class="r">${esc(n.modelle[id].name)}</th>`).join("")}</tr></thead><tbody>
+          ${Object.entries(n.kosten).map(([a, k]) => `<tr><td>${esc(n.aktionen[a])}</td>${MREIHE.map(id => `<td class="r num">${k[id]}</td>`).join("")}</tr>`).join("")}
+          <tr><td>Indikatoren</td><td class="r" colspan="3" style="color:var(--muted)">frei</td></tr></tbody></table>
+          <p class="hinweis">Fehlt etwas, wird nichts verbraucht. Scheitert eine Aktion, kommt der Verbrauch zurück.</p></div>
+        <div class="karte"><h2>Buchungen</h2>${b.length ? `<div class="tabelle" style="max-height:360px;overflow:auto"><table><tbody>
+          ${b.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}
+          </tbody></table></div>` : `<div class="leer">Noch keine.</div>`}</div></div>`;
+  },
+
+  async nutzer() {
+    await laden();
+    const liste = await api("/api/nutzer");
+    const abos = STAND.nutzung.abos;
+    $("#haupt").innerHTML = kopf("Nutzer", "Wer die KI nutzen darf und mit welchem Abo. Nur du siehst diese Seite.", pille()) + `
+      <div class="karte"><h2>Neuer Nutzer</h2><form class="formular" id="neu">
+        <div><label for="nn">Name</label><input class="feld" id="nn" required></div>
+        <div><label for="np">Passwort (mind. 8)</label><input class="feld" id="np" type="password" minlength="8" required autocomplete="new-password"></div>
+        <div><label for="na">Abo</label><select class="feld" id="na">${Object.entries(abos).map(([id, a]) => `<option value="${id}">${esc(a.name)}</option>`).join("")}</select></div>
+        <div><button class="knopf" type="submit">Anlegen</button></div></form></div>
+      <div class="karte"><div class="tabelle"><table><thead><tr><th>Name</th><th>Abo</th>${MREIHE.map(id => `<th>${esc(STAND.modelle[id].name)}</th>`).join("")}<th class="r">Aktionen</th><th></th></tr></thead><tbody>
+        ${liste.map(u => `<tr><td><b>${esc(u.name)}</b><div class="etikett">seit ${datum(u.erstellt)}</div></td>
+          <td>${u.rolle === "inhaber" ? `<span class="marke-klein voll">Inhaber</span>` : `<select class="feld" data-abo="${u.id}" style="height:34px">${Object.entries(abos).map(([id, a]) => `<option value="${id}" ${id === u.abo ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>`}</td>
+          ${MREIHE.map(id => { const m = u.modelle[id]; return `<td class="num" style="white-space:nowrap">${m.gesperrt ? `<span style="color:var(--faint)">gesperrt</span>` : m.limit == null ? ganz(m.verbraucht) + (u.rolle === "inhaber" ? "" : " / ∞") : `${ganz(m.verbraucht)} / ${ganz(m.limit)}${m.rest === 0 ? " ●" : ""}`}</td>`; }).join("")}
+          <td class="r num">${ganz(u.aktionen)}</td>
+          <td class="r" style="white-space:nowrap">${u.rolle === "inhaber" ? "" : `<button class="chip" data-pw="${u.id}" data-name="${esc(u.name)}">Passwort</button> <button class="chip" data-weg="${u.id}" data-name="${esc(u.name)}">Löschen</button>`}</td></tr>`).join("")}
+        </tbody></table></div><p class="hinweis">● = Limit erreicht. Das Abo gilt sofort; schon Verbrauchtes zählt im Monat weiter.</p></div>`;
+    $("#neu").onsubmit = async e => { e.preventDefault();
+      try { await api("/api/nutzer", {name: $("#nn").value, passwort: $("#np").value, abo: $("#na").value}); toast("Angelegt."); ANSICHT.nutzer(); }
+      catch (err) { toast(err.message); } };
+    $$("[data-abo]").forEach(s => s.onchange = async () => {
+      try { await api("/api/nutzer/abo", {id: s.dataset.abo, abo: s.value}); toast("Abo geändert."); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
+    $$("[data-pw]").forEach(k => k.onclick = async () => {
+      const pw = prompt(`Neues Passwort für ${k.dataset.name} (mind. 8 Zeichen):`); if (!pw) return;
+      try { await api("/api/nutzer/passwort", {id: k.dataset.pw, passwort: pw}); toast("Passwort geändert. Bestehende Anmeldungen sind beendet."); } catch (err) { toast(err.message); } });
+    $$("[data-weg]").forEach(k => k.onclick = async () => {
+      if (!confirm(`${k.dataset.name} wirklich löschen? Der Verlauf bleibt.`)) return;
+      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast("Gelöscht."); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
   },
 };
 
 /* ---------- Training beobachten ---------- */
-let beobachter = null;
+let beobachter = null, lief = false;
 async function beobachten() {
   clearTimeout(beobachter);
   const log = $("#log"); if (!log) return;
   const t = await api("/api/training");
-  log.textContent = t.zeilen.join("\n");
-  log.scrollTop = log.scrollHeight;
-  const knopf = $("#train");
-  if (t.status === "laeuft") {
-    if (knopf) { knopf.disabled = true; knopf.innerHTML = '<span class="lade"></span> Lernt …'; }
-    beobachter = setTimeout(beobachten, 1500);
-  } else if (knopf && knopf.disabled && seite === "strategie") {
-    toast(t.status === "fertig" ? "Training fertig." : "Training fehlgeschlagen.");
-    ANSICHT.strategie();
-  }
+  log.textContent = t.zeilen.join("\n"); log.scrollTop = log.scrollHeight;
+  const name = t.modell ? STAND.modelle[t.modell].name : "";
+  $("#trainstatus").textContent = t.status === "laeuft" ? `${name} lernt …` : t.status === "fertig" ? `${name} fertig` : t.status === "fehler" ? `${name} fehlgeschlagen` : "";
+  $$("[data-train]").forEach(k => { k.disabled = t.status === "laeuft"; });
+  if (t.status === "laeuft") { lief = true; beobachter = setTimeout(beobachten, 1500); }
+  else if (lief && seite === "modelle") { lief = false; toast(t.status === "fertig" ? `${name} ist fertig trainiert.` : "Training fehlgeschlagen."); ANSICHT.modelle(); }
 }
 
 /* ---------- Thema ---------- */
 function thema(t) {
   if (t === "auto") document.documentElement.removeAttribute("data-theme");
   else document.documentElement.setAttribute("data-theme", t);
-  document.querySelectorAll("#thema button").forEach(b => b.classList.toggle("an", b.dataset.t === t));
-  try { localStorage.setItem("thema", t); } catch (_) {}
+  $$("#thema button").forEach(b => b.classList.toggle("an", b.dataset.t === t));
+  merken("thema", t);
 }
-document.querySelectorAll("#thema button").forEach(b => b.onclick = () => thema(b.dataset.t));
-let gespeichert = "auto"; try { gespeichert = localStorage.getItem("thema") || "auto"; } catch (_) {}
-thema(gespeichert);
-
-zeigen();
+(() => { const t = lesen("thema", "auto"); if (t !== "auto") document.documentElement.setAttribute("data-theme", t); })();
+start().catch(e => { $("#wurzel").innerHTML = `<div class="tor"><div class="karte">${esc(e.message)}</div></div>`; });
 </script>
 </body>
 </html>

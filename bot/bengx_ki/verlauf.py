@@ -19,13 +19,17 @@ class Verlauf:
         self.pfad = Path(pfad)
         self._sperre = threading.Lock()
 
-    def eintragen(self, bereich: str, titel: str, daten: dict, tokens: int = 0) -> dict:
+    def eintragen(self, bereich: str, titel: str, daten: dict, tokens: int = 0,
+                  nutzer: dict | None = None, modell: str | None = None) -> dict:
         e = {
             "id": uuid.uuid4().hex[:12],
             "zeit": datetime.now(timezone.utc).isoformat(timespec="seconds"),
             "bereich": bereich,
             "titel": titel,
             "tokens": tokens,
+            "modell": modell,
+            "nutzer": nutzer["id"] if nutzer else None,
+            "nutzer_name": nutzer["name"] if nutzer else None,
             "daten": daten,
         }
         with self._sperre:
@@ -46,10 +50,13 @@ class Verlauf:
                     continue            # halb geschriebene letzte Zeile
         return raus
 
-    def liste(self, bereich: str | None = None, anzahl: int = 500) -> list[dict]:
-        """Neueste zuerst, ohne die großen Detaildaten."""
+    def liste(self, bereich: str | None = None, anzahl: int = 500,
+              nutzer: str | None = None) -> list[dict]:
+        """Neueste zuerst, ohne die großen Detaildaten. `nutzer` = nur dessen Einträge."""
         with self._sperre:
             alle = self._alle()
+        if nutzer:
+            alle = [e for e in alle if e.get("nutzer") == nutzer]
         if bereich:
             alle = [e for e in alle if e["bereich"] == bereich]
         return [{k: v for k, v in e.items() if k != "daten"}
@@ -63,16 +70,18 @@ class Verlauf:
                     return e
         return None
 
-    def letzter(self, bereich: str) -> dict | None:
+    def letzter(self, bereich: str, nutzer: str | None = None) -> dict | None:
         with self._sperre:
             for e in reversed(self._alle()):
-                if e["bereich"] == bereich:
+                if e["bereich"] == bereich and (not nutzer or e.get("nutzer") == nutzer):
                     return e
         return None
 
-    def zaehlen(self) -> dict[str, int]:
+    def zaehlen(self, nutzer: str | None = None) -> dict[str, int]:
         with self._sperre:
             alle = self._alle()
+        if nutzer:
+            alle = [e for e in alle if e.get("nutzer") == nutzer]
         z: dict[str, int] = {}
         for e in alle:
             z[e["bereich"]] = z.get(e["bereich"], 0) + 1

@@ -31,6 +31,63 @@ Die Kursdatei ist dieselbe CSV wie für den Backtest des Bots: Spalten Zeit,
 Open, High, Low, Close und optional Volumen, z. B. als Export aus MT5. Je mehr
 Kerzen, desto besser. Unter etwa 10.000 Stundenkerzen lernt sie kaum etwas.
 
+## Oberfläche
+
+```bash
+python3 -m bengx_ki oberflaeche --csv data/xauusd_h1.csv
+python3 -m bengx_ki oberflaeche --lernprobe          # ohne CSV, zum Ausprobieren
+```
+
+Unter Windows: `KI.bat`, Punkt 5. Der Browser öffnet sich unter
+`http://127.0.0.1:8765/`. Die Oberfläche ist schwarz-weiß, mit hellem und
+dunklem Modus, und läuft auch auf dem Handy-Bildschirm.
+
+| Bereich | Was dort passiert |
+| --- | --- |
+| **Übersicht** | Tokens, Modellstand, letzter Kurs, letzte Analyse, letzte Aktionen |
+| **Analyse** | Einschätzung der KI für die jüngste Kerze, mit Einstieg, Stop und Ziel |
+| **Indikatoren** | Kurve mit EMA 50/200, dazu RSI, ADX, ATR und 20er-Kanal mit Deutung |
+| **Strategie** | die Regeln der KI, Test auf unbekannten Kerzen, neu trainieren mit Live-Protokoll |
+| **Verlauf** | jede Aktion der KI mit allen Details, filterbar; Antippen öffnet sie |
+| **Modell** | Steckbrief des Gehirns und seine Prüfung nach dem Training |
+| **Tokens & Abo** | Guthaben, Abos, was was kostet, Aufladen, alle Buchungen |
+
+Der Server hört nur auf dem eigenen Rechner (127.0.0.1) und hat noch keine
+Anmeldung. Bevor Abonnenten ihn nutzen, braucht er Anmeldung, ein Konto je
+Nutzer und eine Bezahlung.
+
+## Tokens und Abos
+
+Jede Aktion kostet Tokens:
+
+| Aktion | Tokens |
+| --- | --- |
+| Indikatoren lesen | 1 |
+| KI-Analyse | 5 |
+| Strategie testen | 10 |
+| KI neu trainieren | 50 |
+
+| Abo | Tokens im Monat | Preis |
+| --- | --- | --- |
+| Start | 200 | folgt |
+| Pro | 2.000 | folgt |
+| Elite | 10.000 | folgt |
+
+* Das **Abo-Guthaben** wird zu jedem Monatsbeginn neu gesetzt. Der Rest verfällt.
+* **Aufgeladene** Tokens verfallen nie. Abgebucht wird zuerst vom Abo.
+* Fehlt etwas, z. B. das Modell, wird gar nicht erst abgebucht. Scheitert eine
+  Aktion unterwegs, kommen die Tokens zurück.
+* Mengen, Kosten und Preise stehen oben in `bengx_ki/konto.py`.
+
+```bash
+python3 -m bengx_ki tokens                   # Stand und letzte Buchungen
+python3 -m bengx_ki tokens --aufladen 500
+python3 -m bengx_ki tokens --abo pro
+```
+
+Modell, Tokens (`konto.json`) und Verlauf (`verlauf.jsonl`) liegen im Ordner
+`ki/`. Er wird nicht eingecheckt.
+
 ## Was die KI lernt
 
 Für jede Kerze stellt sie eine Frage: **Wird von hier aus zuerst das Ziel oben
@@ -52,6 +109,10 @@ Wochentag.
 | `training.py` | Lernen | zeitlicher Schnitt, Lernschleife, Abbruch vor dem Auswendiglernen, Speichern |
 | `auswertung.py` | Prüfen | Trefferquote gegen Raten, Handel gegen „immer kaufen“ |
 | `lernprobe.py` | Beweis | erfundene Kurse mit verstecktem Muster |
+| `dienste.py` | Aktionen | Analyse, Indikatoren, Strategie-Test als Daten |
+| `konto.py` | Tokens | Guthaben, Abos, Buchungen |
+| `verlauf.py` | Historie | jede Aktion als Zeile in `ki/verlauf.jsonl` |
+| `server.py`, `oberflaeche.html` | Oberfläche | Webserver und Seite, ohne weitere Abhängigkeiten |
 
 ## Warum man den Ergebnissen trauen kann
 

@@ -111,3 +111,34 @@ def bericht(stellen: Sequence[int], ausgang: dict[int, Ausgang], p: torch.Tensor
         zeilen.append(f"   KI ab {s:.0%} Sicherheit: {handel_ki(stellen, ausgang, p, s).zeile()}")
     zeilen.append(f"   Vergleich, immer kaufen: {handel_immer_long(stellen, ausgang).zeile()}")
     return "\n".join(zeilen)
+
+
+def kennzahlen(stellen: Sequence[int], ausgang: dict[int, Ausgang], p: torch.Tensor,
+               schwellen: Sequence[float] = (0.40, 0.50, 0.60, 0.70, 0.80)) -> dict:
+    """Dasselbe wie `bericht`, aber als Daten für die Oberfläche."""
+    wahr = torch.tensor([ausgang[i].klasse for i in stellen])
+    tipp = p.argmax(dim=1)
+    haeufigste = torch.bincount(wahr, minlength=len(KLASSEN)).argmax().item()
+
+    def bilanz(b: Bilanz) -> dict:
+        return {"trades": b.trades, "treffer": b.trefferquote, "summe_r": b.summe_r,
+                "schnitt_r": b.schnitt_r, "einbruch_r": b.tiefster_einbruch_r}
+
+    klassen = []
+    for k in range(len(KLASSEN)):
+        gesagt = tipp == k
+        klassen.append({
+            "name": KLASSEN[k],
+            "gesagt": int(gesagt.sum()),
+            "stimmt": (wahr[gesagt] == k).float().mean().item() if gesagt.any() else None,
+        })
+    return {
+        "kerzen": len(stellen),
+        "treffer": (tipp == wahr).float().mean().item(),
+        "raten": (wahr == haeufigste).float().mean().item(),
+        "raten_klasse": KLASSEN[haeufigste],
+        "klassen": klassen,
+        "schwellen": [{"schwelle": s, **bilanz(handel_ki(stellen, ausgang, p, s))}
+                      for s in schwellen],
+        "immer_kaufen": bilanz(handel_immer_long(stellen, ausgang)),
+    }

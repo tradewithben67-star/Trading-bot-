@@ -4,6 +4,8 @@
     python -m bengx_ki trainieren --csv data/xauusd_h1.csv
     python -m bengx_ki testen     --csv data/neuere_kerzen.csv
     python -m bengx_ki vorhersage --csv data/xauusd_h1.csv
+    python -m bengx_ki oberflaeche --csv data/xauusd_h1.csv   # im Browser
+    python -m bengx_ki tokens --aufladen 500
 """
 
 from __future__ import annotations
@@ -11,16 +13,14 @@ from __future__ import annotations
 import argparse
 import sys
 import time
-
-import torch
+from pathlib import Path
 
 from bengx_bot.data import load_csv
 
 from . import lernprobe
-from .auswertung import bericht
+from .auswertung import bericht, kennzahlen
 from .gehirn import Bauplan
-from .merkmale import HOCH, KLASSEN, RUNTER
-from .training import (Einstellungen, daten_fuer, erste_stelle, laden, speichern,
+from .training import (Einstellungen, daten_fuer, laden, speichern,
                        trainieren, wahrscheinlichkeiten)
 
 STANDARD_MODELL = "ki/modell.pt"
@@ -45,6 +45,7 @@ def _lernen_und_berichten(kerzen, args) -> None:
     p = wahrscheinlichkeiten(paket["_gehirn"], daten.tabelle, test)
     print(f"\nFertig nach {time.time() - start:.0f}s. Test-Teil ab {paket['test_ab'][:10]}.\n")
     print(bericht(test, daten.ausgang, p))
+    paket["ergebnis"] = kennzahlen(test, daten.ausgang, p)
     if args.modell:
         print(f"\nGespeichert: {speichern(paket, args.modell)}")
     print(f"\n{HINWEIS}")
@@ -85,37 +86,51 @@ def cmd_testen(args) -> int:
 
 
 def cmd_vorhersage(args) -> int:
-    from bengx_bot.indicators import atr
-    from .training import normieren, tabelle_bauen
+    from .dienste import analyse
 
     gehirn, paket = laden(args.modell)
-    kerzen = load_csv(args.csv)
-    if len(kerzen) <= erste_stelle(paket["plan"]["fenster"]):
-        print("Zu wenig Kerzen für eine Vorhersage.")
-        return 1
-    tabelle = normieren(tabelle_bauen(kerzen), torch.tensor(paket["mittel"]),
-                        torch.tensor(paket["streuung"]))
-    letzte = len(kerzen) - 1
-    p = wahrscheinlichkeiten(gehirn, tabelle, [letzte])[0]
-    k = kerzen[letzte]
-    a = atr([x.high for x in kerzen], [x.low for x in kerzen],
-            [x.close for x in kerzen], 14)[letzte]
-    weg = paket["abstand_atr"] * a
-
-    print(f"Letzte Kerze: {k.ts:%Y-%m-%d %H:%M} UTC, Schluss {k.close:.2f}")
-    print(f"Blick nach vorn: {paket['horizont']} Kerzen, Stop/Ziel je {weg:.2f} entfernt\n")
-    for i, name in enumerate(KLASSEN):
-        balken = "█" * round(p[i].item() * 40)
-        print(f"  {name:<10} {p[i].item():6.1%}  {balken}")
+    d = analyse(load_csv(args.csv), gehirn, paket, args.schwelle)
+    print(f"Letzte Kerze: {d['kerze'][:16].replace('T', ' ')} UTC, Schluss {d['schluss']:.2f}")
+    print(f"Blick nach vorn: {d['horizont']} Kerzen, Stop/Ziel je {d['abstand']:.2f} entfernt\n")
+    for name, wert in d["wahrscheinlichkeiten"].items():
+        print(f"  {name:<10} {wert:6.1%}  {'█' * round(wert * 40)}")
     print()
-    hoch, runter = p[HOCH].item(), p[RUNTER].item()
-    if hoch >= args.schwelle and hoch > runter:
-        print(f"→ KAUFEN-Idee: Stop {k.close - weg:.2f} · Ziel {k.close + weg:.2f}")
-    elif runter >= args.schwelle and runter > hoch:
-        print(f"→ VERKAUFEN-Idee: Stop {k.close + weg:.2f} · Ziel {k.close - weg:.2f}")
+    i = d["idee"]
+    if i:
+        print(f"→ {i['richtung'].upper()}-Idee: Stop {i['stop']:.2f} · Ziel {i['ziel']:.2f}")
     else:
         print(f"→ Kein Signal: die KI ist sich unter {args.schwelle:.0%} sicher.")
     print(f"\n{HINWEIS}")
+    return 0
+
+
+def cmd_oberflaeche(args) -> int:
+    from .dienste import Quelle
+    from .server import App, starten
+
+    ordner = Path(args.ordner)
+    modell = args.modell or (ordner / ("lernprobe.pt" if args.lernprobe else "modell.pt"))
+    quelle = Quelle(None if args.lernprobe else args.csv, nur_lernprobe=args.lernprobe)
+    starten(App(quelle, modell, ordner, epochen=args.epochen), args.port,
+            browser=not args.kein_browser)
+    return 0
+
+
+def cmd_tokens(args) -> int:
+    from .konto import Konto
+
+    konto = Konto(Path(args.ordner) / "konto.json")
+    if args.abo:
+        konto.abo_wechseln(args.abo)
+    if args.aufladen:
+        konto.aufladen(args.aufladen, "Aufgeladen (Inhaber)")
+    s = konto.stand()
+    print(f"Tokens: {s['gesamt']}  (Abo {s['abo_name']}: {s['abo_rest']} von "
+          f"{s['abo_monat']} · Extra: {s['extra']})")
+    print(f"Nächste Auffüllung: {s['auffuellung']}")
+    print("\nLetzte Buchungen:")
+    for b in konto.buchungen(10):
+        print(f"  {b['zeit'][:16].replace('T', ' ')}  {b['menge']:+6}  {b['text']}")
     return 0
 
 
@@ -159,6 +174,23 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--modell", default=STANDARD_MODELL)
     p.add_argument("--schwelle", type=float, default=0.5)
     p.set_defaults(func=cmd_vorhersage)
+
+    p = sub.add_parser("oberflaeche", help="die Oberfläche im Browser öffnen")
+    p.add_argument("--csv", default="data/xauusd_h1.csv")
+    p.add_argument("--lernprobe", action="store_true",
+                   help="mit erfundenen Kursen statt einer CSV (zum Ausprobieren)")
+    p.add_argument("--modell", default=None)
+    p.add_argument("--ordner", default="ki", help="hier liegen Modell, Tokens, Verlauf (ki)")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--epochen", type=int, default=30)
+    p.add_argument("--kein-browser", action="store_true")
+    p.set_defaults(func=cmd_oberflaeche)
+
+    p = sub.add_parser("tokens", help="Tokens ansehen, aufladen, Abo wechseln")
+    p.add_argument("--ordner", default="ki")
+    p.add_argument("--aufladen", type=int, default=0)
+    p.add_argument("--abo", choices=("start", "pro", "elite"))
+    p.set_defaults(func=cmd_tokens)
 
     args = ap.parse_args(argv)
     try:

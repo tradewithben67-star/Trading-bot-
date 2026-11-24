@@ -37,11 +37,11 @@
         '<button class="btn btn-primary btn-lg" id="pay">' + UI.icon("card") + 'Testzahlung abschließen</button>' +
         '<a class="btn btn-ghost btn-sm" href="konto.html#auftraege">Später bezahlen</a>';
       UI.applySiteName();
-      if (o.status !== "unbezahlt") { location.replace("konto.html?bezahlt=1#auftrag/" + o.id); return; }
+      if (o.status !== "unbezahlt") { location.replace("konto.html?bezahlt=1#auftrag-" + o.id); return; }
       document.getElementById("pay").onclick = async (e) => {
         e.currentTarget.disabled = true; e.currentTarget.textContent = "Zahlung wird verarbeitet …";
         await API.demoPay(o.id);
-        location.href = "konto.html?bezahlt=1#auftrag/" + o.id;
+        location.href = "konto.html?bezahlt=1#auftrag-" + o.id;
       };
     } catch (err) {
       box.innerHTML = '<p class="form-error">' + UI.esc(err.message) + '</p><a class="btn" href="konto.html">Zu meinem Konto</a>';

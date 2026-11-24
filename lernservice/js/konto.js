@@ -38,7 +38,7 @@
     const h = location.hash.replace(/^#/, "") || "auftraege";
     window.scrollTo(0, 0);
     try {
-      if (h.startsWith("auftrag/")) { setNav("auftraege"); return await showOrder(Number(h.split("/")[1])); }
+      if (h.startsWith("auftrag-")) { setNav("auftraege"); return await showOrder(Number(h.slice(8))); }
       if (h === "postfach") { setNav("postfach"); return await showInbox(); }
       if (h === "konto") { setNav("konto"); return showAccount(); }
       if (h === "empfehlen") { setNav("empfehlen"); return await showReferral(); }
@@ -64,7 +64,7 @@
       const preview = o.kind === "text"
         ? '<div class="txt">' + esc((o.text_content || "").slice(0, 260)) + "</div>"
         : '<span data-thumb="' + o.id + '">' + icon("image") + "</span>";
-      return '<a class="sub-card" href="#auftrag/' + o.id + '"><div class="preview">' + preview +
+      return '<a class="sub-card" href="#auftrag-' + o.id + '"><div class="preview">' + preview +
         (unread ? '<span class="flag"><span class="dot"></span>' + unread + " neue Nachricht" + (unread > 1 ? "en" : "") + "</span>" : "") +
         '</div><div class="body"><div class="top"><b>' + esc(p.long) + "</b>" + badge(o.status, true) + '</div><div class="meta">' + orderNo(o) + " · " + (o.kind === "bild" ? "Bild" : "Text") + (o.subject ? " · " + esc(o.subject) : "") + " · " + fmtDate(o.created_at) + "</div></div>" +
         (o.status === "unbezahlt" ? '<div class="actions"><span class="btn btn-primary btn-sm" style="width:100%">Jetzt bezahlen</span></div>' : "") + "</a>";
@@ -101,7 +101,7 @@
     if (paidFlash) {
       payBox = '<div class="notice">' + icon("check") + "<span><b>Danke!</b> Deine Zahlung ist eingegangen" + (st === "unbezahlt" ? " und wird gerade bestätigt – das dauert meist nur ein paar Sekunden." : ".") + " Das Ergebnis kommt in dein Postfach.</span></div>";
       paidFlash = false;
-      if (st === "unbezahlt" && paidPolls++ < 12) setTimeout(() => { if (location.hash === "#auftrag/" + o.id) { paidFlash = true; showOrder(o.id); } }, 5000);
+      if (st === "unbezahlt" && paidPolls++ < 12) setTimeout(() => { if (location.hash === "#auftrag-" + o.id) { paidFlash = true; showOrder(o.id); } }, 5000);
     }
 
     const thread = o.messages.map((m) => {
@@ -131,7 +131,7 @@
 
     const pc = document.getElementById("payCredit");
     if (pc) pc.onclick = async () => {
-      if (!confirm("Diesen Auftrag mit " + eur(o.price_cents) + " Guthaben bezahlen?")) return;
+      if (!await UI.ask("Diesen Auftrag mit " + eur(o.price_cents) + " Guthaben bezahlen?")) return;
       pc.disabled = true;
       try { await API.payWithCredit(o.id); toast("Bezahlt mit Guthaben – ich lege los!"); load(); showOrder(o.id); }
       catch (x) { toast(x.message, true); pc.disabled = false; }
@@ -169,7 +169,7 @@
       "</div></div>").join("") + "</div>";
     view.innerHTML = html;
     view.querySelectorAll(".mail").forEach((el) => {
-      const open = (e) => { if (e.target.closest("a")) return; location.hash = "auftrag/" + el.dataset.order; };
+      const open = (e) => { if (e.target.closest("a")) return; location.hash = "auftrag-" + el.dataset.order; };
       el.addEventListener("click", open);
       el.addEventListener("keydown", (e) => { if (e.key === "Enter") open(e); });
     });
@@ -204,7 +204,7 @@
       '<div class="detail-grid"><div style="display:grid;gap:20px">' +
         '<section class="panel"><h2>Guthaben verwenden</h2>' +
           '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Einlösen:</b> Reicht dein Guthaben für einen Auftrag (einzeln ' + esc(window.APP_CONFIG.PRICE_SINGLE_LABEL || "4,99 €") + ", Kombi-Paket " + esc(window.APP_CONFIG.PRICE_COMBO_LABEL || "12,99 €") + "), kannst du ihn damit bezahlen.</p>" +
-          (unpaid.some((o) => info.balance_cents >= o.price_cents) ? '<div class="files">' + unpaid.map((o) => '<a class="file" href="#auftrag/' + o.id + '">' + icon("wallet") + '<span class="fn">' + esc(productById(o.product).long) + " " + orderNo(o) + '</span><span class="fs">jetzt bezahlen →</span></a>').join("") + "</div>" : "") +
+          (unpaid.some((o) => info.balance_cents >= o.price_cents) ? '<div class="files">' + unpaid.map((o) => '<a class="file" href="#auftrag-' + o.id + '">' + icon("wallet") + '<span class="fn">' + esc(productById(o.product).long) + " " + orderNo(o) + '</span><span class="fs">jetzt bezahlen →</span></a>').join("") + "</div>" : "") +
           '<form id="payoutForm" style="display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px">' +
             '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Auszahlen:</b> ab ' + minP + " – das ganze Guthaben wird ausgezahlt.</p>" +
             '<div class="row-2"><div class="field"><label for="pm">Wie?</label><select class="select" id="pm"><option value="paypal">PayPal</option><option value="ueberweisung">Überweisung</option></select></div>' +
@@ -241,7 +241,7 @@
       const d = pd.value.trim();
       if (pm.value === "paypal" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d)) return toast("Bitte gib deine PayPal-E-Mail an.", true);
       if (pm.value === "ueberweisung" && d.replace(/\s/g, "").length < 15) return toast("Bitte gib IBAN und Kontoinhaber an.", true);
-      if (!confirm(eur(info.balance_cents) + " per " + METHOD[pm.value] + " an „" + d + "“ auszahlen lassen?")) return;
+      if (!await UI.ask(eur(info.balance_cents) + " per " + METHOD[pm.value] + " an „" + d + "“ auszahlen lassen?")) return;
       try { await API.requestPayout(pm.value, d); toast("Auszahlung angefordert – du bekommst das Geld in den nächsten Tagen."); showReferral(); }
       catch (x) { toast(x.message, true); }
     };

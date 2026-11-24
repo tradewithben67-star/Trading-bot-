@@ -141,7 +141,7 @@
     if (!window.API || window.API.mode !== "demo" || document.querySelector(".demo-bar")) return;
     const bar = document.createElement("div");
     bar.className = "demo-bar";
-    bar.innerHTML = "<b>Vorschau-Modus</b> – Daten bleiben nur in diesem Browser. Admin-Test: <b>admin@demo.de</b> / <b>demo1234</b> <button type=\"button\">Demo zurücksetzen</button>";
+    bar.innerHTML = "<b>Vorschau-Modus</b> – Daten bleiben nur in diesem Browser. Schüler-Test: <b>mia@demo.de</b> · Admin-Test: <b>admin@demo.de</b> · Passwort <b>demo1234</b> <button type=\"button\">Demo zurücksetzen</button>";
     bar.querySelector("button").onclick = () => { window.API.demoReset(); location.reload(); };
     document.body.prepend(bar);
   }
@@ -172,7 +172,24 @@
     input.style.setProperty("--p", ((input.value - min) / (max - min)) * 100 + "%");
   }
 
-  window.UI = { COMBOS, eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
+  // Bestätigungsdialog im Seiten-Design (statt confirm(), das manche Umgebungen blockieren)
+  function ask(msg, okLabel) {
+    return new Promise((resolve) => {
+      const wrap = document.createElement("div");
+      wrap.className = "dlg-backdrop";
+      wrap.innerHTML = '<div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="dlgMsg"><p id="dlgMsg"></p><div class="dlg-acts"><button type="button" class="btn" data-a="0">Abbrechen</button><button type="button" class="btn btn-primary" data-a="1"></button></div></div>';
+      wrap.querySelector("#dlgMsg").textContent = msg;
+      wrap.querySelector('[data-a="1"]').textContent = okLabel || "Ja, weiter";
+      const done = (v) => { wrap.remove(); document.removeEventListener("keydown", onKey); resolve(v); };
+      const onKey = (e) => { if (e.key === "Escape") done(false); };
+      wrap.addEventListener("click", (e) => { const b = e.target.closest("[data-a]"); if (b) done(b.dataset.a === "1"); else if (e.target === wrap) done(false); });
+      document.addEventListener("keydown", onKey);
+      document.body.appendChild(wrap);
+      wrap.querySelector('[data-a="1"]').focus();
+    });
+  }
+
+  window.UI = { ask, COMBOS, eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
 
   document.addEventListener("DOMContentLoaded", () => { applySiteName(); demoBar(); onScrollHeader(); });
 })();

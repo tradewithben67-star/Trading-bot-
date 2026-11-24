@@ -513,3 +513,15 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 14px; border-radius: 
   .combo-grid, .price-tiles { grid-template-columns: 1fr; }
   .price-tile { padding: 24px; }
 }
+
+/* Bestätigungsdialog */
+.dlg-backdrop { position: fixed; inset: 0; z-index: 200; background: rgba(8, 8, 12, .66); display: grid; place-items: center; padding: 16px; animation: toast-in .15s ease-out; }
+.dlg { width: min(420px, 100%); background: var(--surface-2); border: 1px solid var(--border-strong); border-radius: var(--r-lg); padding: 22px; display: grid; gap: 18px; box-shadow: var(--shadow); }
+.dlg p { font-size: 15.5px; line-height: 1.5; }
+.dlg-acts { display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+
+/* Sichere Bereiche (Notch / Systemleisten) */
+.site-header, .editor-top { top: env(safe-area-inset-top, 0px); }
+.toast-wrap { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 920px) { .sidebar { top: env(safe-area-inset-top, 0px); } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }

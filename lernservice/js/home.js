@@ -137,7 +137,7 @@
       }
       step("Weiterleitung zur Bezahlung …");
       const url = window.API.paymentUrl(order, state.user.email);
-      location.href = url || "konto.html#auftrag/" + order.id;
+      location.href = url || "konto.html#auftrag-" + order.id;
     } catch (err) {
       fail(err.message || String(err));
       btn.disabled = false; step(label);

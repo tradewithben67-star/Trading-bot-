@@ -12,7 +12,7 @@
   const byDate = (a, b) => new Date(a.created_at) - new Date(b.created_at);
   // gleiche Regel wie product_price_cents() in schema.sql
   const priceOf = (product) => (/^paket_/.test(product) ? 1299 : 499);
-  const safeName = (n) => (String(n || "datei").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-80)) || "datei";
+  const safeName = (n) => (String(n || "datei").normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w.\-]+/g, "_").slice(-80)) || "datei";
 
   function tidy(o) {
     o.files = (o.files || []).slice().sort(byDate);
@@ -160,6 +160,18 @@
 
   /* ═════════════════════════ DEMO (localStorage) ═════════════════════════ */
   function makeDemo() {
+    // localStorage kann fehlen oder voll sein (privates Fenster, eingebettete Vorschau) → Speicher im Arbeitsspeicher als Ersatz
+    const LS = (function () {
+      let real = null;
+      try { window.localStorage.setItem("__lk_t", "1"); window.localStorage.removeItem("__lk_t"); real = window.localStorage; } catch (e) { real = null; }
+      const mem = new Map();
+      return {
+        getItem(k) { if (mem.has(k)) return mem.get(k); try { return real ? real.getItem(k) : null; } catch (e) { return null; } },
+        setItem(k, v) { mem.set(k, String(v)); try { if (real) real.setItem(k, String(v)); } catch (e) { /* voll – bleibt im Arbeitsspeicher */ } },
+        removeItem(k) { mem.delete(k); try { if (real) real.removeItem(k); } catch (e) { /* egal */ } },
+        keys() { let ks = []; try { ks = real ? Object.keys(real) : []; } catch (e) { ks = []; } return Array.from(new Set(ks.concat(Array.from(mem.keys())))); }
+      };
+    })();
     const KEY = "lk_demo_v3", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
     const now = () => new Date().toISOString();
     const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
@@ -203,7 +215,7 @@
       db.users.forEach((u) => (u.ref_code = newCode(db)));
       leon.referred_by = mia.id; ela.referred_by = mia.id;
       const mk = (u, o) => { const r = Object.assign({ id: id(), user_id: u.id, price_cents: priceOf(o.product), draft_message: null, due_date: null, text_content: null, wish: "", created_at: ago(o.h), updated_at: ago(o.h), paid_at: o.status === "unbezahlt" ? null : ago(o.h - 0.1) }, o); delete r.h; db.orders.push(r); return r; };
-      const file = (o, name, mime, data, fromAdmin, msgId, h) => { const f = { id: id(), order_id: o.id, path: "demo/" + name, name, mime, size: Math.round(data.length * 0.75), from_admin: !!fromAdmin, message_id: msgId || null, created_at: ago(h) }; db.files.push(f); localStorage.setItem(FKEY + f.id, data); return f; };
+      const file = (o, name, mime, data, fromAdmin, msgId, h) => { const f = { id: id(), order_id: o.id, path: "demo/" + name, name, mime, size: Math.round(data.length * 0.75), from_admin: !!fromAdmin, message_id: msgId || null, created_at: ago(h) }; db.files.push(f); LS.setItem(FKEY + f.id, data); return f; };
       const msg = (o, fromAdmin, body, h, read) => { const m = { id: id(), order_id: o.id, from_admin: fromAdmin, body, created_at: ago(h), read_at: read ? ago(h - 0.5) : null }; db.messages.push(m); return m; };
 
       const o1 = mk(mia, { kind: "bild", product: "lernzettel", subject: "Biologie", grade: "9", status: "neu", wish: "Bitte einen Lernzettel zur Zellatmung, wir schreiben am Freitag eine Arbeit. Gern mit kleiner Skizze.", h: 3, due_date: new Date(Date.now() + 3 * 864e5).toISOString().slice(0, 10) });
@@ -238,11 +250,11 @@
     }
 
     function load() {
-      try { const db = JSON.parse(localStorage.getItem(KEY)); if (db && db.users) return db; } catch (e) { /* neu anlegen */ }
+      try { const db = JSON.parse(LS.getItem(KEY)); if (db && db.users) return db; } catch (e) { /* neu anlegen */ }
       const db = seed(); save(db); return db;
     }
-    function save(db) { localStorage.setItem(KEY, JSON.stringify(db)); }
-    const current = (db) => db.users.find((u) => u.id === localStorage.getItem(SKEY)) || null;
+    function save(db) { LS.setItem(KEY, JSON.stringify(db)); }
+    const current = (db) => db.users.find((u) => u.id === LS.getItem(SKEY)) || null;
     const pub = (u) => u && { id: u.id, email: u.email, name: u.name, isAdmin: !!u.isAdmin };
     function full(db, o) {
       const u = db.users.find((x) => x.id === o.user_id) || {};
@@ -271,7 +283,7 @@
         if (db.users.some((u) => u.email === email)) throw new Error("Für diese E-Mail gibt es schon ein Konto. Bitte melde dich an.");
         const referrer = ref ? db.users.find((x) => x.ref_code === String(ref).trim().toUpperCase()) : null;
         const u = { id: "u-" + Date.now(), name, email, password, isAdmin: false, created_at: now(), ref_code: newCode(db), referred_by: referrer ? referrer.id : null };
-        db.users.push(u); save(db); localStorage.setItem(SKEY, u.id);
+        db.users.push(u); save(db); LS.setItem(SKEY, u.id);
         return { user: pub(u) };
       },
       async signIn({ email, password }) {
@@ -279,10 +291,10 @@
         const db = load();
         const u = db.users.find((x) => x.email === String(email).trim().toLowerCase() && x.password === password);
         if (!u) throw new Error("E-Mail oder Passwort ist falsch.");
-        localStorage.setItem(SKEY, u.id);
+        LS.setItem(SKEY, u.id);
         return pub(u);
       },
-      async signOut() { localStorage.removeItem(SKEY); },
+      async signOut() { LS.removeItem(SKEY); },
       async resetPassword() { await wait(300); },
       async setPassword(pw) { const db = load(); need(db).password = pw; save(db); },
       async updateName(name) { const db = load(); need(db).name = name; save(db); },
@@ -298,7 +310,7 @@
         if (file.size > MAX_FILE) throw new Error("„" + file.name + "“ ist zu groß (max. 25 MB).");
         const db = load(); const u = need(db);
         const rec = { id: ++db.seq, order_id: order.id, path: "demo/" + safeName(file.name), name: file.name || "datei", mime: file.type || "", size: file.size, from_admin: !!u.isAdmin, message_id: messageId || null, created_at: now() };
-        try { localStorage.setItem(FKEY + rec.id, await readAsDataURL(file)); } catch (e) { /* Speicher voll – in der Vorschau egal */ }
+        try { LS.setItem(FKEY + rec.id, await readAsDataURL(file)); } catch (e) { /* Speicher voll – in der Vorschau egal */ }
         db.files.push(rec); save(db);
         return rec;
       },
@@ -310,7 +322,7 @@
         if (!o || (!u.isAdmin && o.user_id !== u.id)) throw new Error("Auftrag nicht gefunden.");
         return full(db, o);
       },
-      async fileUrl(f) { return localStorage.getItem(FKEY + f.id) || ""; },
+      async fileUrl(f) { return LS.getItem(FKEY + f.id) || ""; },
       async sendMessage(order, body, files) {
         const db = load(); const u = need(db);
         const m = { id: ++db.seq, order_id: order.id, from_admin: !!u.isAdmin, body: body || "", created_at: now(), read_at: null };
@@ -410,7 +422,7 @@
       },
       paymentUrl(order) { return "bezahlen.html?order=" + order.id; },
       demoReset() {
-        Object.keys(localStorage).filter((k) => k.startsWith("lk_demo")).forEach((k) => localStorage.removeItem(k));
+        LS.keys().filter((k) => k.startsWith("lk_demo")).forEach((k) => LS.removeItem(k));
       }
     };
     return api;

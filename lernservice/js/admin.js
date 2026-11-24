@@ -43,7 +43,7 @@
     view.onclick = null;
     window.scrollTo(0, 0);
     try {
-      if (h.startsWith("auftrag/")) { setNav(lastList); return await openEditor(Number(h.split("/")[1])); }
+      if (h.startsWith("auftrag-")) { setNav(lastList); return await openEditor(Number(h.slice(8))); }
       if (h === "empfehlungen") { setNav("empfehlungen"); await load(); return await showReferrals(); }
       lastList = VIEWS[h] ? h : "eingang";
       setNav(lastList);
@@ -87,7 +87,7 @@
       const unread = unreadOf(o);
       const preview = o.kind === "text" ? '<div class="txt">' + esc((o.text_content || "").slice(0, 260)) + "</div>" : '<span data-thumb="' + o.id + '">' + icon("image") + "</span>";
       const due = o.due_date ? " · bis " + fmtDate(o.due_date) : "";
-      return '<a class="sub-card" href="#auftrag/' + o.id + '"><div class="preview">' + preview +
+      return '<a class="sub-card" href="#auftrag-' + o.id + '"><div class="preview">' + preview +
         (unread ? '<span class="flag"><span class="dot"></span>Neue Nachricht</span>' : "") +
         '</div><div class="body"><div class="top"><b>' + esc(o.student.name || o.student.email || "Unbekannt") + "</b>" + badge(o.status) + "</div>" +
         '<div class="meta">' + (o.kind === "bild" ? "Bild" : "Text") + " · " + esc(p.name) + " · " + fmtDate(o.created_at) + esc(due) + "</div></div></a>";
@@ -240,7 +240,7 @@
     const chips = document.getElementById("statusChips");
     chips.addEventListener("click", async (e) => {
       if (e.target.closest("#markPaid")) {
-        if (!confirm("Diesen Auftrag als bezahlt markieren? (z. B. bei Barzahlung oder PayPal)")) return;
+        if (!await UI.ask("Diesen Auftrag als bezahlt markieren? (z. B. bei Barzahlung oder PayPal)")) return;
         try { await API.markPaid(o.id); toast("Als bezahlt markiert."); openEditor(o.id); } catch (x) { toast(x.message, true); }
         return;
       }
@@ -280,8 +280,8 @@
     };
 
     document.getElementById("sendDone").onclick = async (e) => {
-      if (o.status === "unbezahlt" && !confirm("Dieser Auftrag ist noch nicht bezahlt. Trotzdem verschicken?")) return;
-      if (!pending.length && !confirm("Es ist keine Ergebnis-Datei angehängt. Nur die Nachricht verschicken?")) return;
+      if (o.status === "unbezahlt" && !await UI.ask("Dieser Auftrag ist noch nicht bezahlt. Trotzdem verschicken?")) return;
+      if (!pending.length && !await UI.ask("Es ist keine Ergebnis-Datei angehängt. Nur die Nachricht verschicken?")) return;
       const btn = e.currentTarget, label = btn.textContent; btn.disabled = true;
       try {
         btn.textContent = pending.length ? "Lade " + pending.length + " Datei" + (pending.length > 1 ? "en" : "") + " hoch …" : "Wird gesendet …";
@@ -325,7 +325,7 @@
       '<h2 style="font-size:19px;margin-bottom:12px">Empfehlungs-Boni</h2>' +
       (bonuses.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Datum</th><th>Werber</th><th>Geworbener Freund</th><th>Auftrag</th><th class="num">Bonus</th><th></th></tr></thead><tbody>' +
         bonuses.map((c) => "<tr><td>" + fmtDate(c.created_at) + "</td><td>" + who(c.user) + "</td><td>" + who(c.source) + "</td><td>" +
-          (c.order_id ? '<a href="#auftrag/' + c.order_id + '">#' + String(c.order_id).padStart(4, "0") + "</a>" : "—") + '</td><td class="num">' + eur(c.amount_cents) + '</td><td><div class="acts">' +
+          (c.order_id ? '<a href="#auftrag-' + c.order_id + '">#' + String(c.order_id).padStart(4, "0") + "</a>" : "—") + '</td><td class="num">' + eur(c.amount_cents) + '</td><td><div class="acts">' +
           (reversed.has(c.id) ? '<span class="badge badge-abgelehnt">Storniert</span>' : '<button class="btn btn-sm btn-ghost" data-reverse="' + c.id + '">Stornieren</button>') + "</div></td></tr>").join("") +
         "</tbody></table></div>"
         : '<div class="empty">' + icon("gift") + "<p>Noch keine Empfehlungen. Sobald ein geworbener Freund seinen ersten Auftrag bezahlt, erscheint der Bonus hier.</p></div>");
@@ -334,9 +334,9 @@
       const b = e.target.closest("button"); if (!b || !view.contains(b)) return;
       try {
         if (b.dataset.copy != null) { await navigator.clipboard.writeText(b.dataset.copy).then(() => toast("Kopiert."), () => toast("Kopieren nicht möglich.", true)); return; }
-        if (b.dataset.pay) { if (!confirm("Hast du das Geld überwiesen? Als ausgezahlt markieren?")) return; await API.finishPayout(+b.dataset.pay, true); toast("Als ausgezahlt markiert."); }
-        else if (b.dataset.reject) { if (!confirm("Auszahlung ablehnen? Das Guthaben wird zurückgebucht.")) return; await API.finishPayout(+b.dataset.reject, false); toast("Abgelehnt – Guthaben zurückgebucht."); }
-        else if (b.dataset.reverse) { if (!confirm("Diesen Bonus stornieren (z. B. weil der Auftrag erstattet wurde)?")) return; await API.reverseCredit(+b.dataset.reverse); toast("Bonus storniert."); }
+        if (b.dataset.pay) { if (!await UI.ask("Hast du das Geld überwiesen? Als ausgezahlt markieren?")) return; await API.finishPayout(+b.dataset.pay, true); toast("Als ausgezahlt markiert."); }
+        else if (b.dataset.reject) { if (!await UI.ask("Auszahlung ablehnen? Das Guthaben wird zurückgebucht.")) return; await API.finishPayout(+b.dataset.reject, false); toast("Abgelehnt – Guthaben zurückgebucht."); }
+        else if (b.dataset.reverse) { if (!await UI.ask("Diesen Bonus stornieren (z. B. weil der Auftrag erstattet wurde)?")) return; await API.reverseCredit(+b.dataset.reverse); toast("Bonus storniert."); }
         else return;
         refreshPayoutCount(); showReferrals();
       } catch (x) { toast(x.message, true); }
@@ -438,6 +438,6 @@
     return ed;
   }
 
-  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !location.hash.startsWith("#auftrag/")) route(); });
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && !location.hash.startsWith("#auftrag-")) route(); });
   route();
 })();

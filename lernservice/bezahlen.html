@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e13">
+  <title>Bezahlen – {SITE}</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Diese Seite wird nur im Vorschau-Modus benutzt. Im Live-Betrieb geht es direkt zu Stripe. -->
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="brand-mark" data-icon="arrowUp"></span><span data-site-name></span></a>
+    </div>
+  </header>
+  <main class="center-page">
+    <div class="card pay-card" id="box"><div class="loading"><div class="spinner"></div></div></div>
+  </main>
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+  (async function () {
+    const box = document.getElementById("box");
+    const id = new URLSearchParams(location.search).get("order");
+    try {
+      const o = await API.getOrder(id);
+      const p = UI.productById(o.product);
+      if (API.mode === "live") { const u = API.paymentUrl(o, (await API.session()).email); if (u) { location.replace(u); return; } }
+      box.innerHTML =
+        '<div class="notice">' + UI.icon("info") + '<span><b>Vorschau:</b> Hier erscheint später die sichere Stripe-Bezahlseite (Karte, Apple Pay, Google Pay …). Es wird nichts abgebucht.</span></div>' +
+        '<h1 style="font-size:26px">Bezahlen</h1>' +
+        '<div class="pay-line"><span>' + UI.esc(p.long) + " · Auftrag " + UI.orderNo(o) + '</span><span data-price></span></div>' +
+        '<div class="pay-line total"><span>Gesamt</span><span data-price></span></div>' +
+        '<button class="btn btn-primary btn-lg" id="pay">' + UI.icon("card") + 'Testzahlung abschließen</button>' +
+        '<a class="btn btn-ghost btn-sm" href="konto.html#auftraege">Später bezahlen</a>';
+      UI.applySiteName();
+      if (o.status !== "unbezahlt") { location.replace("konto.html?bezahlt=1#auftrag/" + o.id); return; }
+      document.getElementById("pay").onclick = async (e) => {
+        e.currentTarget.disabled = true; e.currentTarget.textContent = "Zahlung wird verarbeitet …";
+        await API.demoPay(o.id);
+        location.href = "konto.html?bezahlt=1#auftrag/" + o.id;
+      };
+    } catch (err) {
+      box.innerHTML = '<p class="form-error">' + UI.esc(err.message) + '</p><a class="btn" href="konto.html">Zu meinem Konto</a>';
+    }
+  })();
+  </script>
+</body>
+</html>

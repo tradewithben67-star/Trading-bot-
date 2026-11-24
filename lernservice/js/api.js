@@ -58,8 +58,10 @@
         return me;
       },
       onAuthChange(cb) { sb.auth.onAuthStateChange((ev) => { me = null; cb(ev); }); },
-      async signUp({ name, email, password }) {
-        const { data, error } = await sb.auth.signUp({ email, password, options: { data: { name }, emailRedirectTo: baseUrl() + "konto.html" } });
+      async signUp({ name, email, password, ref }) {
+        const meta = { name };
+        if (ref) meta.ref = String(ref).trim().toUpperCase();
+        const { data, error } = await sb.auth.signUp({ email, password, options: { data: meta, emailRedirectTo: baseUrl() + "konto.html" } });
         if (error) throw germanError(error);
         if (!data.session) return { needsConfirm: true };
         me = null;
@@ -121,8 +123,27 @@
       async updateOrder(id, patch) {
         return chk(await sb.from("orders").update(patch).eq("id", id).select().single());
       },
-      async markPaid(id) { return api.updateOrder(id, { status: "neu", paid_at: new Date().toISOString() }); },
+      async markPaid(id) { return api.updateOrder(id, { status: "neu", paid_at: new Date().toISOString(), paid_via: "manuell" }); },
       async markRead(orderId) { await sb.rpc("mark_read", { p_order: orderId }); },
+
+      // ── Empfehlungsprogramm ──
+      async referralInfo() {
+        const u = await api.session();
+        const info = chk(await sb.rpc("my_referral_info"));
+        const credits = chk(await sb.from("credits").select("*").eq("user_id", u.id).order("created_at", { ascending: false }));
+        const payouts = chk(await sb.from("payouts").select("*").eq("user_id", u.id).order("created_at", { ascending: false }));
+        return { info, credits, payouts };
+      },
+      async setReferrer(code) { chk(await sb.rpc("set_referrer", { p_code: code })); },
+      async payWithCredit(orderId) { chk(await sb.rpc("pay_with_credit", { p_order: orderId })); },
+      async requestPayout(method, details) { chk(await sb.rpc("request_payout", { p_method: method, p_details: details })); },
+      async adminReferrals() {
+        const credits = chk(await sb.from("credits").select("*, user:profiles!credits_user_id_fkey(name,email), source:profiles!credits_source_user_id_fkey(name,email)").order("created_at", { ascending: false }).limit(500));
+        const payouts = chk(await sb.from("payouts").select("*, user:profiles(name,email)").order("created_at", { ascending: false }).limit(200));
+        return { credits, payouts };
+      },
+      async finishPayout(id, paid) { chk(await sb.rpc("admin_finish_payout", { p_id: id, p_paid: !!paid })); },
+      async reverseCredit(id) { chk(await sb.rpc("admin_reverse_credit", { p_id: id })); },
       paymentUrl(order, email) {
         if (!C.STRIPE_PAYMENT_LINK) return null;
         const u = new URL(C.STRIPE_PAYMENT_LINK);
@@ -136,7 +157,7 @@
 
   /* ═════════════════════════ DEMO (localStorage) ═════════════════════════ */
   function makeDemo() {
-    const KEY = "lk_demo_v1", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
+    const KEY = "lk_demo_v2", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
     const now = () => new Date().toISOString();
     const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     const wait = (ms) => new Promise((r) => setTimeout(r, ms || 120));
@@ -150,14 +171,34 @@
     }
     function textData(txt) { return "data:text/plain;charset=utf-8," + encodeURIComponent(txt); }
 
+    const BONUS = 299, MIN_PAYOUT = 1000;
+    function newCode(db) {
+      const ch = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; let c;
+      do { c = Array.from({ length: 6 }, () => ch[Math.floor(Math.random() * ch.length)]).join(""); } while (db.users.some((u) => u.ref_code === c));
+      return c;
+    }
+    const balance = (db, uid) => db.credits.filter((c) => c.user_id === uid).reduce((s, c) => s + c.amount_cents, 0);
+    function credit(db, row) { const c = Object.assign({ id: ++db.seq, source_user_id: null, order_id: null, payout_id: null, reverses_id: null, note: null, created_at: now() }, row); db.credits.push(c); return c; }
+    // gleiche Regel wie in der Datenbank: Bonus beim ersten echten Kauf des geworbenen Freundes
+    function onPaid(db, o, via) {
+      o.status = "neu"; o.paid_at = now(); o.paid_via = via;
+      const buyer = db.users.find((u) => u.id === o.user_id);
+      if (via !== "guthaben" && buyer && buyer.referred_by && buyer.referred_by !== buyer.id &&
+          !db.credits.some((c) => c.kind === "empfehlung" && c.source_user_id === buyer.id)) {
+        credit(db, { user_id: buyer.referred_by, amount_cents: BONUS, kind: "empfehlung", source_user_id: buyer.id, order_id: o.id, note: "Empfehlung" });
+      }
+    }
+
     function seed() {
-      const db = { seq: 1000, users: [], orders: [], files: [], messages: [] };
+      const db = { seq: 1000, users: [], orders: [], files: [], messages: [], credits: [], payouts: [] };
       const id = () => ++db.seq;
       const admin = { id: "u-admin", name: "Admin", email: "admin@demo.de", password: "demo1234", isAdmin: true, created_at: ago(500) };
       const mia = { id: "u-mia", name: "Mia Schneider", email: "mia@demo.de", password: "demo1234", isAdmin: false, created_at: ago(300) };
       const leon = { id: "u-leon", name: "Leon Wagner", email: "leon@demo.de", password: "demo1234", isAdmin: false, created_at: ago(200) };
       const ela = { id: "u-ela", name: "Ela Yilmaz", email: "ela@demo.de", password: "demo1234", isAdmin: false, created_at: ago(100) };
       db.users.push(admin, mia, leon, ela);
+      db.users.forEach((u) => (u.ref_code = newCode(db)));
+      leon.referred_by = mia.id; ela.referred_by = mia.id;
       const mk = (u, o) => { const r = Object.assign({ id: id(), user_id: u.id, price_cents: 799, draft_message: null, due_date: null, text_content: null, wish: "", created_at: ago(o.h), updated_at: ago(o.h), paid_at: o.status === "unbezahlt" ? null : ago(o.h - 0.1) }, o); delete r.h; db.orders.push(r); return r; };
       const file = (o, name, mime, data, fromAdmin, msgId, h) => { const f = { id: id(), order_id: o.id, path: "demo/" + name, name, mime, size: Math.round(data.length * 0.75), from_admin: !!fromAdmin, message_id: msgId || null, created_at: ago(h) }; db.files.push(f); localStorage.setItem(FKEY + f.id, data); return f; };
       const msg = (o, fromAdmin, body, h, read) => { const m = { id: id(), order_id: o.id, from_admin: fromAdmin, body, created_at: ago(h), read_at: read ? ago(h - 0.5) : null }; db.messages.push(m); return m; };
@@ -174,6 +215,20 @@
       file(o4, "karteikarten-unit4.txt", "text/plain", textData("VORNE: environment\nHINTEN: Umwelt\n\nVORNE: to reduce\nHINTEN: verringern\n\nVORNE: waste\nHINTEN: Müll, Abfall\n\nVORNE: sustainable\nHINTEN: nachhaltig\n\nVORNE: climate change\nHINTEN: Klimawandel\n"), true, db.messages[db.messages.length - 1].id, 60);
       mk(leon, { kind: "text", product: "uebungsfragen", subject: "Mathe", grade: "10", status: "unbezahlt", wish: "Übungsaufgaben zu quadratischen Funktionen.", h: 1, text_content: "Scheitelpunktform, p-q-Formel, Nullstellen" });
       const o6 = mk(ela, { kind: "bild", product: "mindmap", subject: "Deutsch", grade: "8", status: "fertig", wish: "Mindmap zu den Figuren aus „Tschick“.", h: 120 });
+      // Empfehlungen: Mia hat Leon + Ela geworben, Jonas vier Freunde (und will sich auszahlen lassen)
+      credit(db, { user_id: mia.id, amount_cents: BONUS, kind: "empfehlung", source_user_id: leon.id, order_id: o2.id, note: "Empfehlung", created_at: ago(7) });
+      credit(db, { user_id: mia.id, amount_cents: BONUS, kind: "empfehlung", source_user_id: ela.id, order_id: o3.id, note: "Empfehlung", created_at: ago(26) });
+      const jonas = { id: "u-jonas", name: "Jonas Becker", email: "jonas@demo.de", password: "demo1234", isAdmin: false, created_at: ago(400), ref_code: newCode(db) };
+      db.users.push(jonas);
+      ["Paul Richter", "Lina Hoffmann", "Noah Klein", "Emma Wolf"].forEach((n, i) => {
+        const f = { id: "u-f" + i, name: n, email: n.split(" ")[0].toLowerCase() + "@demo.de", password: "demo1234", isAdmin: false, created_at: ago(300 - i * 20), ref_code: newCode(db), referred_by: jonas.id };
+        db.users.push(f);
+        const fo = mk(f, { kind: "text", product: ["lernzettel", "karteikarten", "zusammenfassung", "powerpoint"][i], subject: "Mathe", grade: "10", status: "archiv", wish: "", h: 290 - i * 20, text_content: "Archivierter Beispielauftrag.", paid_via: "stripe" });
+        credit(db, { user_id: jonas.id, amount_cents: BONUS, kind: "empfehlung", source_user_id: f.id, order_id: fo.id, note: "Empfehlung", created_at: ago(290 - i * 20) });
+      });
+      const pay = { id: ++db.seq, user_id: jonas.id, amount_cents: 4 * BONUS, method: "paypal", details: "jonas.becker@paypal.de", status: "offen", created_at: ago(5), done_at: null };
+      db.payouts.push(pay);
+      credit(db, { user_id: jonas.id, amount_cents: -4 * BONUS, kind: "auszahlung", payout_id: pay.id, note: "Auszahlung angefordert", created_at: ago(5) });
       file(o6, "tschick-notizen.svg", "image/svg+xml", noteSvg("Tschick – Figuren", ["Maik Klingenberg – Ich-Erzähler", "Tschick (Andrej) – neuer Mitschüler", "Isa – trifft die beiden auf der Müllkippe"], 280), false, null, 120);
       msg(o6, true, "Hier ist deine Mindmap. Sag Bescheid, wenn du noch etwas ergänzt haben möchtest!", 100, true);
       return db;
@@ -206,12 +261,13 @@
       mode: "demo",
       async session() { return pub(current(load())); },
       onAuthChange() {},
-      async signUp({ name, email, password }) {
+      async signUp({ name, email, password, ref }) {
         await wait(250);
         const db = load();
         email = String(email).trim().toLowerCase();
         if (db.users.some((u) => u.email === email)) throw new Error("Für diese E-Mail gibt es schon ein Konto. Bitte melde dich an.");
-        const u = { id: "u-" + Date.now(), name, email, password, isAdmin: false, created_at: now() };
+        const referrer = ref ? db.users.find((x) => x.ref_code === String(ref).trim().toUpperCase()) : null;
+        const u = { id: "u-" + Date.now(), name, email, password, isAdmin: false, created_at: now(), ref_code: newCode(db), referred_by: referrer ? referrer.id : null };
         db.users.push(u); save(db); localStorage.setItem(SKEY, u.id);
         return { user: pub(u) };
       },
@@ -265,12 +321,84 @@
         Object.assign(o, patch, { updated_at: now() }); save(db);
         return o;
       },
-      async markPaid(id) { return api.updateOrder(id, { status: "neu", paid_at: now() }); },
+      async markPaid(id) {
+        const db = load(); need(db, true);
+        const o = db.orders.find((x) => x.id === Number(id));
+        if (o && o.status === "unbezahlt") { onPaid(db, o, "manuell"); save(db); }
+      },
       async demoPay(id) {
         await wait(700);
         const db = load(); const u = need(db);
         const o = db.orders.find((x) => x.id === Number(id) && x.user_id === u.id);
-        if (o && o.status === "unbezahlt") { o.status = "neu"; o.paid_at = now(); save(db); }
+        if (o && o.status === "unbezahlt") { onPaid(db, o, "stripe"); save(db); }
+      },
+
+      // ── Empfehlungsprogramm (Demo, gleiche Regeln wie die Datenbank) ──
+      async referralInfo() {
+        await wait(); const db = load(); const u = need(db);
+        const earned = db.credits.filter((c) => c.user_id === u.id && c.kind === "empfehlung");
+        return {
+          info: {
+            code: u.ref_code, has_referrer: !!u.referred_by,
+            can_set_referrer: !u.referred_by && !db.orders.some((o) => o.user_id === u.id && o.status !== "unbezahlt"),
+            balance_cents: balance(db, u.id), invited: db.users.filter((x) => x.referred_by === u.id).length,
+            bought: earned.length, earned_cents: earned.reduce((s, c) => s + c.amount_cents, 0),
+            bonus_cents: BONUS, min_payout_cents: MIN_PAYOUT
+          },
+          credits: db.credits.filter((c) => c.user_id === u.id).sort((a, b) => -byDate(a, b)),
+          payouts: db.payouts.filter((p) => p.user_id === u.id).sort((a, b) => -byDate(a, b))
+        };
+      },
+      async setReferrer(code) {
+        const db = load(); const u = need(db);
+        const ref = db.users.find((x) => x.ref_code === String(code || "").trim().toUpperCase());
+        if (!ref) throw new Error("Diesen Empfehlungscode gibt es nicht.");
+        if (ref.id === u.id) throw new Error("Du kannst dich nicht selbst empfehlen.");
+        if (ref.referred_by === u.id) throw new Error("Ihr könnt euch nicht gegenseitig empfehlen.");
+        if (db.orders.some((o) => o.user_id === u.id && o.status !== "unbezahlt")) throw new Error("Ein Code kann nur vor dem ersten Kauf eingetragen werden.");
+        if (u.referred_by) throw new Error("Du hast schon einen Empfehlungscode eingetragen.");
+        u.referred_by = ref.id; save(db);
+      },
+      async payWithCredit(orderId) {
+        await wait(300); const db = load(); const u = need(db);
+        const o = db.orders.find((x) => x.id === Number(orderId) && x.user_id === u.id);
+        if (!o) throw new Error("Auftrag nicht gefunden.");
+        if (o.status !== "unbezahlt") throw new Error("Dieser Auftrag ist schon bezahlt.");
+        if (balance(db, u.id) < o.price_cents) throw new Error("Nicht genug Guthaben.");
+        credit(db, { user_id: u.id, amount_cents: -o.price_cents, kind: "bezahlung", order_id: o.id, note: "Auftrag mit Guthaben bezahlt" });
+        onPaid(db, o, "guthaben"); save(db);
+      },
+      async requestPayout(method, details) {
+        await wait(300); const db = load(); const u = need(db);
+        const bal = balance(db, u.id);
+        if (bal < MIN_PAYOUT) throw new Error("Auszahlung ist erst ab dem Mindestbetrag möglich.");
+        const p = { id: ++db.seq, user_id: u.id, amount_cents: bal, method, details: String(details).trim(), status: "offen", created_at: now(), done_at: null };
+        db.payouts.push(p);
+        credit(db, { user_id: u.id, amount_cents: -bal, kind: "auszahlung", payout_id: p.id, note: "Auszahlung angefordert" });
+        save(db);
+      },
+      async adminReferrals() {
+        await wait(); const db = load(); need(db, true);
+        const who = (id) => { const x = db.users.find((u) => u.id === id); return x ? { name: x.name, email: x.email } : null; };
+        return {
+          credits: db.credits.slice().sort((a, b) => -byDate(a, b)).map((c) => Object.assign({}, c, { user: who(c.user_id), source: who(c.source_user_id) })),
+          payouts: db.payouts.slice().sort((a, b) => -byDate(a, b)).map((p) => Object.assign({}, p, { user: who(p.user_id) }))
+        };
+      },
+      async finishPayout(id, paid) {
+        const db = load(); need(db, true);
+        const p = db.payouts.find((x) => x.id === Number(id));
+        if (!p || p.status !== "offen") throw new Error("Diese Auszahlung ist schon erledigt.");
+        p.status = paid ? "ausgezahlt" : "abgelehnt"; p.done_at = now();
+        if (!paid) credit(db, { user_id: p.user_id, amount_cents: p.amount_cents, kind: "korrektur", payout_id: p.id, note: "Auszahlung abgelehnt – Guthaben zurückgebucht" });
+        save(db);
+      },
+      async reverseCredit(id) {
+        const db = load(); need(db, true);
+        const c = db.credits.find((x) => x.id === Number(id));
+        if (!c || c.kind !== "empfehlung") throw new Error("Nur Empfehlungs-Gutschriften können storniert werden.");
+        if (!db.credits.some((x) => x.reverses_id === c.id)) credit(db, { user_id: c.user_id, amount_cents: -c.amount_cents, kind: "korrektur", reverses_id: c.id, note: "Empfehlungs-Bonus storniert" });
+        save(db);
       },
       async markRead(orderId) {
         const db = load(); const u = need(db);

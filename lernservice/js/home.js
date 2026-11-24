@@ -57,6 +57,13 @@
   ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); }));
   dz.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
 
+  // Eingeladen von einem Freund?
+  const ref = window.UI.getRef();
+  if (ref) {
+    $("#refNote").innerHTML = icon("gift") + "<span>Du wurdest von einem Freund eingeladen (Code <b>" + esc(ref) + "</b>). Mit deinem ersten Auftrag hilfst du ihm – danach kannst du selbst Freunde werben.</span>";
+    $("#refNote").classList.remove("hidden");
+  }
+
   // Login-Status
   async function refreshAuth() {
     state.user = await window.UI.renderAuthNav();
@@ -97,7 +104,8 @@
     try {
       if (!state.user) {
         step("Konto wird erstellt …");
-        const r = await window.API.signUp({ name: $("#name").value.trim(), email: $("#email").value.trim(), password: $("#password").value });
+        const r = await window.API.signUp({ name: $("#name").value.trim(), email: $("#email").value.trim(), password: $("#password").value, ref: window.UI.getRef() });
+        window.UI.clearRef();
         if (r.needsConfirm) {
           fail("Fast geschafft! Wir haben dir eine E-Mail geschickt. Bestätige deine Adresse, melde dich an und sende den Auftrag dann noch einmal ab.");
           btn.disabled = false; step(label); return;

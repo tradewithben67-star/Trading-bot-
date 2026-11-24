@@ -1,13 +1,13 @@
 /* Schülerbereich: Aufträge, Postfach, Konto */
 (async function () {
-  const { icon, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, productById, toast } = window.UI;
+  const { icon, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, productById, toast, eur } = window.UI;
   const view = document.getElementById("view");
   let user = null, orders = [], paidPolls = 0;
   let paidFlash = new URLSearchParams(location.search).get("bezahlt") === "1";
   if (paidFlash) history.replaceState(null, "", location.pathname + location.hash);
 
   user = await API.session().catch(() => null);
-  if (!user) { location.replace("login.html?next=konto.html"); return; }
+  if (!user) { location.replace("login.html?next=" + encodeURIComponent("konto.html" + location.hash)); return; }
   if (user.isAdmin) { location.replace("admin.html"); return; }
   document.getElementById("uName").textContent = user.name || "Schüler";
   document.getElementById("uEmail").textContent = user.email;
@@ -41,6 +41,7 @@
       if (h.startsWith("auftrag/")) { setNav("auftraege"); return await showOrder(Number(h.split("/")[1])); }
       if (h === "postfach") { setNav("postfach"); return await showInbox(); }
       if (h === "konto") { setNav("konto"); return showAccount(); }
+      if (h === "empfehlen") { setNav("empfehlen"); return await showReferral(); }
       setNav("auftraege"); await showOrders();
     } catch (e) {
       view.innerHTML = '<div class="empty">' + icon("info") + "<h3>Das hat nicht geklappt</h3><p>" + esc(e.message) + '</p><a class="btn" href="#auftraege">Zurück</a></div>';
@@ -91,7 +92,9 @@
     let payBox = "";
     if (st === "unbezahlt") {
       const url = API.paymentUrl(o, user.email);
-      payBox = url
+      const bal = await API.referralInfo().then((r) => r.info.balance_cents).catch(() => 0);
+      if (bal >= o.price_cents) payBox += '<button class="btn btn-lg" id="payCredit">' + icon("wallet") + "Mit Guthaben bezahlen (" + eur(bal) + " verfügbar)</button>";
+      payBox += url
         ? '<div class="notice warn">' + icon("card") + '<span style="flex:1">Dieser Auftrag ist noch nicht bezahlt. Ich fange an, sobald die Zahlung da ist.</span></div><a class="btn btn-primary btn-lg" href="' + esc(url) + '">' + icon("card") + "Jetzt bezahlen</a>"
         : '<div class="notice warn">' + icon("info") + "<span>Die Online-Bezahlung wird gerade eingerichtet. Du bekommst Bescheid, sobald du bezahlen kannst.</span></div>";
     }
@@ -126,6 +129,13 @@
           (st !== "unbezahlt" ? '<form class="reply" id="reply"><textarea class="textarea" id="replyText" rows="3" placeholder="Rückfrage oder Nachricht schreiben …"></textarea><div class="row"><button class="btn btn-primary btn-sm" type="submit">' + icon("send") + "Senden</button></div></form>" : "") +
         "</section></div>";
 
+    const pc = document.getElementById("payCredit");
+    if (pc) pc.onclick = async () => {
+      if (!confirm("Diesen Auftrag mit " + eur(o.price_cents) + " Guthaben bezahlen?")) return;
+      pc.disabled = true;
+      try { await API.payWithCredit(o.id); toast("Bezahlt mit Guthaben – ich lege los!"); load(); showOrder(o.id); }
+      catch (x) { toast(x.message, true); pc.disabled = false; }
+    };
     const form = document.getElementById("reply");
     if (form) form.onsubmit = async (e) => {
       e.preventDefault();
@@ -163,6 +173,84 @@
       el.addEventListener("click", open);
       el.addEventListener("keydown", (e) => { if (e.key === "Enter") open(e); });
     });
+  }
+
+  /* ── Freunde werben ── */
+  const KIND = { empfehlung: "Empfehlungs-Bonus", bezahlung: "Auftrag mit Guthaben bezahlt", auszahlung: "Auszahlung angefordert", korrektur: "Korrektur" };
+  const METHOD = { paypal: "PayPal", ueberweisung: "Überweisung" };
+  async function showReferral() {
+    const { info, credits, payouts } = await API.referralInfo();
+    await load();
+    const link = UI.refLink(info.code);
+    const bonus = eur(info.bonus_cents), minP = eur(info.min_payout_cents);
+    const unpaid = orders.filter((o) => o.status === "unbezahlt");
+    const canPayout = info.balance_cents >= info.min_payout_cents;
+    const shareText = "Ich lass mir meine Lernzettel, Karteikarten & Präsentationen bei " + window.APP_CONFIG.SITE_NAME + " machen – probier's aus:";
+
+    view.innerHTML =
+      '<div class="main-head"><h1>Freunde werben</h1></div>' +
+      '<div class="stat-row" style="margin-bottom:20px">' +
+        '<div class="stat hl"><span class="k">Dein Guthaben</span><span class="v">' + eur(info.balance_cents) + "</span></div>" +
+        '<div class="stat"><span class="k">Eingeladen</span><span class="v">' + info.invited + "</span></div>" +
+        '<div class="stat"><span class="k">Davon gekauft</span><span class="v">' + info.bought + "</span></div>" +
+        '<div class="stat"><span class="k">Insgesamt verdient</span><span class="v">' + eur(info.earned_cents) + "</span></div></div>" +
+      '<section class="panel" style="margin-bottom:20px"><h2>Dein Empfehlungslink</h2>' +
+        '<p class="muted" style="font-size:14.5px">Teile deinen Link. Für jeden Freund, der sich darüber anmeldet und seinen <b>ersten Auftrag bezahlt</b>, bekommst du <b>' + bonus + "</b> Guthaben.</p>" +
+        '<div class="link-box"><input class="input" id="refLink" readonly value="' + esc(link) + '" aria-label="Dein Empfehlungslink">' +
+          '<button class="btn" id="copyLink">' + icon("copy") + "Kopieren</button>" +
+          '<button class="btn btn-primary" id="shareLink">' + icon("share") + "Teilen</button></div>" +
+        '<div class="muted" style="font-size:14px">Oder sag deinen Code weiter: <span class="code-pill">' + esc(info.code) + "</span></div>" +
+      "</section>" +
+      '<div class="detail-grid"><div style="display:grid;gap:20px">' +
+        '<section class="panel"><h2>Guthaben verwenden</h2>' +
+          '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Einlösen:</b> Hast du mindestens ' + esc(window.APP_CONFIG.PRICE_LABEL || "7,99 €") + " Guthaben, kannst du einen Auftrag damit bezahlen.</p>" +
+          (unpaid.some((o) => info.balance_cents >= o.price_cents) ? '<div class="files">' + unpaid.map((o) => '<a class="file" href="#auftrag/' + o.id + '">' + icon("wallet") + '<span class="fn">' + esc(productById(o.product).long) + " " + orderNo(o) + '</span><span class="fs">jetzt bezahlen →</span></a>').join("") + "</div>" : "") +
+          '<form id="payoutForm" style="display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px">' +
+            '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Auszahlen:</b> ab ' + minP + " – das ganze Guthaben wird ausgezahlt.</p>" +
+            '<div class="row-2"><div class="field"><label for="pm">Wie?</label><select class="select" id="pm"><option value="paypal">PayPal</option><option value="ueberweisung">Überweisung</option></select></div>' +
+            '<div class="field"><label for="pd" id="pdLabel">PayPal-E-Mail</label><input class="input" id="pd" maxlength="200" placeholder="du@beispiel.de"></div></div>' +
+            '<div><button class="btn btn-primary" type="submit"' + (canPayout ? "" : " disabled") + ">" + icon("wallet") + (canPayout ? eur(info.balance_cents) + " auszahlen lassen" : "Noch " + eur(info.min_payout_cents - Math.max(0, info.balance_cents)) + " bis zur Auszahlung") + "</button></div>" +
+          "</form></section>" +
+        (info.can_set_referrer ? '<form class="panel" id="setRefForm"><h2>Von einem Freund eingeladen?</h2><p class="muted" style="font-size:14px">Trag seinen Code ein, bevor du deinen ersten Auftrag bezahlst – dann bekommt er seinen Bonus.</p>' +
+          '<div class="link-box"><input class="input" id="refCodeIn" maxlength="12" autocapitalize="characters" placeholder="z. B. K7M2QX"><button class="btn" type="submit">Eintragen</button></div></form>' : "") +
+      "</div>" +
+      '<section class="panel"><h2>Verlauf</h2>' +
+        (payouts.length ? '<div class="section-label" style="margin:0">Auszahlungen</div><div class="ledger">' + payouts.map((p) => '<div class="row"><span>' + eur(p.amount_cents) + " per " + METHOD[p.method] + '<div class="sub">' + fmtDateTime(p.created_at) + '</div></span><span><span class="badge badge-' + p.status + '">' + ({ offen: "In Bearbeitung", ausgezahlt: "Ausgezahlt", abgelehnt: "Abgelehnt" })[p.status] + "</span></span></div>").join("") + "</div>" : "") +
+        '<div class="section-label" style="margin:' + (payouts.length ? "8px" : "0") + ' 0 0">Buchungen</div>' +
+        (credits.length ? '<div class="ledger">' + credits.map((c) => '<div class="row"><span>' + KIND[c.kind] + '<div class="sub">' + fmtDateTime(c.created_at) + (c.kind === "empfehlung" ? " · ein Freund hat bestellt" : c.note && c.kind === "korrektur" ? " · " + esc(c.note) : "") + '</div></span><span class="amt' + (c.amount_cents > 0 ? " plus" : "") + '">' + (c.amount_cents > 0 ? "+" : "") + eur(c.amount_cents) + "</span></div>").join("") + "</div>"
+          : '<p class="faint" style="font-size:14px">Noch keine Buchungen. Teile deinen Link, um loszulegen!</p>') +
+      "</section></div>";
+
+    const linkEl = document.getElementById("refLink");
+    document.getElementById("copyLink").onclick = async () => {
+      try { await navigator.clipboard.writeText(link); toast("Link kopiert – jetzt einfügen und teilen!"); }
+      catch (e) { linkEl.select(); toast("Link markiert – jetzt kopieren.", true); }
+    };
+    document.getElementById("shareLink").onclick = async () => {
+      if (navigator.share) { try { await navigator.share({ title: window.APP_CONFIG.SITE_NAME, text: shareText, url: link }); } catch (e) { /* abgebrochen */ } }
+      else location.href = "https://wa.me/?text=" + encodeURIComponent(shareText + " " + link);
+    };
+    const pm = document.getElementById("pm"), pd = document.getElementById("pd");
+    pm.onchange = () => {
+      const pp = pm.value === "paypal";
+      document.getElementById("pdLabel").textContent = pp ? "PayPal-E-Mail" : "IBAN + Kontoinhaber";
+      pd.placeholder = pp ? "du@beispiel.de" : "DE12 3456 … , Max Mustermann";
+    };
+    document.getElementById("payoutForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const d = pd.value.trim();
+      if (pm.value === "paypal" && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d)) return toast("Bitte gib deine PayPal-E-Mail an.", true);
+      if (pm.value === "ueberweisung" && d.replace(/\s/g, "").length < 15) return toast("Bitte gib IBAN und Kontoinhaber an.", true);
+      if (!confirm(eur(info.balance_cents) + " per " + METHOD[pm.value] + " an „" + d + "“ auszahlen lassen?")) return;
+      try { await API.requestPayout(pm.value, d); toast("Auszahlung angefordert – du bekommst das Geld in den nächsten Tagen."); showReferral(); }
+      catch (x) { toast(x.message, true); }
+    };
+    const sf = document.getElementById("setRefForm");
+    if (sf) sf.onsubmit = async (e) => {
+      e.preventDefault();
+      try { await API.setReferrer(document.getElementById("refCodeIn").value); toast("Code eingetragen. Danke!"); showReferral(); }
+      catch (x) { toast(x.message, true); }
+    };
   }
 
   /* ── Konto ── */

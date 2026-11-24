@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           Prefer: "return=minimal",
         },
-        body: JSON.stringify({ status: "neu", paid_at: new Date().toISOString(), stripe_session_id: s.id }),
+        body: JSON.stringify({ status: "neu", paid_at: new Date().toISOString(), paid_via: "stripe", stripe_session_id: s.id }),
       });
       if (!res.ok) return new Response("Datenbank-Fehler: " + (await res.text()), { status: 500 }); // Stripe versucht es dann erneut
     } else {

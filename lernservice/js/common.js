@@ -31,6 +31,9 @@
     archive: '<rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><path d="M10 12h4"/>',
     card: '<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>',
     copy: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
+    gift: '<rect x="3" y="8" width="18" height="4" rx="1"/><path d="M12 8v13"/><path d="M19 12v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7"/><path d="M7.5 8a2.5 2.5 0 0 1 0-5C10 3 12 8 12 8s2-5 4.5-5a2.5 2.5 0 0 1 0 5"/>',
+    share: '<circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 13.5 6.8 4"/><path d="m15.4 6.5-6.8 4"/>',
+    wallet: '<path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2"/><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4"/>',
     globe: '<circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15 15 0 0 1 0 20 15 15 0 0 1 0-20"/>',
     // Produkte
     presentation: '<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m7 21 5-5 5 5"/>',
@@ -79,6 +82,17 @@
   const isImage = (f) => /^image\//.test(f.mime || "") || /\.(png|jpe?g|webp|gif|heic)$/i.test(f.name || "");
   const badge = (status, student) => '<span class="badge badge-' + esc(status) + '">' + esc((student ? STATUS_STUDENT : STATUS)[status] || status) + "</span>";
   const orderNo = (o) => "#" + String(o.id).padStart(4, "0");
+  const eur = (cents) => ((cents || 0) / 100).toLocaleString("de-DE", { style: "currency", currency: "EUR" });
+
+  // ── Empfehlungscode aus dem Link (?ref=CODE) merken, bis sich jemand registriert ──
+  const REF_KEY = "lk_ref";
+  function getRef() { try { return localStorage.getItem(REF_KEY) || ""; } catch (e) { return ""; } }
+  function clearRef() { try { localStorage.removeItem(REF_KEY); } catch (e) { /* egal */ } }
+  (function captureRef() {
+    const r = new URLSearchParams(location.search).get("ref");
+    if (r && /^[A-Za-z0-9]{4,12}$/.test(r)) { try { localStorage.setItem(REF_KEY, r.toUpperCase()); } catch (e) { /* egal */ } }
+  })();
+  const refLink = (code) => new URL("index.html?ref=" + encodeURIComponent(code), location.href).href;
 
   // ── Toast ──
   function toast(msg, isErr) {
@@ -95,6 +109,8 @@
   function applySiteName() {
     document.querySelectorAll("[data-site-name]").forEach((el) => (el.textContent = C.SITE_NAME || "Lernkiste"));
     document.querySelectorAll("[data-price]").forEach((el) => (el.textContent = C.PRICE_LABEL || "7,99 €"));
+    document.querySelectorAll("[data-bonus]").forEach((el) => (el.textContent = C.REFERRAL_BONUS_LABEL || "2,99 €"));
+    document.querySelectorAll("[data-min-payout]").forEach((el) => (el.textContent = C.MIN_PAYOUT_LABEL || "10,00 €"));
     document.querySelectorAll("[data-delivery]").forEach((el) => (el.textContent = C.DELIVERY_TEXT || ""));
     document.querySelectorAll("[data-contact]").forEach((el) => { el.textContent = C.CONTACT_EMAIL; if (el.tagName === "A") el.href = "mailto:" + C.CONTACT_EMAIL; });
     document.querySelectorAll("[data-year]").forEach((el) => (el.textContent = new Date().getFullYear()));
@@ -138,7 +154,7 @@
     input.style.setProperty("--p", ((input.value - min) / (max - min)) * 100 + "%");
   }
 
-  window.UI = { icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
+  window.UI = { eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
 
   document.addEventListener("DOMContentLoaded", () => { applySiteName(); demoBar(); onScrollHeader(); });
 })();

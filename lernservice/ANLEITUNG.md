@@ -117,6 +117,30 @@ Der Auftrag sollte nach wenigen Sekunden im Admin-Eingang als **Neu** erscheinen
 
 ---
 
+## Empfehlungsprogramm (Freunde werben)
+
+Ist automatisch dabei, sobald du `schema.sql` ausgeführt hast.
+
+**Hast du `schema.sql` schon vor dem Empfehlungsprogramm ausgeführt?** Dann führe die (neue) Datei einfach **noch einmal komplett** im SQL Editor aus. Das ist gefahrlos, deine Daten bleiben erhalten. Bestehende Konten bekommen dabei automatisch einen Code.
+Die Edge Function `stripe-webhook` bitte ebenfalls mit dem neuen Code neu deployen.
+
+**So funktioniert es:**
+- Jeder Schüler findet unter **Konto → Freunde werben** seinen Link (`…/index.html?ref=CODE`) und kann ihn direkt per WhatsApp & Co. teilen.
+- Meldet sich ein Freund über den Link an (oder trägt den Code ein) und **bezahlt seinen ersten Auftrag**, bekommt der Werber automatisch **2,99 € Guthaben**. Das gibt es pro Freund einmal.
+- Guthaben kann man **für eigene Aufträge einlösen** (Button „Mit Guthaben bezahlen“) oder sich **ab 10 € auszahlen lassen** (PayPal oder Überweisung).
+- Du siehst die Auszahlungswünsche im Admin unter **Empfehlungen**. Geld per PayPal oder Bank schicken, dann auf **„Ausgezahlt“** tippen.
+  „Ablehnen“ bucht das Guthaben zurück.
+- Wurde ein Auftrag erstattet oder war es Betrug (z. B. Zweitkonto), kannst du dort den Bonus **stornieren**.
+
+**Schutz vor Missbrauch (automatisch):** Man kann sich nicht selbst werben. Zwei Personen können sich nicht gegenseitig werben. Den Code kann man nur vor dem ersten Kauf eintragen. Bei Zahlung mit Guthaben gibt es keinen Bonus. Und niemand kann sich selbst Guthaben gutschreiben.
+
+**Beträge ändern:** In `schema.sql` die Zahlen in `referral_bonus_cents` (299) und `min_payout_cents` (1000) ändern und das Skript erneut ausführen.
+Danach die Anzeige in `config.js` anpassen (`REFERRAL_BONUS_LABEL`, `MIN_PAYOUT_LABEL`).
+
+**Rechnung:** Von 7,99 € gehen ca. 0,40 € Stripe-Gebühr ab. Bei einem geworbenen Erstkauf bleiben dir nach dem Bonus ca. 4,60 €, bei jedem weiteren Kauf des Freundes wieder die vollen ca. 7,60 €.
+
+---
+
 ## Schritt 6 – Rechtstexte ausfüllen
 
 In GitHub `lernservice/recht.html` öffnen und alle `[Platzhalter]` ersetzen (Name, Adresse, Kleinunternehmer-Hinweis …).

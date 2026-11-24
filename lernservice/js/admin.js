@@ -1,6 +1,6 @@
 /* Admin: Eingang + Bearbeiten & Zurückschicken */
 (async function () {
-  const { icon, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, productById, toast, setRangeFill } = window.UI;
+  const { icon, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, productById, toast, setRangeFill, eur } = window.UI;
   const view = document.getElementById("view");
   const SITE = window.APP_CONFIG.SITE_NAME;
 
@@ -26,15 +26,25 @@
     document.getElementById("c-bearbeitung").textContent = n("in_arbeit") || "";
     document.getElementById("c-fertig").textContent = n("fertig") || "";
     document.getElementById("c-unbezahlt").textContent = n("unbezahlt") || "";
+    refreshPayoutCount();
+  }
+  async function refreshPayoutCount() {
+    try {
+      const { payouts } = await API.adminReferrals();
+      const open = payouts.filter((p) => p.status === "offen").length;
+      const el = document.getElementById("c-payouts"); el.textContent = open; el.classList.toggle("hidden", !open);
+    } catch (e) { /* Empfehlungs-Tabellen evtl. noch nicht eingerichtet */ }
   }
   function setNav(v) { document.querySelectorAll(".side-nav a").forEach((a) => a.setAttribute("aria-current", a.dataset.view === v ? "page" : "false")); }
 
   async function route() {
     const h = location.hash.replace(/^#/, "") || "eingang";
     view.classList.remove("flush");
+    view.onclick = null;
     window.scrollTo(0, 0);
     try {
       if (h.startsWith("auftrag/")) { setNav(lastList); return await openEditor(Number(h.split("/")[1])); }
+      if (h === "empfehlungen") { setNav("empfehlungen"); await load(); return await showReferrals(); }
       lastList = VIEWS[h] ? h : "eingang";
       setNav(lastList);
       await load();
@@ -278,6 +288,56 @@
         toast("An " + (o.student.name || "den Schüler") + " verschickt – liegt jetzt im Postfach.");
         location.hash = lastList;
       } catch (x) { toast(x.message, true); btn.disabled = false; btn.textContent = label; }
+    };
+  }
+
+  /* ═══════════ Empfehlungen & Auszahlungen ═══════════ */
+  async function showReferrals() {
+    const { credits, payouts } = await API.adminReferrals();
+    const open = payouts.filter((p) => p.status === "offen");
+    const bonuses = credits.filter((c) => c.kind === "empfehlung");
+    const reversed = new Set(credits.filter((c) => c.reverses_id).map((c) => c.reverses_id));
+    const totalBal = credits.reduce((s, c) => s + c.amount_cents, 0);
+    const METHOD = { paypal: "PayPal", ueberweisung: "Überweisung" };
+    const who = (u) => u ? "<b>" + esc(u.name || "—") + '</b><div class="faint" style="font-size:12.5px">' + esc(u.email || "") + "</div>" : '<span class="faint">gelöscht</span>';
+
+    view.innerHTML =
+      '<div class="main-head"><h1>Empfehlungen</h1></div>' +
+      '<div class="stat-row" style="margin-bottom:24px">' +
+        '<div class="stat hl"><span class="k">Offene Auszahlungen</span><span class="v">' + eur(open.reduce((s, p) => s + p.amount_cents, 0)) + "</span></div>" +
+        '<div class="stat"><span class="k">Geworbene Käufer</span><span class="v">' + bonuses.length + "</span></div>" +
+        '<div class="stat"><span class="k">Boni gesamt</span><span class="v">' + eur(bonuses.filter((c) => !reversed.has(c.id)).reduce((s, c) => s + c.amount_cents, 0)) + "</span></div>" +
+        '<div class="stat"><span class="k">Guthaben aller Schüler</span><span class="v">' + eur(totalBal) + "</span></div></div>" +
+
+      '<h2 style="font-size:19px;margin-bottom:6px">Auszahlungsanfragen</h2>' +
+      '<p class="muted" style="font-size:14px;margin-bottom:12px">Schick das Geld per PayPal oder Überweisung und tippe dann auf „Ausgezahlt“. „Ablehnen“ bucht das Guthaben zurück.</p>' +
+      (payouts.length ? '<div class="table-wrap" style="margin-bottom:32px"><table class="table"><thead><tr><th>Datum</th><th>Schüler</th><th class="num">Betrag</th><th>An</th><th></th></tr></thead><tbody>' +
+        payouts.map((p) => "<tr><td>" + fmtDate(p.created_at) + "</td><td>" + who(p.user) + '</td><td class="num"><b>' + eur(p.amount_cents) + "</b></td>" +
+          "<td>" + METHOD[p.method] + '<div class="copyable">' + esc(p.details) + "</div></td>" +
+          '<td><div class="acts">' + (p.status === "offen"
+            ? '<button class="btn btn-sm" data-copy="' + esc(p.details) + '">' + icon("copy") + '</button><button class="btn btn-sm btn-primary" data-pay="' + p.id + '">' + icon("check") + 'Ausgezahlt</button><button class="btn btn-sm btn-ghost" data-reject="' + p.id + '">Ablehnen</button>'
+            : '<span class="badge badge-' + p.status + '">' + (p.status === "ausgezahlt" ? "Ausgezahlt " + fmtDate(p.done_at) : "Abgelehnt") + "</span>") + "</div></td></tr>").join("") +
+        "</tbody></table></div>"
+        : '<div class="empty" style="margin-bottom:32px">' + icon("wallet") + "<p>Keine Auszahlungsanfragen.</p></div>") +
+
+      '<h2 style="font-size:19px;margin-bottom:12px">Empfehlungs-Boni</h2>' +
+      (bonuses.length ? '<div class="table-wrap"><table class="table"><thead><tr><th>Datum</th><th>Werber</th><th>Geworbener Freund</th><th>Auftrag</th><th class="num">Bonus</th><th></th></tr></thead><tbody>' +
+        bonuses.map((c) => "<tr><td>" + fmtDate(c.created_at) + "</td><td>" + who(c.user) + "</td><td>" + who(c.source) + "</td><td>" +
+          (c.order_id ? '<a href="#auftrag/' + c.order_id + '">#' + String(c.order_id).padStart(4, "0") + "</a>" : "—") + '</td><td class="num">' + eur(c.amount_cents) + '</td><td><div class="acts">' +
+          (reversed.has(c.id) ? '<span class="badge badge-abgelehnt">Storniert</span>' : '<button class="btn btn-sm btn-ghost" data-reverse="' + c.id + '">Stornieren</button>') + "</div></td></tr>").join("") +
+        "</tbody></table></div>"
+        : '<div class="empty">' + icon("gift") + "<p>Noch keine Empfehlungen. Sobald ein geworbener Freund seinen ersten Auftrag bezahlt, erscheint der Bonus hier.</p></div>");
+
+    view.onclick = async (e) => {
+      const b = e.target.closest("button"); if (!b || !view.contains(b)) return;
+      try {
+        if (b.dataset.copy != null) { await navigator.clipboard.writeText(b.dataset.copy).then(() => toast("Kopiert."), () => toast("Kopieren nicht möglich.", true)); return; }
+        if (b.dataset.pay) { if (!confirm("Hast du das Geld überwiesen? Als ausgezahlt markieren?")) return; await API.finishPayout(+b.dataset.pay, true); toast("Als ausgezahlt markiert."); }
+        else if (b.dataset.reject) { if (!confirm("Auszahlung ablehnen? Das Guthaben wird zurückgebucht.")) return; await API.finishPayout(+b.dataset.reject, false); toast("Abgelehnt – Guthaben zurückgebucht."); }
+        else if (b.dataset.reverse) { if (!confirm("Diesen Bonus stornieren (z. B. weil der Auftrag erstattet wurde)?")) return; await API.reverseCredit(+b.dataset.reverse); toast("Bonus storniert."); }
+        else return;
+        refreshPayoutCount(); showReferrals();
+      } catch (x) { toast(x.message, true); }
     };
   }
 

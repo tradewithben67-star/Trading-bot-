@@ -12,6 +12,11 @@ window.APP_CONFIG = {
   // Preis – nur für die Anzeige. Der echte Preis steht in deinem Stripe-Zahlungslink.
   PRICE_LABEL: "7,99 €",
 
+  // Empfehlungsprogramm – nur Anzeige. Die echten Beträge stehen in supabase/schema.sql
+  // (Funktionen referral_bonus_cents und min_payout_cents).
+  REFERRAL_BONUS_LABEL: "2,99 €",
+  MIN_PAYOUT_LABEL: "10,00 €",
+
   // Lieferzeit, die Schülern angezeigt wird
   DELIVERY_TEXT: "in der Regel innerhalb von 48 Stunden",
 

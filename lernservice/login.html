@@ -37,6 +37,7 @@
         <div class="field"><label for="r-name">Name</label><input class="input" id="r-name" autocomplete="name" required></div>
         <div class="field"><label for="r-email">E-Mail</label><input class="input" id="r-email" type="email" autocomplete="email" required></div>
         <div class="field"><label for="r-pw">Passwort</label><input class="input" id="r-pw" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen" required></div>
+        <div class="field"><label for="r-ref">Empfehlungscode <span class="faint">(optional)</span></label><input class="input" id="r-ref" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="z. B. K7M2QX"></div>
         <label class="check"><input type="checkbox" id="r-ok"><span>Ich akzeptiere die <a href="recht.html#agb">AGB</a> und <a href="recht.html#datenschutz">Datenschutzerklärung</a>.</span></label>
         <p class="form-error hidden" role="alert"></p>
         <button class="btn btn-primary btn-lg" type="submit">Konto erstellen</button>
@@ -77,6 +78,7 @@
     }
     document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => show(b.dataset.mode)));
     document.querySelectorAll("[data-goto]").forEach((b) => (b.onclick = () => show(b.dataset.goto)));
+    if (UI.getRef()) { $("#r-ref").value = UI.getRef(); show("register"); }
     if (location.hash === "#registrieren") show("register");
     if (location.hash === "#neues-passwort") show("newpw");
     API.onAuthChange((ev) => { if (ev === "PASSWORD_RECOVERY") show("newpw"); });
@@ -95,7 +97,8 @@
       if (!$("#r-name").value.trim()) throw new Error("Bitte gib deinen Namen ein.");
       if ($("#r-pw").value.length < 8) throw new Error("Das Passwort muss mindestens 8 Zeichen haben.");
       if (!$("#r-ok").checked) throw new Error("Bitte akzeptiere AGB und Datenschutzerklärung.");
-      const r = await API.signUp({ name: $("#r-name").value.trim(), email: $("#r-email").value.trim(), password: $("#r-pw").value });
+      const r = await API.signUp({ name: $("#r-name").value.trim(), email: $("#r-email").value.trim(), password: $("#r-pw").value, ref: $("#r-ref").value.trim() });
+      UI.clearRef();
       if (r.needsConfirm) { UI.toast("Bestätige jetzt deine E-Mail – danach kannst du dich anmelden."); show("login"); return; }
       go(r.user);
     });

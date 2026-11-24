@@ -16,6 +16,7 @@
       <nav class="nav" aria-label="Hauptnavigation">
         <a class="hide-sm" href="#leistungen">Leistungen</a>
         <a class="hide-sm" href="#so-gehts">So geht's</a>
+        <a class="hide-sm" href="#empfehlen">Freunde werben</a>
         <a class="hide-sm" href="#faq">FAQ</a>
         <span data-auth-slot><a class="btn btn-sm" href="login.html">Anmelden</a></span>
       </nav>
@@ -90,6 +91,7 @@
 
           <!-- Nur ohne Login sichtbar -->
           <div id="accountFields" class="hidden" style="display:grid;gap:12px">
+            <div id="refNote" class="notice hidden"></div>
             <div class="row-2">
               <div class="field"><label for="name">Name</label><input class="input" id="name" autocomplete="name" placeholder="Dein Name"></div>
               <div class="field"><label for="email">E-Mail</label><input class="input" type="email" id="email" autocomplete="email" placeholder="du@beispiel.de"></div>
@@ -158,6 +160,25 @@
       </div>
     </section>
 
+    <section class="section" id="empfehlen">
+      <div class="container">
+        <div class="card ref-hero">
+          <div>
+            <p class="eyebrow">Freunde werben</p>
+            <h2 style="font-size:clamp(28px,3.6vw,40px);margin:12px 0 14px">Empfiehl uns weiter – <span style="color:var(--accent)"><span data-bonus></span></span> pro Freund.</h2>
+            <p class="muted" style="font-size:16px;max-width:520px">Jeder Schüler bekommt in seinem Konto einen eigenen Empfehlungslink. Teile ihn per WhatsApp, Instagram oder in der Klassengruppe. Sobald jemand über deinen Link seinen ersten Auftrag bezahlt, bekommst du <b data-bonus></b> Guthaben.</p>
+            <a class="btn btn-primary" href="konto.html#empfehlen" style="margin-top:24px" data-icon="gift">Meinen Link holen</a>
+          </div>
+          <ol class="steps" style="margin:0">
+            <li><span class="n">1</span>Link aus deinem Konto teilen</li>
+            <li><span class="n">2</span>Freund meldet sich an und bestellt</li>
+            <li><span class="n">3</span>Du bekommst <b data-bonus style="margin:0 4px"></b> Guthaben</li>
+            <li><span class="n">4</span>Guthaben einlösen oder ab <span data-min-payout style="margin:0 4px"></span> auszahlen lassen</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
     <section class="section" id="faq">
       <div class="container">
         <div class="section-head">
@@ -171,6 +192,7 @@
           <details><summary>Wo finde ich mein Ergebnis?</summary><p>In deinem Konto unter „Postfach“. Dort kannst du die Dateien herunterladen und mir auch Rückfragen schicken.</p></details>
           <details><summary>Was, wenn ich nicht zufrieden bin?</summary><p>Schreib mir einfach über dein Postfach, was nicht passt – ich bessere nach.</p></details>
           <details><summary>Darf ich das als meine Hausaufgabe abgeben?</summary><p>Die Materialien sind zum Lernen gedacht – nicht dafür, sie als eigene Leistung abzugeben. Nutze sie zum Verstehen und Wiederholen.</p></details>
+          <details><summary>Wie funktioniert „Freunde werben“?</summary><p>In deinem Konto unter „Freunde werben“ findest du deinen persönlichen Link und Code. Für jeden Freund, der sich darüber anmeldet und seinen ersten Auftrag bezahlt, bekommst du <span data-bonus></span> Guthaben. Damit kannst du eigene Aufträge bezahlen oder es dir ab <span data-min-payout></span> per PayPal oder Überweisung auszahlen lassen.</p></details>
           <details><summary>Wer sieht meine Dateien?</summary><p>Nur du und ich. Alles liegt in einem geschützten Speicher; andere Nutzer haben keinen Zugriff.</p></details>
         </div>
       </div>

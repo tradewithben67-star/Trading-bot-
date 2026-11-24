@@ -107,7 +107,8 @@ th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12.5px;
      border-bottom: 1px solid var(--line); }
 td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
 tr:last-child td { border-bottom: 0; }
-td.r, th.r { text-align: right; padding-right: 0; }
+td.r, th.r { text-align: right; }
+td:last-child, th:last-child { padding-right: 0; }
 .tabelle { overflow-x: auto; }
 .rechtsblock { text-align: right; }
 
@@ -834,7 +835,7 @@ async function chatSenden(text) {
   $("#chat-vorschlaege").innerHTML = "";
   if (liste.querySelector(".leer")) liste.innerHTML = "";
   liste.insertAdjacentHTML("beforeend", zeigeNachricht({rolle: "nutzer", text}) +
-    `<div class="msg-ki" id="denkt"><div class="ki-zeichen">B</div><div class="etikett" style="padding-top:5px"><span class="punkte-lade"><i></i><i></i><i></i></span>denkt nach und rechnet …</div></div>`);
+    `<div class="msg-ki" id="denkt"><div class="ki-zeichen">B</div><div style="min-width:0"><div class="etikett" style="padding-top:5px"><span class="punkte-lade"><i></i><i></i><i></i></span><span id="denkt-text">denkt nach und rechnet …</span></div><div class="ki-text" id="denkt-live" style="margin-top:6px"></div></div></div>`);
   liste.scrollTop = liste.scrollHeight;
   try {
     const r = await api("/api/chat", {bereich: chatBereich, text});
@@ -850,6 +851,9 @@ async function chatSenden(text) {
     const l = $("#chat-liste"); if (l) l.scrollTop = l.scrollHeight;
   }
 }
+// Zwischenstände, falls die Antwort schon beim Schreiben ankommt (Test-Version im Artefakt).
+function chatLive(text) { const l = $("#denkt-live"); if (l) l.innerHTML = md(text); }
+function chatSchritt(text) { const t = $("#denkt-text"); if (t) t.textContent = text; }
 const chatKarte = (bereich, titel) => `<div class="karte"><h2>${titel}</h2>${chatBox(bereich)}</div>`;
 
 /* ---------- Seiten ---------- */

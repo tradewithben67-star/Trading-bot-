@@ -314,5 +314,133 @@ class TestServer(unittest.TestCase):
         self.assertEqual(self.rufen("/api/stand", keks=chef)[0], 401)
 
 
+@unittest.skipUnless(HAT_TORCH and importlib.util.find_spec("anthropic") is not None,
+                     "PyTorch oder anthropic nicht installiert")
+class TestChat(unittest.TestCase):
+    """Der Chat gegen einen Schein-Server, der Claude spielt — echtes SDK, keine Kosten."""
+
+    def setUp(self):
+        import json
+        import tempfile
+        import threading
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+
+        import anthropic
+        from bengx_ki import lernprobe
+        from bengx_ki.chat import Chat
+        from bengx_ki.dienste import Quelle
+        from bengx_ki.gehirn import Bauplan
+        from bengx_ki.server import App
+        from bengx_ki.training import Einstellungen, speichern, trainieren
+
+        self.anfragen = []
+        self.antworten = []
+        test = self
+
+        class Claude(BaseHTTPRequestHandler):
+            def log_message(self, *a):
+                pass
+
+            def do_POST(self):
+                roh = self.rfile.read(int(self.headers["Content-Length"]))
+                test.anfragen.append({"body": json.loads(roh), "beta": self.headers.get("anthropic-beta")})
+                antwort = json.dumps(test.antworten.pop(0)).encode()
+                self.send_response(200)
+                self.send_header("Content-Type", "application/json")
+                self.send_header("Content-Length", str(len(antwort)))
+                self.end_headers()
+                self.wfile.write(antwort)
+
+        self.claude = ThreadingHTTPServer(("127.0.0.1", 0), Claude)
+        threading.Thread(target=self.claude.serve_forever, daemon=True).start()
+        self.tmp = tempfile.TemporaryDirectory()
+        self.app = App(Quelle(None, nur_lernprobe=True), Path(self.tmp.name))
+        client = anthropic.Anthropic(api_key="test", max_retries=0,
+                                     base_url=f"http://127.0.0.1:{self.claude.server_port}")
+        self.app.chat = Chat(self.app, Path(self.tmp.name) / "chats", client=client)
+        paket = trainieren(lernprobe.kerzen(1200, zufall=2),
+                           Bauplan(fenster=16, breite=16, koepfe=2, schichten=1),
+                           Einstellungen(epochen=1), melden=lambda s: None)
+        for m in ("standard", "max"):
+            speichern(paket, self.app.modelle[m].pfad)
+        self.chef = self.app.nutzer.anlegen("Ben", "geheim123")
+        self.anna = self.app.nutzer.anlegen("Anna", "passwort9", "start")
+
+    def tearDown(self):
+        self.claude.shutdown()
+        self.claude.server_close()
+        self.tmp.cleanup()
+
+    @staticmethod
+    def nachricht(inhalt, stop):
+        return {"id": "msg_test", "type": "message", "role": "assistant", "model": "claude-opus-5-5",
+                "content": inhalt, "stop_reason": stop, "stop_sequence": None,
+                "usage": {"input_tokens": 10, "output_tokens": 10}}
+
+    def test_werkzeug_runde_mit_analyse(self):
+        import json
+        self.antworten = [
+            self.nachricht([{"type": "text", "text": "Ich schaue nach."},
+                            {"type": "tool_use", "id": "toolu_1", "name": "ki_analyse",
+                             "input": {"modell": "standard", "schwelle": 0.5}}], "tool_use"),
+            self.nachricht([{"type": "text", "text": "Die KI sieht leicht steigende Kurse."}], "end_turn"),
+        ]
+        antwort = self.app.chat_senden(self.anna, {"bereich": "analyse", "text": "Warum dieses Setup?"})
+        self.assertIn("leicht steigende", antwort["antwort"]["text"])
+        karte = antwort["antwort"]["anhaenge"][0]["eintrag"]
+        self.assertEqual(karte["bereich"], "analyse")
+        self.assertIn("gruende", karte["daten"])
+        self.assertIn("chart", karte["daten"])
+        # Die Anfrage an Claude: richtiges Modell, Werkzeuge, Kontextzeile, Rückfall-Beta.
+        erste = self.anfragen[0]
+        self.assertEqual(erste["body"]["model"], "claude-opus-5-5")
+        self.assertIn("server-side-fallback-2026-07-01", erste["beta"])
+        self.assertTrue(erste["body"]["messages"][0]["content"].startswith("[Seite: Analyse"))
+        ergebnis = self.anfragen[1]["body"]["messages"][-1]["content"][0]
+        self.assertEqual(ergebnis["tool_use_id"], "toolu_1")
+        self.assertIn("gruende", json.loads(ergebnis["content"]))
+        # Verbraucht: eine Chat-Nachricht und 3 Tokens Standard.
+        s = self.app.nutzung.stand(self.anna)
+        self.assertEqual((s["chat"]["verbraucht"], s["modelle"]["standard"]["verbraucht"]), (1, 3))
+        # Der Faden bleibt: die nächste Anfrage enthält das ganze Gespräch.
+        self.antworten = [self.nachricht([{"type": "text", "text": "Gern."}], "end_turn")]
+        self.app.chat_senden(self.anna, {"bereich": "analyse", "text": "Danke"})
+        self.assertEqual(len(self.anfragen[-1]["body"]["messages"]), 5)
+
+    def test_grenze_im_werkzeug_wird_gemeldet(self):
+        self.antworten = [
+            self.nachricht([{"type": "tool_use", "id": "toolu_2", "name": "ki_analyse",
+                             "input": {"modell": "max", "schwelle": 0.5}}], "tool_use"),
+            self.nachricht([{"type": "text", "text": "Max ist nicht in deinem Abo."}], "end_turn"),
+        ]
+        self.app.chat_senden(self.anna, {"bereich": "allgemein", "text": "Analysiere mit Max"})
+        ergebnis = self.anfragen[1]["body"]["messages"][-1]["content"][0]
+        self.assertTrue(ergebnis["is_error"])
+        self.assertIn("nicht enthalten", ergebnis["content"])
+
+    def test_indikator_per_chat_speichern(self):
+        self.antworten = [
+            self.nachricht([{"type": "tool_use", "id": "toolu_3", "name": "indikator_speichern",
+                             "input": {"name": "RSI 21", "formel": "rsi(close, 21)", "anzeige": "unten"}}], "tool_use"),
+            self.nachricht([{"type": "text", "text": "Gespeichert."}], "end_turn"),
+        ]
+        a = self.app.chat_senden(self.anna, {"bereich": "indikatoren", "text": "Bau mir einen RSI 21"})
+        self.assertEqual(self.app.eigene.liste(self.anna["id"])[0]["formel"], "rsi(close, 21)")
+        self.assertIn("werte", a["antwort"]["anhaenge"][0]["auswertung"])
+
+    def test_chat_limit_und_erstattung_bei_fehler(self):
+        from bengx_ki.konto import Grenze
+        self.antworten = []          # der Schein-Server hat nichts → Fehler
+        with self.assertRaises(Exception):
+            self.app.chat_senden(self.anna, {"bereich": "allgemein", "text": "Hallo"})
+        self.assertEqual(self.app.nutzung.stand(self.anna)["chat"]["verbraucht"], 0)
+        for _ in range(30):
+            self.app.nutzung.chat_abbuchen(self.anna)
+        with self.assertRaises(Grenze):
+            self.app.chat_senden(self.anna, {"bereich": "allgemein", "text": "Hallo"})
+        self.antworten = [self.nachricht([{"type": "text", "text": "Hallo Ben"}], "end_turn")]
+        self.assertEqual(self.app.chat_senden(self.chef, {"bereich": "allgemein", "text": "Hallo"})["antwort"]["text"], "Hallo Ben")
+
+
 if __name__ == "__main__":
     unittest.main()

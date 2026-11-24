@@ -26,20 +26,21 @@ from pathlib import Path
 
 from .modelle import MODELLE, pruefe
 
-# Tokens im Monat je Modell. None = unbegrenzt, 0 = gesperrt.
+# Tokens im Monat je Modell und Chat-Nachrichten im Monat. None = unbegrenzt, 0 = gesperrt.
+# Jede Chat-Nachricht kostet echtes Geld bei Anthropic, deshalb ein eigenes Kontingent.
 ABOS: dict[str, dict] = {
     "start": {"name": "Start", "preis": None,
               "text": "Zum Kennenlernen.",
-              "limits": {"mini": 100, "standard": 30, "max": 0}},
+              "limits": {"mini": 100, "standard": 30, "max": 0}, "chat": 30},
     "pro": {"name": "Pro", "preis": None,
             "text": "Für aktiven Handel, mit Zugang zu Max.",
-            "limits": {"mini": 1000, "standard": 600, "max": 200}},
+            "limits": {"mini": 1000, "standard": 600, "max": 200}, "chat": 300},
     "elite": {"name": "Elite", "preis": None,
               "text": "Mini ohne Grenze, viel Max.",
-              "limits": {"mini": None, "standard": 3000, "max": 1000}},
+              "limits": {"mini": None, "standard": 3000, "max": 1000}, "chat": 1500},
 }
 INHABER_ABO = {"name": "Inhaber", "preis": None, "text": "Keine Grenzen.",
-               "limits": {m: None for m in MODELLE}}
+               "limits": {m: None for m in MODELLE}, "chat": None}
 
 KOSTEN: dict[str, int] = {"analyse": 1, "strategie": 5}
 AKTIONEN = {"analyse": "KI-Analyse", "strategie": "Strategie-Test"}
@@ -115,11 +116,40 @@ class Nutzung:
                 "abo_name": abo["name"],
                 "unbegrenzt": nutzer.get("rolle") == "inhaber",
                 "modelle": self._modelle(nutzer, e),
+                "chat": self._chat(nutzer, e),
                 "auffuellung": naechster_monat(self._uhr()),
                 "kosten": {a: {m: kosten(a, m) for m in MODELLE} for a in KOSTEN},
                 "aktionen": AKTIONEN,
                 "abos": ABOS,
             }
+
+    def _chat(self, nutzer: dict, e: dict) -> dict:
+        limit = abo_von(nutzer).get("chat", 0)
+        verbraucht = e["verbraucht"].get("chat", 0)
+        return {"limit": limit, "verbraucht": verbraucht,
+                "rest": None if limit is None else max(0, limit - verbraucht),
+                "gesperrt": limit == 0}
+
+    def chat_abbuchen(self, nutzer: dict) -> None:
+        with self._sperre:
+            e = self._eintrag(nutzer["id"])
+            c = self._chat(nutzer, e)
+            if c["gesperrt"]:
+                raise Grenze(f"Der Chat ist im Abo {abo_von(nutzer)['name']} nicht enthalten.", "chat")
+            if c["rest"] is not None and c["rest"] < 1:
+                tag = datetime.fromisoformat(naechster_monat(self._uhr())).strftime("%d.%m.%Y")
+                raise Grenze(f"Chat-Limit erreicht ({c['verbraucht']} von {c['limit']} Nachrichten). "
+                             f"Wieder frei am {tag}.", "chat")
+            e["verbraucht"]["chat"] = c["verbraucht"] + 1
+            self._buchen(e, -1, "Chat-Nachricht")
+            self._sichern()
+
+    def chat_erstatten(self, nutzer: dict, grund: str) -> None:
+        with self._sperre:
+            e = self._eintrag(nutzer["id"])
+            e["verbraucht"]["chat"] = max(0, e["verbraucht"].get("chat", 0) - 1)
+            self._buchen(e, 1, f"Erstattung Chat: {grund}")
+            self._sichern()
 
     def abbuchen(self, nutzer: dict, modell: str, aktion: str) -> int:
         k = kosten(aktion, modell)

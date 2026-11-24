@@ -25,6 +25,13 @@ Schnittstelle (alles JSON, alles außer Anmeldung nur angemeldet):
     POST /api/analyse               {"modell", "schwelle"}
     POST /api/indikatoren
     POST /api/strategie             {"modell"}
+    GET  /api/chat?bereich=…        Gespräch in einem Bereich, mit Karten
+    POST /api/chat                  {"bereich", "text"} — Antwort der KI (Claude + eigene Werkzeuge)
+    POST /api/chat/neu              {"bereich"} — Gespräch neu beginnen
+    GET  /api/indikatoren/eigene    eigene Indikatoren, Vorlagen, Hilfe
+    POST /api/indikatoren/eigene    {"name", "formel", "anzeige"}
+    POST /api/indikatoren/eigene/loeschen {"id"}
+    POST /api/indikatoren/pruefen   {"formel"} — ausrechnen, ohne zu speichern
   nur Inhaber:
     GET  /api/training     POST /api/training      {"modell", "epochen"}
     GET  /api/nutzer       POST /api/nutzer        {"name", "passwort", "abo"}
@@ -46,7 +53,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import dienste
+from . import dienste, eigene
+from .chat import BEREICHE, Chat
 from .auswertung import kennzahlen
 from .gehirn import Bauplan
 from .konto import Grenze, Nutzung, kosten
@@ -111,6 +119,8 @@ class App:
         self.verlauf = Verlauf(ordner / "verlauf.jsonl")
         self.sitzungen = Sitzungen()
         self.training = Training()
+        self.eigene = eigene.Ablage(ordner / "indikatoren.json")
+        self.chat = Chat(self, ordner / "chats")
         self.epochen = epochen
 
     # -- bezahlte Aktionen ---------------------------------------------
@@ -136,8 +146,69 @@ class App:
                              lambda: dienste.analyse(kerzen, gehirn, paket, schwelle))
 
     def indikatoren(self, n: dict, body: dict) -> dict:
-        daten = dienste.indikatoren(self.quelle.kerzen())
+        kerzen = self.quelle.kerzen()
+        daten = dienste.indikatoren(kerzen)
+        daten["chart"] = dienste.chartdaten(kerzen)
+        daten["eigene"] = self.eigene_auswerten(n, kerzen)
         return self.verlauf.eintragen("indikatoren", "Indikatoren", daten, 0, nutzer=n)
+
+    # -- eigene Indikatoren (frei) ---------------------------------------
+
+    def eigene_auswerten(self, n: dict, kerzen=None) -> list[dict]:
+        kerzen = kerzen or self.quelle.kerzen()
+        raus = []
+        for i in self.eigene.liste(n["id"]):
+            try:
+                raus.append({**i, **eigene.auswerten(kerzen, i["formel"])})
+            except ValueError as exc:
+                raus.append({**i, "fehler": str(exc)})
+        return raus
+
+    def formel_pruefen(self, body: dict) -> dict:
+        kerzen = self.quelle.kerzen()
+        return {"formel": str(body.get("formel", "")),
+                **eigene.auswerten(kerzen, str(body.get("formel", ""))),
+                "chart": dienste.chartdaten(kerzen)}
+
+    def eigene_speichern(self, n: dict, body: dict) -> dict:
+        formel = str(body.get("formel", ""))
+        eigene.auswerten(self.quelle.kerzen(), formel)      # nur Gültiges speichern
+        return self.eigene.speichern(n["id"], str(body.get("name", "")), formel,
+                                     str(body.get("anzeige", "chart")))
+
+    # -- Chat -------------------------------------------------------------
+
+    def anhaenge_aufloesen(self, n: dict, nachrichten: list[dict]) -> list[dict]:
+        """Hängt an Chat-Antworten die vollen Daten der Karten (Analyse, Test, Indikator)."""
+        raus = []
+        for m in nachrichten:
+            fertig = []
+            for a in m.get("anhaenge", []):
+                if a["art"] == "verlauf":
+                    e = self.verlauf.holen(a["id"])
+                    if e and (n["rolle"] == "inhaber" or e.get("nutzer") == n["id"]):
+                        fertig.append({"art": "verlauf", "eintrag": e})
+                elif a["art"] == "formel":
+                    try:
+                        fertig.append({**a, "auswertung": self.formel_pruefen({"formel": a["formel"]})})
+                    except ValueError:
+                        pass
+            raus.append({**m, "anhaenge": fertig})
+        return raus
+
+    def chat_stand(self, n: dict, bereich: str) -> dict:
+        if bereich not in BEREICHE:
+            raise ValueError("Unbekannter Bereich.")
+        bereit, grund = self.chat.bereit()
+        return {"bereich": bereich, "bereit": bereit, "grund": grund,
+                "kontingent": self.nutzung.stand(n)["chat"],
+                "nachrichten": self.anhaenge_aufloesen(n, self.chat.verlauf(n, bereich))}
+
+    def chat_senden(self, n: dict, body: dict) -> dict:
+        bereich = str(body.get("bereich", "allgemein"))
+        antwort = self.chat.senden(n, bereich, str(body.get("text", "")))
+        return {"antwort": self.anhaenge_aufloesen(n, [antwort])[0],
+                "kontingent": self.nutzung.stand(n)["chat"]}
 
     def strategie(self, n: dict, body: dict) -> dict:
         modell = pruefe(str(body.get("modell", STANDARD)))
@@ -202,7 +273,7 @@ class App:
         raus = []
         for n in self.nutzer.liste():
             s = self.nutzung.stand(n)
-            raus.append(n | {"abo_name": s["abo_name"], "modelle": s["modelle"],
+            raus.append(n | {"abo_name": s["abo_name"], "modelle": s["modelle"], "chat": s["chat"],
                              "aktionen": sum(self.verlauf.zaehlen(n["id"]).values())})
         return raus
 
@@ -215,6 +286,7 @@ class App:
         self.nutzer.loeschen(nid)
         self.sitzungen.alle_beenden(nid)
         self.nutzung.vergessen(nid)
+        self.eigene.vergessen(nid)
         return {"ok": True}
 
     def nutzer_passwort(self, body: dict) -> dict:
@@ -237,6 +309,7 @@ class App:
             "training": self.training.info()["status"],
             "neueste": self.verlauf.liste(anzahl=6, nutzer=wer),
             "nutzerzahl": len(self.nutzer.liste()) if not wer else None,
+            "chat": dict(zip(("bereit", "grund"), self.chat.bereit())),
         }
 
 
@@ -333,6 +406,14 @@ def handler_fuer(app: App):
                     n = self._angemeldet()
                     self._json({"stand": app.nutzung.stand(n),
                                 "buchungen": app.nutzung.buchungen(n["id"])})
+                elif pfad == "/api/chat":
+                    n = self._angemeldet()
+                    bereich = parse_qs(url.query).get("bereich", ["allgemein"])[0]
+                    self._json(app.chat_stand(n, bereich))
+                elif pfad == "/api/indikatoren/eigene":
+                    n = self._angemeldet()
+                    self._json({"liste": app.eigene_auswerten(n), "vorlagen": eigene.VORLAGEN,
+                                "hilfe": eigene.HILFE})
                 elif pfad == "/api/modelle":
                     self._angemeldet()
                     self._json(app.modelle.info())
@@ -391,6 +472,21 @@ def handler_fuer(app: App):
                     ziel = {"/api/analyse": app.analyse, "/api/indikatoren": app.indikatoren,
                             "/api/strategie": app.strategie}[pfad]
                     self._json(ziel(n, body))
+                elif pfad == "/api/chat":
+                    self._json(app.chat_senden(self._angemeldet(), body))
+                elif pfad == "/api/chat/neu":
+                    n = self._angemeldet()
+                    app.chat.neu(n, str(body.get("bereich", "allgemein")))
+                    self._json({"ok": True})
+                elif pfad == "/api/indikatoren/pruefen":
+                    self._angemeldet()
+                    self._json(app.formel_pruefen(body))
+                elif pfad == "/api/indikatoren/eigene":
+                    self._json(app.eigene_speichern(self._angemeldet(), body))
+                elif pfad == "/api/indikatoren/eigene/loeschen":
+                    n = self._angemeldet()
+                    app.eigene.loeschen(n["id"], str(body.get("id", "")))
+                    self._json({"ok": True})
                 elif pfad == "/api/training":
                     self._json(app.training_starten(self._inhaber(), body))
                 elif pfad == "/api/nutzer":

@@ -60,6 +60,9 @@ class Aufmerksamkeit(nn.Module):
         # Maske: Kerze t darf nur Kerzen 0..t sehen, nie spätere.
         maske = torch.tril(torch.ones(plan.fenster, plan.fenster, dtype=torch.bool))
         self.register_buffer("maske", maske, persistent=False)
+        # Für die Erklärung: auf Wunsch die letzten Aufmerksamkeits-Gewichte behalten.
+        self.merken = False
+        self.zuletzt: torch.Tensor | None = None
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         stapel, zeit, breite = x.shape
@@ -75,6 +78,8 @@ class Aufmerksamkeit(nn.Module):
         passung = (q @ k.transpose(-2, -1)) / math.sqrt(d)
         passung = passung.masked_fill(~self.maske[:zeit, :zeit], float("-inf"))
         gewichte = F.softmax(passung, dim=-1)        # jede Zeile summiert zu 1
+        if self.merken:
+            self.zuletzt = gewichte.detach()
         gewichte = self.vergessen(gewichte)
 
         y = gewichte @ v                               # gewichtete Summe der Werte
@@ -140,6 +145,33 @@ class Gehirn(nn.Module):
             x = block(x)
         letzte = self.norm(x[:, -1])          # die jüngste Kerze kennt jetzt alles
         return self.kopf(letzte)
+
+    def aufmerksamkeit(self, fenster: torch.Tensor) -> torch.Tensor:
+        """Worauf die jüngste Kerze geachtet hat — über alle Blöcke hinweg.
+
+        „Aufmerksamkeits-Durchrollen“: in jedem Block wird über die Köpfe
+        gemittelt, der direkte Weg (x + …) mit eingerechnet und Block für
+        Block weitermultipliziert. Ergebnis: ein Gewicht je Kerze im Fenster,
+        zusammen 1. Hoch heißt: diese Kerze hat die Entscheidung geprägt.
+        """
+        self.eval()
+        for b in self.bloecke:
+            b.aufmerksamkeit.merken = True
+        try:
+            with torch.no_grad():
+                self(fenster)
+            zeit = fenster.shape[1]
+            gesamt = torch.eye(zeit)
+            for b in self.bloecke:
+                a = b.aufmerksamkeit.zuletzt[0].mean(dim=0)          # (zeit, zeit)
+                a = 0.5 * a + 0.5 * torch.eye(zeit)
+                a = a / a.sum(dim=-1, keepdim=True)
+                gesamt = a @ gesamt
+            return gesamt[-1]
+        finally:
+            for b in self.bloecke:
+                b.aufmerksamkeit.merken = False
+                b.aufmerksamkeit.zuletzt = None
 
     def anzahl_gewichte(self) -> int:
         return sum(p.numel() for p in self.parameters())

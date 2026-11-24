@@ -31,6 +31,52 @@ Die Kursdatei ist dieselbe CSV wie für den Backtest des Bots: Spalten Zeit,
 Open, High, Low, Close und optional Volumen, z. B. als Export aus MT5. Je mehr
 Kerzen, desto besser. Unter etwa 10.000 Stundenkerzen lernt sie kaum etwas.
 
+## Chat, Chart und Warum
+
+**Chat in jedem Bereich.** Auf den Seiten Analyse, Indikatoren und Strategie
+und auf der eigenen Seite **Chat** schreibt man mit der KI wie mit einem
+Menschen. Das Sprechen übernimmt Claude (Anthropic). Gerechnet wird nur mit
+den eigenen Werkzeugen: Claude ruft die Analyse des eigenen Netzes, den
+Strategie-Test, die Indikatoren, den Formel-Baukasten, die Kerzen und den
+Verlauf auf und erklärt die Ergebnisse. Was dabei entsteht, erscheint als
+Karte mit Chart unter der Antwort.
+
+Einrichtung: einen API-Schlüssel von console.anthropic.com in `bot/.env`
+eintragen und die Oberfläche neu starten:
+
+```
+ANTHROPIC_API_KEY=sk-ant-...
+```
+
+Jede Chat-Nachricht kostet bei Anthropic Geld, meist wenige Cent. Deshalb hat
+der Chat ein eigenes Kontingent je Abo (Start 30, Pro 300, Elite 1.500
+Nachrichten im Monat; Inhaber ohne Grenze). Startet die KI im Chat eine
+Analyse, verbraucht das zusätzlich das Kontingent des Modells. Als Modell
+dient `claude-opus-5-5`; ein anderes lässt sich mit `BENGX_KI_CLAUDE_MODELL`
+einstellen. Lehnt das Modell eine Anfrage aus Sicherheitsgründen ab, springt
+automatisch ein anderes ein (server-seitiger Rückfall).
+
+**Echter Chart.** Jede Analyse zeigt die letzten 120 Kerzen mit EMA 50,
+Einstieg, Ziel und Stop und dem Zeitraum, den die KI nach vorn schaut.
+
+**Warum dieses Setup.** Zwei Messungen am Netz, keine erfundene Begründung:
+
+- *Fokus*: Auf welche Kerzen die jüngste Kerze über alle Blöcke hinweg
+  geachtet hat (Aufmerksamkeit, durchgerollt). Die drei wichtigsten sind im
+  Chart nummeriert.
+- *Was die Richtung trägt*: Wie viele Prozentpunkte die Wahrscheinlichkeit
+  fällt, wenn man dem Netz eine Merkmalsgruppe wegnimmt (Kerzenform,
+  Bewegung, Abstand zum Durchschnitt, Unruhe, Volumen, Uhrzeit).
+
+**Eigene Indikatoren.** Unter Indikatoren baut man eigene aus einer Formel,
+etwa `ema(close, 20)`, `rsi(close, 14) < 30` oder
+`crossover(ema(close, 50), ema(close, 200))`. Linien erscheinen im Chart,
+Oszillatoren darunter. Eine Bedingung wird im Chart markiert und gemessen:
+Wie oft traf sie zu, und kam danach zuerst das Ziel oben oder der Stop
+unten? Formeln werden sicher ausgewertet (eigene Zerlegung, kein `eval`).
+Man kann Indikatoren auch einfach im Chat beschreiben; die KI baut und prüft
+sie dann selbst.
+
 ## Drei Modelle
 
 | Modell | Blick | Aufbau | Gewichte | Verbrauch |
@@ -152,7 +198,9 @@ Wochentag.
 | `training.py` | Lernen | zeitlicher Schnitt, Lernschleife, Abbruch vor dem Auswendiglernen, Speichern |
 | `auswertung.py` | Prüfen | Trefferquote gegen Raten, Handel gegen „immer kaufen“ |
 | `lernprobe.py` | Beweis | erfundene Kurse mit verstecktem Muster |
-| `dienste.py` | Aktionen | Analyse, Indikatoren, Strategie-Test als Daten |
+| `dienste.py` | Aktionen | Analyse mit Chart und Begründung, Indikatoren, Strategie-Test |
+| `eigene.py` | Baukasten | eigene Indikatoren aus Formeln, sicher ausgewertet und gemessen |
+| `chat.py` | Chat | Claude mit den eigenen Werkzeugen, Gespräche je Nutzer und Bereich |
 | `modelle.py` | Modellfamilie | Mini, Standard, Max: Größe und Verbrauch |
 | `konto.py` | Nutzung | Kontingente je Modell und Abo, Buchungen |
 | `nutzer.py` | Nutzer | Konten, Passwort-Hashes, Sitzungen |

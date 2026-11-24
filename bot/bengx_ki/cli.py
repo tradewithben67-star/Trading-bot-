@@ -134,6 +134,14 @@ def cmd_oberflaeche(args) -> int:
     from .dienste import Quelle
     from .server import App, starten
 
+    import os
+
+    from bengx_bot.telegram import load_env_file
+
+    # Der Schlüssel für den Chat darf in bot/.env stehen (wird nie eingecheckt).
+    for k, v in load_env_file(".env").items():
+        os.environ.setdefault(k, v)
+
     ordner = Path(args.ordner)
     umziehen(ordner)
     modelle = ordner / ("lernprobe-modelle" if args.lernprobe else "modelle")

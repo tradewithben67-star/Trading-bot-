@@ -1,0 +1,1351 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BENGX KI</title>
+<style>
+:root {
+  --bg: #ffffff; --fg: #0a0a0a; --muted: #5c5c5c; --faint: #767676;
+  --line: #e9e9e9; --soft: #f6f6f6; --hover: #f0f0f0;
+  --inv-bg: #0a0a0a; --inv-fg: #ffffff;
+  --radius: 14px;
+  --sans: ui-sans-serif, -apple-system, "Segoe UI", Inter, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a8a8a8; --faint: #8a8a8a;
+    --line: #232323; --soft: #141414; --hover: #1b1b1b;
+    --inv-bg: #f5f5f5; --inv-fg: #0a0a0a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a8a8a8; --faint: #8a8a8a;
+  --line: #232323; --soft: #141414; --hover: #1b1b1b;
+  --inv-bg: #f5f5f5; --inv-fg: #0a0a0a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--fg); font: 15px/1.5 var(--sans);
+       -webkit-font-smoothing: antialiased; }
+button, input { font: inherit; color: inherit; }
+.num { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--mono); font-size: 13px; }
+
+/* ---------- Gerüst ---------- */
+.app { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
+.seite { border-right: 1px solid var(--line); padding: 20px 14px; display: flex;
+         flex-direction: column; gap: 22px; position: sticky; top: 0; height: 100vh; }
+.marke { display: flex; align-items: baseline; gap: 6px; padding: 4px 10px;
+         font-weight: 750; letter-spacing: .14em; font-size: 15px; }
+.marke span { font-weight: 400; letter-spacing: .04em; color: var(--muted); }
+nav { display: flex; flex-direction: column; gap: 2px; }
+.nav-titel { font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+             color: var(--faint); padding: 14px 10px 6px; }
+nav a { display: flex; align-items: center; gap: 11px; padding: 8px 10px; border-radius: 9px;
+        color: var(--muted); text-decoration: none; font-size: 14px; }
+nav a svg { width: 17px; height: 17px; flex: none; stroke: currentColor; fill: none;
+            stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+nav a:hover { background: var(--hover); color: var(--fg); }
+nav a.aktiv { background: var(--soft); color: var(--fg); font-weight: 560; }
+nav a .zahl { margin-left: auto; font-size: 12px; color: var(--faint); }
+.unten { margin-top: auto; display: flex; flex-direction: column; gap: 10px; }
+.token-karte { border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; }
+.token-karte:hover { background: var(--hover); }
+.token-karte .gross { font-size: 22px; font-weight: 650; letter-spacing: -.02em; }
+.token-karte .klein { font-size: 12px; color: var(--muted); }
+.leiste { height: 4px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 10px 0 6px; }
+.leiste i { display: block; height: 100%; background: var(--fg); border-radius: 4px; }
+.thema { display: flex; border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+.thema button { flex: 1; border: 0; background: none; padding: 5px; border-radius: 7px;
+                font-size: 12px; color: var(--muted); cursor: pointer; }
+.thema button.an { background: var(--soft); color: var(--fg); }
+
+main { min-width: 0; padding: 34px 44px 80px; max-width: 1120px; }
+.kopf { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px;
+        margin-bottom: 28px; }
+h1 { font-size: 28px; line-height: 1.2; letter-spacing: -.025em; margin: 0; font-weight: 680; }
+.unter { color: var(--muted); margin: 6px 0 0; font-size: 14px; }
+.pille { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line);
+         border-radius: 999px; padding: 6px 12px; font-size: 13px; white-space: nowrap; }
+.pille i { width: 7px; height: 7px; border-radius: 50%; background: var(--fg); }
+h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .09em; color: var(--muted);
+     font-weight: 600; margin: 0 0 14px; }
+
+/* ---------- Bausteine ---------- */
+.raster { display: grid; gap: 16px; }
+.r2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.r3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.r4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.karte { border: 1px solid var(--line); border-radius: var(--radius); padding: 20px; min-width: 0; }
+.karte + .karte, .raster + .karte, .karte + .raster, .raster + .raster { margin-top: 16px; }
+.raster > .karte { margin-top: 0; }
+.wert { font-size: 26px; font-weight: 650; letter-spacing: -.02em; margin-top: 2px; }
+.etikett { font-size: 12.5px; color: var(--muted); }
+.knopf { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 40px;
+         padding: 0 16px; border-radius: 10px; border: 1px solid var(--fg); background: var(--inv-bg);
+         color: var(--inv-fg); font-weight: 560; font-size: 14px; cursor: pointer; white-space: nowrap; }
+.knopf:hover { opacity: .86; }
+.knopf:disabled { opacity: .4; cursor: default; }
+.knopf.hell { background: transparent; color: var(--fg); border-color: var(--line); }
+.knopf.hell:hover { background: var(--hover); opacity: 1; }
+.knopf small { font-weight: 400; opacity: .65; font-size: 12.5px; }
+.zeile { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.zeile.weit { justify-content: space-between; }
+.leer { color: var(--muted); padding: 28px 0; text-align: center; font-size: 14px; }
+.chip { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 999px;
+        padding: 4px 11px; font-size: 12.5px; color: var(--muted); background: none; cursor: pointer; }
+.chip.an { background: var(--inv-bg); color: var(--inv-fg); border-color: var(--inv-bg); }
+.marke-klein { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; padding: 2px 8px;
+               border: 1px solid var(--line); border-radius: 999px; color: var(--muted); }
+.marke-klein.voll { background: var(--inv-bg); color: var(--inv-fg); border-color: var(--inv-bg); }
+
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12.5px; padding: 0 12px 10px 0;
+     border-bottom: 1px solid var(--line); }
+td { padding: 11px 12px 11px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+tr:last-child td { border-bottom: 0; }
+td.r, th.r { text-align: right; }
+td:last-child, th:last-child { padding-right: 0; }
+.tabelle { overflow-x: auto; }
+.rechtsblock { text-align: right; }
+
+.balken { display: grid; grid-template-columns: 92px 1fr 64px; white-space: nowrap; align-items: center; gap: 12px;
+          margin: 10px 0; font-size: 14px; }
+.spur { height: 8px; background: var(--soft); border-radius: 8px; overflow: hidden; }
+.spur i { display: block; height: 100%; background: var(--fg); border-radius: 8px; }
+.balken.blass .spur i { background: var(--faint); }
+.urteil { font-size: 34px; font-weight: 700; letter-spacing: -.03em; line-height: 1.1; }
+
+.liste-eintrag { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center;
+                 padding: 13px 4px; border-bottom: 1px solid var(--line); cursor: pointer; }
+.liste-eintrag:last-child { border-bottom: 0; }
+.liste-eintrag:hover { background: var(--hover); }
+.symbol { width: 34px; height: 34px; border-radius: 9px; border: 1px solid var(--line);
+          display: grid; place-items: center; }
+.symbol svg { width: 16px; height: 16px; stroke: var(--fg); fill: none; stroke-width: 1.6;
+              stroke-linecap: round; stroke-linejoin: round; }
+.liste-eintrag .titel { font-weight: 560; font-size: 14px; }
+.liste-eintrag .kurz { color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden;
+                       text-overflow: ellipsis; }
+.liste-eintrag .rechts { text-align: right; font-size: 12.5px; color: var(--muted); white-space: nowrap; }
+
+.konsole { background: var(--inv-bg); color: var(--inv-fg); border-radius: 12px; padding: 16px;
+           font-family: var(--mono); font-size: 12.5px; line-height: 1.65; max-height: 340px;
+           overflow: auto; white-space: pre-wrap; }
+.konsole:empty::before { content: "Noch kein Training in dieser Sitzung."; opacity: .5; }
+
+.detail { position: fixed; inset: 0; background: rgba(0,0,0,.28); display: none; z-index: 20; }
+.detail.offen { display: block; }
+.detail .blatt { position: absolute; right: 0; top: 0; bottom: 0; width: min(620px, 100%);
+                 background: var(--bg); border-left: 1px solid var(--line); padding: 28px;
+                 overflow-y: auto; }
+.x { border: 1px solid var(--line); background: none; border-radius: 9px; width: 34px; height: 34px;
+     cursor: pointer; font-size: 18px; line-height: 1; }
+.toast { position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%) translateY(20px);
+         background: var(--inv-bg); color: var(--inv-fg); padding: 11px 18px; border-radius: 11px;
+         font-size: 14px; opacity: 0; transition: .2s; pointer-events: none; z-index: 30;
+         max-width: calc(100% - 32px); }
+.toast.zeigen { opacity: 1; transform: translateX(-50%); }
+.hinweis { font-size: 12.5px; color: var(--muted); margin-top: 18px; }
+.lade { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor;
+        border-right-color: transparent; border-radius: 50%; animation: dreh .7s linear infinite; }
+@keyframes dreh { to { transform: rotate(360deg); } }
+svg.kurve { width: 100%; height: 220px; display: block; }
+.feld { height: 40px; border: 1px solid var(--line); border-radius: 10px; padding: 0 12px;
+        background: var(--bg); width: 140px; }
+.abo.aktuell { border-color: var(--fg); }
+dl.paare { display: grid; grid-template-columns: auto 1fr; gap: 9px 18px; margin: 0; font-size: 14px; }
+dl.paare dt { color: var(--muted); }
+dl.paare dd { margin: 0; }
+
+/* ---------- Chart ---------- */
+.chartrahmen { position: relative; overflow-x: auto; margin: 14px 0 4px; -webkit-overflow-scrolling: touch; }
+.chartrahmen svg { display: block; width: 100%; min-width: 640px; height: auto; font-family: var(--sans); }
+.chart-tip { position: absolute; top: 8px; left: 8px; background: var(--bg); border: 1px solid var(--line);
+             border-radius: 9px; padding: 7px 10px; font-size: 12px; pointer-events: none; white-space: nowrap;
+             box-shadow: 0 4px 14px rgba(0,0,0,.08); font-variant-numeric: tabular-nums; }
+.legende { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: var(--muted); }
+.legende span { display: inline-flex; align-items: center; gap: 6px; }
+.legende i { display: inline-block; width: 16px; height: 0; border-top: 2px solid var(--fg); }
+.legende i.gestrichelt { border-top-style: dashed; border-color: var(--muted); }
+.legende i.punkt { width: 9px; height: 9px; border: 1.5px solid var(--fg); border-radius: 50%; }
+.legende i.dreieck { width: 0; height: 0; border: 5px solid transparent; border-bottom: 8px solid var(--fg); border-top: 0; }
+
+/* ---------- Warum ---------- */
+.gruende { margin: 0; padding-left: 18px; display: grid; gap: 6px; line-height: 1.5; }
+.fokusliste { display: grid; gap: 8px; margin-top: 8px; font-size: 13.5px; }
+.fokusliste div { display: grid; grid-template-columns: 22px 1fr auto; gap: 10px; align-items: center; }
+.fokusliste b { width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid var(--fg); display: grid;
+                place-items: center; font-size: 11.5px; }
+.beitrag { display: grid; grid-template-columns: minmax(0, 1fr) 120px 60px; gap: 10px; align-items: center;
+           font-size: 13.5px; margin-top: 8px; }
+.beitrag .achse { position: relative; height: 8px; background: var(--soft); border-radius: 4px; }
+.beitrag .achse::after { content: ""; position: absolute; left: 50%; top: -3px; bottom: -3px; width: 1px; background: var(--faint); }
+.beitrag .achse i { position: absolute; top: 0; bottom: 0; border-radius: 4px; background: var(--fg); }
+.beitrag .achse i.minus { background: var(--faint); }
+
+/* ---------- eigene Indikatoren ---------- */
+.formel-form { display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; align-items: end; }
+.formel-form label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 6px; }
+.formel-form .feld { width: 100%; }
+.formel-form .mono { font-family: var(--mono); font-size: 13px; }
+.eigen-zeile { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 12px; align-items: center;
+               padding: 11px 0; border-bottom: 1px solid var(--line); }
+.eigen-zeile:last-child { border-bottom: 0; }
+.eigen-zeile code { font-family: var(--mono); font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+details.hilfe summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+details.hilfe dl { margin-top: 10px; }
+
+/* ---------- Chat ---------- */
+.chat { display: flex; flex-direction: column; gap: 14px; }
+.chat-liste { display: flex; flex-direction: column; gap: 20px; max-height: 640px; overflow-y: auto; padding: 2px 4px 2px 0; }
+.chat.voll .chat-liste { max-height: none; min-height: 280px; }
+.msg-ich { align-self: flex-end; max-width: 82%; background: var(--inv-bg); color: var(--inv-fg);
+           padding: 10px 14px; border-radius: 16px 16px 4px 16px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.msg-ki { display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 12px; align-items: start; }
+.ki-zeichen { width: 28px; height: 28px; border-radius: 8px; background: var(--inv-bg); color: var(--inv-fg);
+              display: grid; place-items: center; font-weight: 750; font-size: 13px; letter-spacing: .02em; }
+.ki-text { line-height: 1.6; overflow-wrap: anywhere; }
+.ki-text p { margin: 0 0 10px; } .ki-text p:last-child { margin-bottom: 0; }
+.ki-text ul { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 4px; }
+.msg-hinweis { align-self: center; font-size: 12.5px; color: var(--muted); }
+.anhang { border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-top: 12px; }
+.chat-eingabe { display: flex; gap: 10px; align-items: flex-end; border: 1px solid var(--line); border-radius: 14px;
+                padding: 8px 8px 8px 14px; background: var(--bg); }
+.chat-eingabe:focus-within { border-color: var(--fg); }
+.chat-eingabe textarea { flex: 1; border: 0; background: transparent; resize: none; font: inherit; color: var(--fg);
+                         min-height: 26px; max-height: 180px; outline: none; padding: 7px 0; }
+.chat-fuss { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: var(--muted); }
+.vorschlaege { display: flex; gap: 8px; flex-wrap: wrap; }
+.punkte-lade { display: inline-flex; gap: 4px; vertical-align: middle; margin-right: 8px; }
+.punkte-lade i { width: 6px; height: 6px; border-radius: 50%; background: var(--fg); animation: puls 1.2s infinite ease-in-out; }
+.punkte-lade i:nth-child(2) { animation-delay: .15s; } .punkte-lade i:nth-child(3) { animation-delay: .3s; }
+@keyframes puls { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .punkte-lade i, .lade { animation: none; } }
+
+/* ---------- Bedienbarkeit ---------- */
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+.knopf:focus-visible { outline-offset: 3px; }
+.springen { position: absolute; left: -9999px; top: 0; }
+.springen:focus { left: 16px; top: 16px; z-index: 50; background: var(--inv-bg); color: var(--inv-fg);
+                  border: 0; padding: 10px 14px; border-radius: 9px; font-weight: 600; }
+[role="button"][tabindex] { cursor: pointer; }
+.fusslinks { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; padding: 0 4px; }
+.fusslinks a, .fusslinks button { color: var(--muted); text-decoration: none; background: none; border: 0; padding: 0;
+                                  font: inherit; cursor: pointer; }
+.fusslinks a:hover, .fusslinks button:hover { color: var(--fg); text-decoration: underline; }
+.speicher-hinweis { position: fixed; z-index: 40; left: max(16px, env(safe-area-inset-left, 0px));
+                    right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                    max-width: 620px; margin: 0 auto; background: var(--bg); border: 1px solid var(--fg); border-radius: 14px;
+                    padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.speicher-hinweis p { margin: 0 0 14px; font-size: 14px; }
+.speicher-hinweis .zeile .knopf { flex: 1; min-width: 160px; }
+.risiko { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 13.5px; color: var(--muted); background: var(--soft); }
+.haken { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; margin: 14px 0 0; font-size: 14px; line-height: 1.45; color: var(--fg) !important; }
+.tor label.haken { display: grid; margin: 14px 0 0; font-size: 14px; color: var(--fg); }
+.haken input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--fg); }
+.recht { max-width: 70ch; line-height: 1.6; }
+.recht h2 { margin: 26px 0 8px; }
+.recht p { margin: 0 0 10px; }
+.recht ul { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 6px; }
+.recht .adresse { margin: 0 0 10px; }
+.warnung { border: 1.5px solid var(--fg); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; }
+.tor.breit .karte { width: min(780px, 100%); }
+
+/* ---------- Telefon ---------- */
+@media (max-width: 860px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .seite { min-width: 0; position: sticky; top: 0; height: auto; z-index: 10; background: var(--bg);
+           border-right: 0; border-bottom: 1px solid var(--line); padding: 12px 16px; gap: 10px; }
+  .seite .marke { padding: 0; }
+  nav { flex-direction: row; overflow-x: auto; gap: 4px; scrollbar-width: none; }
+  nav::-webkit-scrollbar { display: none; }
+  .nav-titel { display: none; }
+  nav a { flex: none; padding: 6px 10px; }
+  nav a .zahl { display: none; }
+  .unten { margin-top: 0; }
+  .unten .token-karte, .unten .thema { display: none; }
+  main { padding: 22px 16px 60px; }
+  .r2, .r3, .r4 { grid-template-columns: 1fr 1fr; }
+  .r2.immer-voll, .r3.immer-voll { grid-template-columns: 1fr; }
+  h1 { font-size: 24px; }
+  .urteil { font-size: 28px; }
+  .balken { grid-template-columns: 76px 1fr 60px; gap: 10px; }
+}
+@media (max-width: 520px) {
+  .r2, .r3 { grid-template-columns: 1fr; }
+  .r3.drei { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+  .r3.drei .wert { font-size: 17px !important; }
+  .aktionen .karte { display: flex; align-items: center; gap: 14px; padding: 14px 16px; }
+  .aktionen .karte > div:nth-child(2) { margin-top: 0 !important; }
+  .aktionen .karte .kosten { margin: 0 0 0 auto !important; white-space: nowrap; }
+  .aktionen .karte .u { display: none; }
+  .kopf { flex-direction: column; }
+  .rechtsblock { text-align: left; }
+}
+
+/* ---------- Anmeldung ---------- */
+.tor { min-height: 100vh; display: grid; place-items: center; padding: 24px 16px; }
+.tor .karte { width: min(400px, 100%); padding: 32px; }
+.tor h1 { font-size: 24px; margin: 22px 0 6px; }
+.tor label { display: block; font-size: 13px; color: var(--muted); margin: 16px 0 6px; }
+.tor .feld { width: 100%; }
+.tor .knopf { width: 100%; margin-top: 22px; }
+.tor .fehler { color: var(--fg); font-size: 13.5px; margin-top: 14px; min-height: 20px; }
+
+/* ---------- Modellwahl ---------- */
+.wahl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wahl button { text-align: left; border: 1px solid var(--line); background: var(--bg);
+               border-radius: 12px; padding: 14px; cursor: pointer; display: flex;
+               flex-direction: column; gap: 4px; min-width: 0; }
+.wahl button:hover:not(:disabled) { background: var(--hover); }
+.wahl button.an { border-color: var(--fg); box-shadow: inset 0 0 0 1px var(--fg); }
+.wahl button:disabled { cursor: not-allowed; opacity: .45; }
+.wahl .n { font-weight: 650; font-size: 15px; display: flex; justify-content: space-between; gap: 8px; }
+.wahl .t { font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+.wahl .s { font-size: 12px; margin-top: 6px; color: var(--fg); }
+.punkte { display: inline-flex; gap: 3px; align-items: center; }
+.punkte i { width: 6px; height: 6px; border-radius: 50%; border: 1px solid var(--fg); }
+.punkte i.v { background: var(--fg); }
+.nutzung-zeile { display: grid; grid-template-columns: 70px 1fr auto; gap: 10px; align-items: center;
+                 font-size: 12px; color: var(--muted); margin-top: 6px; }
+.nutzung-zeile .leiste { margin: 0; }
+select.feld { width: auto; appearance: none; padding-right: 28px; cursor: pointer;
+  background-image: linear-gradient(45deg, transparent 50%, var(--muted) 50%), linear-gradient(135deg, var(--muted) 50%, transparent 50%);
+  background-position: calc(100% - 15px) 50%, calc(100% - 10px) 50%; background-size: 5px 5px; background-repeat: no-repeat; }
+.namelink { border: 0; background: none; padding: 0; font-weight: 650; cursor: pointer; text-align: left;
+            text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--faint); }
+.namelink:hover { text-decoration-color: var(--fg); }
+.abmelden { border: 0; background: none; color: var(--muted); font-size: 12.5px; cursor: pointer; padding: 0; }
+.abmelden:hover { color: var(--fg); text-decoration: underline; }
+.formular { display: grid; grid-template-columns: 1fr 1fr auto auto; gap: 10px; align-items: end; }
+.formular label { font-size: 12.5px; color: var(--muted); display: block; margin-bottom: 6px; }
+.formular .feld { width: 100%; }
+@media (max-width: 860px) {
+  .wahl { grid-template-columns: 1fr; }
+  .formular { grid-template-columns: 1fr 1fr; }
+  .formel-form { grid-template-columns: 1fr; }
+  .beitrag { grid-template-columns: minmax(0, 1fr) 90px 52px; }
+  .msg-ich { max-width: 92%; }
+}
+</style>
+</head>
+<body>
+<div id="wurzel"></div>
+<div class="detail" id="detail" onclick="if(event.target===this)zu()"><div class="blatt" id="blatt" role="dialog" aria-modal="true" aria-label="Details"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+const ICON = {
+  uebersicht: '<path d="M3 3h7v9H3zM14 3h7v5h-7zM14 12h7v9h-7zM3 16h7v5H3z"/>',
+  analyse: '<path d="M12 3v3M12 18v3M3 12h3M18 12h3"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.2"/>',
+  indikatoren: '<path d="M3 17l5-6 4 4 8-9"/><path d="M3 21h18"/>',
+  strategie: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  training: '<path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/>',
+  verlauf: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  modelle: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
+  nutzung: '<path d="M4 19h16M6 15V9M12 15V5M18 15v-3"/>',
+  chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  konto: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.4 4.2-6.5 8-6.5s7 2.1 8 6.5"/>',
+  rechtliches: '<path d="M12 3v18M5 7h14M7 7l-3 7a3.5 3.5 0 0 0 6 0zM17 7l-3 7a3.5 3.5 0 0 0 6 0zM8 21h8"/>',
+  nutzer: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
+};
+const SEITEN = [
+  ["uebersicht", "Übersicht"],
+  ["chat", "Chat"],
+  ["#KI"],
+  ["analyse", "Analyse"], ["indikatoren", "Indikatoren"], ["strategie", "Strategie"],
+  ["#Daten"],
+  ["verlauf", "Verlauf"], ["modelle", "Modelle"], ["nutzung", "Nutzung & Abo"], ["konto", "Konto"],
+  ["#Inhaber", null, "inhaber"],
+  ["rechtliches", "Rechtliches", "inhaber"],
+  ["nutzer", "Nutzer", "inhaber"],
+];
+const MREIHE = ["mini", "standard", "max"];
+const icon = n => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON[n] || ICON.verlauf}</svg>`;
+const RECHT = {impressum: "Impressum", datenschutz: "Datenschutz", nutzungsbedingungen: "Nutzungsbedingungen", widerruf: "Widerruf", cookies: "Cookies"};
+let ICHDATEN = {}, VERLAUF_FILTER = "";
+const $ = s => document.querySelector(s);
+const $$ = s => document.querySelectorAll(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const zahl = (x, n = 2) => x == null ? "–" : Number(x).toLocaleString("de-DE", {minimumFractionDigits: n, maximumFractionDigits: n});
+const ganz = x => x == null ? "–" : Number(x).toLocaleString("de-DE");
+const pz = (x, n = 0) => x == null ? "–" : (x * 100).toLocaleString("de-DE", {minimumFractionDigits: n, maximumFractionDigits: n}) + " %";
+const rr = x => x == null ? "–" : (x >= 0 ? "+" : "−") + zahl(Math.abs(x), 1) + " R";
+const zeit = s => s ? new Date(s).toLocaleString("de-DE", {day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit"}) : "–";
+const datum = s => s ? new Date(s).toLocaleDateString("de-DE") : "–";
+const tok = n => `${ganz(n)} ${n === 1 ? "Token" : "Tokens"}`;
+const BEREICH = {analyse: "Analyse", indikatoren: "Indikatoren", strategie: "Strategie", training: "Training"};
+// Komfort-Einstellungen landen nur im Browser, wenn die Person das erlaubt hat (§ 25 TDDDG).
+const KOMFORT = ["thema", "modell", "filter"];
+const speicherWahl = () => { try { return localStorage.getItem("speicher-wahl") || ""; } catch (_) { return ""; } };
+const merken = (k, v) => { if (KOMFORT.includes(k) && speicherWahl() !== "komfort") return; try { localStorage.setItem(k, v); } catch (_) {} };
+const lesen = (k, d) => { if (KOMFORT.includes(k) && speicherWahl() !== "komfort") return d; try { return localStorage.getItem(k) || d; } catch (_) { return d; } };
+function speicherHinweis(zwingend = false) {
+  if (!zwingend && speicherWahl()) return;
+  document.querySelector(".speicher-hinweis")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="speicher-hinweis" role="dialog" aria-label="Speicher-Einstellungen">
+    <p><b>Kein Tracking, keine Werbung.</b> Für die Anmeldung brauchen wir ein notwendiges Cookie. Auf Wunsch merken wir uns außerdem
+      Komfort-Einstellungen in deinem Browser (Hell/Dunkel, zuletzt gewähltes Modell). <a href="#cookies" style="color:inherit">Mehr dazu</a></p>
+    <div class="zeile"><button class="knopf hell" data-wahl="notwendig">Nur Notwendiges</button><button class="knopf hell" data-wahl="komfort">Komfort erlauben</button></div></div>`);
+  document.querySelectorAll("[data-wahl]").forEach(b => b.onclick = () => {
+    try { localStorage.setItem("speicher-wahl", b.dataset.wahl); } catch (_) {}
+    if (b.dataset.wahl === "notwendig") { KOMFORT.forEach(k => { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (_) {} }); }
+    document.querySelector(".speicher-hinweis").remove();
+    toast(b.dataset.wahl === "komfort" ? "Komfort-Einstellungen werden gemerkt." : "Nur Notwendiges. Nichts weiter wird gespeichert.");
+  });
+}
+const fusslinks = () => `<div class="fusslinks">${Object.entries(RECHT).map(([id, n]) => `<a href="#${id}">${n}</a>`).join("")}<button type="button" onclick="speicherHinweis(true)">Speicher-Einstellungen</button></div>`;
+
+let ICH = null, STAND = null, seite = "uebersicht";
+let gewaehlt = lesen("modell", "standard");
+const inhaber = () => ICH && ICH.rolle === "inhaber";
+
+/* ---------- Netz ---------- */
+async function api(pfad, body) {
+  const r = await fetch(pfad, body === undefined ? {} :
+    {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const d = await r.json().catch(() => ({fehler: "Keine Antwort vom Server."}));
+  if (r.status === 401 && d.anmelden) { ICH = null; tor(); }
+  if (!r.ok) throw Object.assign(new Error(d.fehler || "Fehler"), d);
+  return d;
+}
+function toast(text) {
+  const t = $("#toast"); t.textContent = text; t.classList.add("zeigen");
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("zeigen"), 4200);
+}
+
+/* ---------- Anmeldung ---------- */
+async function start() {
+  const d = await api("/api/ich");
+  ICHDATEN = d; ICH = d.nutzer;
+  speicherHinweis();
+  if (RECHT[location.hash.slice(1)] && !ICH) return rechtZeigen();
+  if (!ICH) return tor(d.einrichten);
+  if (d.zustimmung_noetig) return zustimmungZeigen();
+  if (!document.querySelector(".app")) geruest();
+  zeigen();
+}
+function zustimmungZeigen() {
+  const a = ICHDATEN.mindestalter;
+  $("#wurzel").innerHTML = `<div class="tor"><form class="karte" id="zform" style="width:min(520px,100%)">
+    <div class="marke" style="padding:0">BENGX <span>KI</span></div>
+    <h1>Bevor es losgeht</h1>
+    <p class="unter" style="margin:0 0 16px">Hallo ${esc(ICH.name)}. Bitte lies und bestätige diese Punkte. ${ICH.zustimmungen?.nutzung ? "Die Bedingungen haben sich seit deiner letzten Zustimmung geändert." : ""}</p>
+    <div class="risiko">${esc(ICHDATEN.risiko)}</div>
+    <label class="haken"><input type="checkbox" id="z1"><span>Ich bin mindestens ${a} Jahre alt.</span></label>
+    <label class="haken"><input type="checkbox" id="z2"><span>Ich akzeptiere die <a href="#nutzungsbedingungen" target="_blank" rel="noopener" style="color:inherit">Nutzungsbedingungen</a> und verstehe, dass die KI keine Anlageberatung gibt.</span></label>
+    <label class="haken"><input type="checkbox" id="z3"><span>Ich habe die <a href="#datenschutz" target="_blank" rel="noopener" style="color:inherit">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
+    <button class="knopf" type="submit" id="zweiter" disabled>Zustimmen und weiter</button>
+    <div class="fehler" id="zf"></div>
+    <div class="zeile weit" style="margin-top:8px"><button class="abmelden" type="button" onclick="abmelden()">Abmelden</button>
+      <button class="abmelden" type="button" id="zlos">Konto stattdessen löschen</button></div>
+    <div id="zloeschen" hidden style="margin-top:12px"><label class="etikett" for="zpw">Zum Löschen dein Passwort</label>
+      <div class="zeile" style="margin-top:6px"><input class="feld" type="password" id="zpw" autocomplete="current-password" style="flex:1"><button class="knopf hell" type="button" id="zweg">Endgültig löschen</button></div></div>
+  </form><div style="margin-top:16px">${fusslinks()}</div></div>`;
+  const boxen = ["#z1", "#z2", "#z3"].map(x => $(x));
+  boxen.forEach(b => b.onchange = () => { $("#zweiter").disabled = !boxen.every(x => x.checked); });
+  $("#zlos").onclick = () => { $("#zloeschen").hidden = false; $("#zpw").focus(); };
+  $("#zweg").onclick = async () => {
+    try { await api("/api/konto/loeschen", {passwort: $("#zpw").value}); ICH = null; toast("Dein Konto und alle Daten sind gelöscht."); start(); }
+    catch (err) { $("#zf").textContent = err.message; } };
+  $("#zform").onsubmit = async e => { e.preventDefault();
+    try { await api("/api/zustimmung", {art: "nutzung", volljaehrig: $("#z1").checked, nutzungsbedingungen: $("#z2").checked, datenschutz: $("#z3").checked}); start(); }
+    catch (err) { $("#zf").textContent = err.message; } };
+}
+async function rechtInhalt(name) {
+  const d = await api("/api/rechtliches?seite=" + name);
+  const block = b => b.h ? `<h2>${esc(b.h)}</h2>` : b.p ? `<p>${esc(b.p)}</p>` : b.ul ? `<ul>${b.ul.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`
+    : b.adresse ? `<p class="adresse">${b.adresse.map(esc).join("<br>")}</p>` : "";
+  return {d, html: `${d.vollstaendig ? "" : `<div class="warnung">${ICH && inhaber() ? `Es fehlen noch Angaben des Betreibers. <a href="#rechtliches" style="color:inherit">Jetzt unter Rechtliches eintragen</a>.` : "Einige Angaben des Betreibers werden gerade ergänzt."}</div>`}
+    <div class="recht">${d.bloecke.map(block).join("")}</div>`};
+}
+async function rechtZeigen() {
+  const name = location.hash.slice(1);
+  const {d, html} = await rechtInhalt(name);
+  if (ICH && document.querySelector(".app")) {
+    $("#haupt").innerHTML = kopf(esc(d.titel), `Stand ${datum(d.stand)}`) + `<div class="karte">${html}</div>`;
+    navZeichnen(); window.scrollTo(0, 0); return;
+  }
+  $("#wurzel").innerHTML = `<div class="tor breit"><div class="karte">
+    <div class="zeile weit"><div class="marke" style="padding:0">BENGX <span>KI</span></div><a href="#" class="abmelden" id="zurueck">← Zurück</a></div>
+    <h1>${esc(d.titel)}</h1><p class="unter">Stand ${datum(d.stand)}</p>${html}</div>
+    <div style="margin-top:16px">${fusslinks()}</div></div>`;
+  $("#zurueck").onclick = e => { e.preventDefault(); history.replaceState(null, "", location.pathname); start(); };
+  window.scrollTo(0, 0);
+}
+function tor(einrichten = false) {
+  $("#wurzel").innerHTML = `<div class="tor"><form class="karte" id="torform">
+    <div class="marke" style="padding:0">BENGX <span>KI</span></div>
+    <h1>${einrichten ? "Willkommen" : "Anmelden"}</h1>
+    <p class="unter" style="margin:0">${einrichten ? "Lege dein Inhaber-Konto an. Als Inhaber hast du keine Grenzen und verwaltest alle anderen." : "Mit deinem Namen und Passwort."}</p>
+    <label for="tn">Name</label><input class="feld" id="tn" autocomplete="username" required>
+    <label for="tp">Passwort</label><input class="feld" id="tp" type="password" autocomplete="${einrichten ? "new-password" : "current-password"}" required minlength="${einrichten ? 8 : 1}">
+    ${einrichten ? `<p class="etikett" style="margin:8px 0 0">Mindestens 8 Zeichen.</p>` : ""}
+    <button class="knopf" type="submit">${einrichten ? "Inhaber anlegen" : "Anmelden"}</button>
+    <div class="fehler" id="tf" role="alert"></div>
+    <p class="etikett" style="margin:14px 0 0;font-size:12px">${esc(ICHDATEN.risiko || "")}</p></form>
+    <div style="margin-top:16px">${fusslinks()}</div></div>`;
+  $("#tn").focus();
+  $("#torform").onsubmit = async e => {
+    e.preventDefault();
+    try {
+      await api(einrichten ? "/api/einrichten" : "/api/anmelden", {name: $("#tn").value, passwort: $("#tp").value});
+      if (!RECHT[location.hash.slice(1)]) history.replaceState(null, "", "#uebersicht");
+      start();
+    } catch (err) { $("#tf").textContent = err.message; }
+  };
+}
+async function abmelden() { await api("/api/abmelden", {}); ICH = null; tor(); }
+
+/* ---------- Gerüst ---------- */
+function geruest() {
+  $("#wurzel").innerHTML = `<button class="springen" type="button" onclick="document.getElementById('haupt').focus()">Zum Inhalt springen</button><div class="app">
+    <aside class="seite" aria-label="Navigation">
+      <div class="marke">BENGX <span>KI</span></div>
+      <nav id="nav"></nav>
+      <div class="unten">
+        <div class="token-karte" onclick="geh('nutzung')" role="button" tabindex="0" aria-label="Nutzung und Abo öffnen">
+          <div class="zeile weit"><b style="font-size:14px">${esc(ICH.name)}</b><span class="marke-klein ${inhaber() ? "voll" : ""}" id="sb-abo">–</span></div>
+          <div id="sb-nutzung" style="margin-top:6px"></div>
+        </div>
+        <div class="zeile weit" style="padding:0 4px"><button class="abmelden" onclick="abmelden()">Abmelden</button></div>
+        ${fusslinks()}
+        <div class="thema" id="thema">
+          <button data-t="light">Hell</button><button data-t="auto">Auto</button><button data-t="dark">Dunkel</button>
+        </div>
+      </div>
+    </aside>
+    <main id="haupt" tabindex="-1"></main></div>`;
+  $$("#thema button").forEach(b => b.onclick = () => thema(b.dataset.t));
+  thema(lesen("thema", "auto"));
+}
+async function laden() {
+  STAND = await api("/api/stand");
+  const n = STAND.nutzung;
+  $("#sb-abo").textContent = n.abo_name;
+  $("#sb-nutzung").innerHTML = MREIHE.map(m => nutzungZeile(n.modelle[m])).join("") + nutzungZeile({...n.chat, name: "Chat"});
+  navZeichnen();
+}
+function nutzungZeile(m) {
+  const breite = m.limit == null ? 0 : Math.min(100, 100 * m.verbraucht / Math.max(1, m.limit));
+  const text = m.gesperrt ? "gesperrt" : m.limit == null ? (inhaber() ? ganz(m.verbraucht) : "∞") : `${ganz(m.verbraucht)}/${ganz(m.limit)}`;
+  return `<div class="nutzung-zeile"><span>${esc(m.name)}</span><div class="leiste"><i style="width:${breite}%"></i></div><span class="num">${text}</span></div>`;
+}
+function navZeichnen() {
+  const z = STAND ? STAND.zaehler : {};
+  const summe = Object.values(z).reduce((a, b) => a + b, 0);
+  $("#nav").innerHTML = SEITEN.filter(([, , r]) => !r || inhaber()).map(([id, name]) => id.startsWith("#")
+    ? `<div class="nav-titel">${id.slice(1)}</div>`
+    : `<a href="#${id}" class="${id === seite ? "aktiv" : ""}">${icon(id)}${name}${
+        id === "verlauf" && summe ? `<span class="zahl">${summe}</span>` : z[id] ? `<span class="zahl">${z[id]}</span>` :
+        id === "nutzer" && STAND && STAND.nutzerzahl ? `<span class="zahl">${STAND.nutzerzahl}</span>` : ""}</a>`).join("");
+}
+function geh(id) { location.hash = id; }
+window.addEventListener("hashchange", () => {
+  if (RECHT[location.hash.slice(1)]) return rechtZeigen();
+  if (!ICH) return start();
+  if (!document.querySelector(".app")) return start();
+  zeigen();
+});
+// Tastatur: Elemente mit role="button" reagieren auf Enter und Leertaste wie ein Knopf.
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest('[role="button"][tabindex]');
+  if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); el.click(); }
+});
+async function zeigen() {
+  seite = location.hash.slice(1) || "uebersicht";
+  if (RECHT[seite]) return rechtZeigen();
+  const eintrag = SEITEN.find(([id]) => id === seite);
+  if (!eintrag || (eintrag[2] && !inhaber())) seite = "uebersicht";
+  navZeichnen(); zu(); window.scrollTo(0, 0);
+  try { await ANSICHT[seite](); }
+  catch (e) { if (!e.anmelden) $("#haupt").innerHTML = kopf("Fehler", esc(e.message)); }
+}
+const kopf = (titel, unter = "", rechts = "") => `<div class="kopf"><div><h1>${titel}</h1>${unter ? `<p class="unter">${unter}</p>` : ""}</div>${rechts}</div>`;
+const pille = () => STAND ? `<span class="pille"><i></i>${esc(STAND.nutzung.abo_name)}</span>` : "";
+
+/* ---------- Aktionen ---------- */
+async function ausfuehren(knopf, pfad, body, danach) {
+  const alt = knopf.innerHTML;
+  knopf.disabled = true; knopf.innerHTML = '<span class="lade"></span> Läuft …';
+  try { const e = await api(pfad, body || {}); await laden(); await danach(e); }
+  catch (err) { toast(err.message); if (err.grenze) await laden().then(() => modellwahlNeu()); }
+  finally { if (document.body.contains(knopf)) { knopf.disabled = false; knopf.innerHTML = alt; } modellwahlNeu(); }
+}
+
+/* ---------- Modellwahl ---------- */
+function modellStatus(id) {
+  const n = STAND.nutzung.modelle[id], m = STAND.modelle[id];
+  if (n.gesperrt) return {frei: false, text: "Nicht im Abo " + STAND.nutzung.abo_name};
+  if (!m.vorhanden) return {frei: false, text: "Noch nicht trainiert"};
+  if (n.limit == null) return {frei: true, text: inhaber() ? "Unbegrenzt" : "Ohne Grenze"};
+  if (n.rest <= 0) return {frei: false, text: "Limit erreicht · frei am " + datum(STAND.nutzung.auffuellung)};
+  return {frei: true, text: `${ganz(n.rest)} von ${ganz(n.limit)} übrig`};
+}
+let wahlAktion = "analyse", wahlKnopf = null;
+function modellwahl(aktion, knopfId, knopfText) {
+  wahlAktion = aktion; wahlKnopf = [knopfId, knopfText];
+  if (!modellStatus(gewaehlt).frei) gewaehlt = MREIHE.find(m => modellStatus(m).frei) || gewaehlt;
+  return `<div class="wahl" id="wahl">${wahlInhalt()}</div>`;
+}
+function wahlInhalt() {
+  return MREIHE.map((id, i) => {
+    const m = STAND.modelle[id], s = modellStatus(id), k = STAND.nutzung.kosten[wahlAktion][id];
+    return `<button data-m="${id}" class="${id === gewaehlt ? "an" : ""}" ${s.frei ? "" : "disabled"}>
+      <span class="n">${esc(m.name)}<span class="punkte" title="Stärke">${[0, 1, 2].map(j => `<i class="${j <= i ? "v" : ""}"></i>`).join("")}</span></span>
+      <span class="t">${esc(m.text)}</span>
+      <span class="s">${tok(k)} · ${esc(s.text)}</span></button>`;
+  }).join("");
+}
+function modellwahlNeu() {
+  // Die Wahl bleibt stehen, auch wenn das Modell gerade nicht geht: der Knopf sagt dann, warum.
+  const w = $("#wahl"); if (!w) return;
+  w.innerHTML = wahlInhalt();
+  w.querySelectorAll("[data-m]").forEach(b => b.onclick = () => { gewaehlt = b.dataset.m; merken("modell", gewaehlt); modellwahlNeu(); });
+  const [kid, ktext] = wahlKnopf, k = $("#" + kid);
+  if (k) {
+    const s = modellStatus(gewaehlt);
+    k.disabled = !s.frei;
+    k.innerHTML = `${ktext} <small>· ${STAND.modelle[gewaehlt].name} · ${s.frei ? tok(STAND.nutzung.kosten[wahlAktion][gewaehlt]) : s.text.split(" · ")[0]}</small>`;
+  }
+}
+
+/* ---------- Darstellungen ---------- */
+function zeigeAnalyse(d, kompakt = false) {
+  const p = d.wahrscheinlichkeiten, i = d.idee;
+  const urteil = i ? (i.richtung === "kaufen" ? "Kaufen" : "Verkaufen") : "Kein Signal";
+  const max = Math.max(...Object.values(p));
+  const fokus = (d.fokus || []).map((f, n) => ({...f, nr: n + 1})).filter(f => f.chart_index != null && f.nr <= 3);
+  return `
+    <div class="zeile weit"><div>
+      <div class="etikett">Einschätzung für die Kerze vom ${zeit(d.kerze)}</div>
+      <div class="urteil" style="margin-top:6px${kompakt ? ";font-size:26px" : ""}">${urteil}</div>
+    </div><div class="rechtsblock"><div class="etikett">Schluss</div><div class="wert num">${zahl(d.schluss)}</div></div></div>
+    ${d.chart ? chart(d.chart, {niveaus: i, fokus, zukunft: d.horizont, hoehe: kompakt ? 240 : 320}) : ""}
+    <div style="margin-top:14px">${["hoch", "seitwärts", "runter"].map(k => `
+      <div class="balken ${p[k] === max ? "" : "blass"}"><span>${k[0].toUpperCase() + k.slice(1)}</span>
+      <div class="spur"><i style="width:${(p[k] * 100).toFixed(1)}%"></i></div><span class="num" style="text-align:right">${pz(p[k], 1)}</span></div>`).join("")}
+    </div>
+    ${i ? `<div class="raster r3 drei" style="margin-top:18px">
+      <div><div class="etikett">Einstieg</div><div class="wert num" style="font-size:20px">${zahl(i.einstieg)}</div></div>
+      <div><div class="etikett">Stop</div><div class="wert num" style="font-size:20px">${zahl(i.stop)}</div></div>
+      <div><div class="etikett">Ziel</div><div class="wert num" style="font-size:20px">${zahl(i.ziel)}</div></div></div>`
+      : `<p class="etikett" style="margin-top:14px">Weder hoch noch runter erreicht ${pz(d.schwelle)} Sicherheit. Die KI hält sich zurück.</p>`}
+    ${d.gruende ? zeigeWarum(d, kompakt) : ""}
+    <p class="hinweis">Stop und Ziel je ${zahl(d.abstand)} entfernt · Blick ${d.horizont} Kerzen nach vorn · Schwelle ${pz(d.schwelle)} · Keine Anlageberatung, Handel mit hohem Verlustrisiko.</p>`;
+}
+function zeigeWarum(d, kompakt) {
+  const wann = f => f.vor === 0 ? "jüngste Kerze" : f.vor === 1 ? "Kerze davor" : `${f.vor} Kerzen zurück`;
+  const groesste = Math.max(...d.merkmale.map(m => Math.abs(m.beitrag)), 0.01);
+  return `<h2 style="margin-top:24px">Warum diese Einschätzung</h2>
+    <ul class="gruende">${d.gruende.map(g => `<li>${esc(g)}</li>`).join("")}</ul>
+    ${kompakt ? "" : `<div class="raster r2 immer-voll" style="margin-top:18px">
+      <div><div class="etikett">Worauf das Gehirn geachtet hat</div><div class="fokusliste">
+        ${d.fokus.slice(0, 5).map((f, n) => `<div><b>${n + 1}</b><span>${esc(wann(f))} · ${esc(f.form)}</span><span class="num">${pz(f.gewicht)}</span></div>`).join("")}</div></div>
+      <div><div class="etikett">Was die Richtung trägt, in Prozentpunkten</div>
+        ${d.merkmale.map(m => { const w = Math.min(50, 50 * Math.abs(m.beitrag) / groesste);
+          return `<div class="beitrag"><span>${esc(m.gruppe)}</span><span class="achse"><i class="${m.beitrag < 0 ? "minus" : ""}" style="${m.beitrag < 0 ? `right:50%;width:${w}%` : `left:50%;width:${w}%`}"></i></span><span class="num" style="text-align:right">${(m.beitrag >= 0 ? "+" : "−") + zahl(Math.abs(m.beitrag) * 100, 1)}</span></div>`; }).join("")}</div></div>
+    <p class="hinweis">Gemessen am Netz selbst: die Aufmerksamkeit über alle Blöcke, und wie stark die Wahrscheinlichkeit sinkt, wenn man ihm eine Merkmalsgruppe wegnimmt. Die Kreise im Chart markieren die Kerzen 1 bis 3.</p>`}`;
+}
+
+/* ---------- Kerzen-Chart ---------- */
+const CHARTS = {};
+let chartNr = 0;
+function chart(d, o = {}) {
+  const id = "kc" + (++chartNr), n = d.close.length, zuk = o.niveaus ? (o.zukunft || 24) : 0;
+  const W = 960, PR = 74, PL = 6, H = o.hoehe || 320, UH = 96, ABST = 16, ZH = 24;
+  const unten = (o.unten || []).filter(u => u.werte.some(v => v != null));
+  const gesH = H + unten.reduce(a => a + UH + ABST, 0) + ZH;
+  const sw = (W - PR - PL) / (n + zuk), X = i => PL + (i + 0.5) * sw;
+  const linien = [...(d.ema50 ? [{name: "EMA 50", werte: d.ema50, stil: "ema"}] : []), ...(o.linien || [])];
+  const alle = [...d.high, ...d.low];
+  linien.forEach(l => l.werte.forEach(v => v != null && alle.push(v)));
+  if (o.niveaus) alle.push(o.niveaus.stop, o.niveaus.ziel);
+  let lo = Math.min(...alle), hi = Math.max(...alle); const rand = (hi - lo) * .06 || 1; lo -= rand; hi += rand;
+  const Y = v => 10 + (hi - v) * (H - 20) / (hi - lo);
+  const t = [];
+  const schilder = o.niveaus ? [o.niveaus.ziel, o.niveaus.einstieg, o.niveaus.stop].map(Y) : [];
+  for (let k = 0; k <= 4; k++) { const v = lo + (hi - lo) * (k + .5) / 5, frei = schilder.every(y => Math.abs(y - Y(v)) > 16);
+    t.push(`<line x1="${PL}" x2="${W - PR}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/>${frei ? `<text x="${W - PR + 8}" y="${Y(v) + 4}" font-size="12" fill="var(--muted)">${zahl(v)}</text>` : ""}`); }
+  if (o.niveaus) {
+    const nv = o.niveaus, x0 = X(n - 1), x1 = W - PR;
+    t.push(`<rect x="${x0}" width="${x1 - x0}" y="${Math.min(Y(nv.ziel), Y(nv.einstieg))}" height="${Math.abs(Y(nv.ziel) - Y(nv.einstieg))}" fill="var(--fg)" opacity=".07"/>`);
+    t.push(`<rect x="${x0}" width="${x1 - x0}" y="${Math.min(Y(nv.stop), Y(nv.einstieg))}" height="${Math.abs(Y(nv.stop) - Y(nv.einstieg))}" fill="url(#${id}-schraffur)"/>`);
+    [["Ziel", nv.ziel, "6 4"], ["Einstieg", nv.einstieg, ""], ["Stop", nv.stop, "2 4"]].forEach(([name, v, strich]) =>
+      t.push(`<line x1="${PL}" x2="${x1}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--fg)" stroke-width="1.2" ${strich ? `stroke-dasharray="${strich}"` : ""} opacity="${name === "Einstieg" ? .55 : .9}"/>
+        <rect x="${x1 + 2}" y="${Y(v) - 10}" width="${PR - 4}" height="20" rx="5" fill="${name === "Einstieg" ? "var(--bg)" : "var(--inv-bg)"}" stroke="var(--fg)"/>
+        <text x="${x1 + PR / 2}" y="${Y(v) + 4}" font-size="11.5" text-anchor="middle" fill="${name === "Einstieg" ? "var(--fg)" : "var(--inv-fg)"}" font-weight="600">${name}</text>`));
+  }
+  (o.fokus || []).forEach(f => t.push(`<rect x="${X(f.chart_index) - sw / 2}" width="${sw}" y="0" height="${H}" fill="var(--fg)" opacity="${.04 + .16 * Math.min(1, f.gewicht * 3)}"/>`));
+  linien.forEach((l, k) => { const pkt = l.werte.map((v, i) => v == null ? null : `${X(i).toFixed(1)},${Y(v).toFixed(1)}`);
+    const ema = (l.stil || "").startsWith("ema");
+    const strich = ema ? `stroke="var(--muted)" stroke-dasharray="${l.stil === "ema2" ? "2 3" : "5 4"}"` : `stroke="var(--fg)" ${["", "stroke-dasharray=\"8 3\"", "stroke-dasharray=\"2 3\""][k % 3]}`;
+    teilLinien(pkt).forEach(z => t.push(`<polyline points="${z}" fill="none" ${strich} stroke-width="1.5"/>`)); });
+  for (let i = 0; i < n; i++) {
+    const o_ = d.open[i], c = d.close[i], x = X(i), b = Math.max(1, sw * .62), oben = Y(Math.max(o_, c)), h = Math.max(1, Math.abs(Y(o_) - Y(c)));
+    t.push(`<line x1="${x}" x2="${x}" y1="${Y(d.high[i])}" y2="${Y(d.low[i])}" stroke="var(--fg)" stroke-width="1"/>
+      <rect x="${x - b / 2}" y="${oben}" width="${b}" height="${h}" fill="${c >= o_ ? "var(--bg)" : "var(--fg)"}" stroke="var(--fg)" stroke-width="1"/>`);
+  }
+  const belegt = [];
+  (o.fokus || []).forEach(f => { const x = X(f.chart_index); let y = Y(d.low[f.chart_index]) + 16;
+    while (belegt.some(([bx, by]) => Math.abs(bx - x) < 20 && Math.abs(by - y) < 20)) y += 21;
+    belegt.push([x, y]);
+    t.push(`<circle cx="${x}" cy="${y}" r="9" fill="var(--bg)" stroke="var(--fg)" stroke-width="1.5"/><text x="${x}" y="${y + 4}" font-size="11" text-anchor="middle" fill="var(--fg)" font-weight="700">${f.nr}</text>`); });
+  (o.treffer || []).forEach(i => { if (i < 0 || i >= n) return; const x = X(i), y = Y(d.low[i]) + 8;
+    t.push(`<path d="M${x} ${y} l5 9 h-10 z" fill="var(--fg)"/>`); });
+  let y0 = H + ABST;
+  unten.forEach(u => {
+    const w = u.werte.filter(v => v != null); let ul = Math.min(...w), uh = Math.max(...w);
+    const rsiArt = ul >= 0 && uh <= 100 && uh - ul > 20; if (rsiArt) { ul = 0; uh = 100; }
+    if (uh === ul) { uh += 1; ul -= 1; }
+    const Yu = v => y0 + 6 + (uh - v) * (UH - 12) / (uh - ul);
+    t.push(`<rect x="${PL}" y="${y0}" width="${W - PR - PL}" height="${UH}" fill="none" stroke="var(--line)"/>`);
+    (rsiArt ? [30, 70] : ul < 0 && uh > 0 ? [0] : []).forEach(v => t.push(`<line x1="${PL}" x2="${W - PR}" y1="${Yu(v)}" y2="${Yu(v)}" stroke="var(--faint)" stroke-dasharray="3 3"/><text x="${W - PR + 8}" y="${Yu(v) + 4}" font-size="11" fill="var(--muted)">${v}</text>`));
+    teilLinien(u.werte.map((v, i) => v == null ? null : `${X(i).toFixed(1)},${Yu(v).toFixed(1)}`)).forEach(z => t.push(`<polyline points="${z}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>`));
+    const letzt = [...u.werte].reverse().find(v => v != null);
+    t.push(`<text x="${PL + 8}" y="${y0 + 16}" font-size="12" fill="var(--fg)" font-weight="600">${esc(u.name)} <tspan fill="var(--muted)" font-weight="400">${zahl(letzt)}</tspan></text>`);
+    y0 += UH + ABST;
+  });
+  const schritt = Math.ceil(n / 5);
+  for (let i = schritt - 1; i < n; i += schritt) t.push(`<text x="${X(i)}" y="${gesH - 6}" font-size="11.5" text-anchor="middle" fill="var(--muted)">${kurzzeit(d.zeit[i])}</text>`);
+  CHARTS[id] = {d, X, sw, n, W, PR, PL};
+  const legende = [`<span><i style="width:9px;height:12px;border:1.5px solid var(--fg)"></i>Kerze</span>`,
+    ...linien.map((l, k) => { const ema = (l.stil || "").startsWith("ema");
+      return `<span><i class="${ema ? "gestrichelt" : ""}" style="${ema ? (l.stil === "ema2" ? "border-top-style:dotted" : "") : ["", "border-top-style:dashed", "border-top-style:dotted"][k % 3]}"></i>${esc(l.name)}</span>`; }),
+    ...(o.niveaus ? [`<span><i></i>Einstieg, Ziel, Stop</span>`] : []),
+    ...((o.fokus || []).length ? [`<span><i class="punkt"></i>Fokus der KI</span>`] : []),
+    ...(o.trefferName ? [`<span><i class="dreieck"></i>${esc(o.trefferName)}</span>`] : [])];
+  return `<div class="chartrahmen" data-chart="${id}">
+    <svg viewBox="0 0 ${W} ${gesH}" role="img" aria-label="${esc(`Kerzenchart, ${n} Kerzen vom ${datum(d.zeit[0])} bis ${datum(d.zeit[n - 1])}, letzter Schluss ${zahl(d.close[n - 1])}${o.niveaus ? `, Einstieg ${zahl(o.niveaus.einstieg)}, Ziel ${zahl(o.niveaus.ziel)}, Stop ${zahl(o.niveaus.stop)}` : ""}`)}">
+      <defs><pattern id="${id}-schraffur" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--fg)" stroke-width="1" opacity=".25"/></pattern></defs>
+      ${t.join("")}
+      <line class="faden" x1="0" x2="0" y1="0" y2="${gesH - ZH}" stroke="var(--fg)" stroke-dasharray="2 3" opacity="0"/>
+      <rect class="flaeche" x="${PL}" y="0" width="${W - PR - PL}" height="${gesH - ZH}" fill="transparent"/>
+    </svg><div class="chart-tip" hidden></div></div>
+    <div class="legende">${legende.join("")}</div>`;
+}
+function teilLinien(punkte) { const z = []; let akt = [];
+  punkte.forEach(pk => { if (pk) akt.push(pk); else if (akt.length) { z.push(akt.join(" ")); akt = []; } });
+  if (akt.length) z.push(akt.join(" ")); return z.filter(x => x.includes(" ")); }
+const kurzzeit = s => { const d = new Date(s); return d.toLocaleDateString("de-DE", {day: "2-digit", month: "2-digit"}) + " " + d.toLocaleTimeString("de-DE", {hour: "2-digit", minute: "2-digit"}); };
+document.addEventListener("pointermove", e => {
+  const r = e.target.closest && e.target.closest(".chartrahmen"); if (!r) return;
+  const c = CHARTS[r.dataset.chart], svg = r.querySelector("svg"); if (!c || !svg) return;
+  const box = svg.getBoundingClientRect(), x = (e.clientX - box.left) * c.W / box.width;
+  const i = Math.round((x - c.PL) / c.sw - .5), tip = r.querySelector(".chart-tip"), faden = svg.querySelector(".faden");
+  if (i < 0 || i >= c.n || x > c.W - c.PR) { tip.hidden = true; faden.setAttribute("opacity", 0); return; }
+  faden.setAttribute("x1", c.X(i)); faden.setAttribute("x2", c.X(i)); faden.setAttribute("opacity", .5);
+  const d = c.d;
+  tip.innerHTML = `<b>${zeit(d.zeit[i])}</b><br>O ${zahl(d.open[i])} · H ${zahl(d.high[i])}<br>T ${zahl(d.low[i])} · S ${zahl(d.close[i])}`;
+  tip.hidden = false;
+  const links = (c.X(i) * box.width / c.W) + r.scrollLeft;
+  tip.style.left = Math.max(4, Math.min(links + 14, r.scrollLeft + r.clientWidth - tip.offsetWidth - 4)) + "px";
+});
+document.addEventListener("pointerleave", e => { if (e.target.classList && e.target.classList.contains("chartrahmen")) { const t = e.target.querySelector(".chart-tip"); if (t) t.hidden = true; } }, true);
+function chartsNachRechts(wurzel = document) { wurzel.querySelectorAll(".chartrahmen").forEach(r => { r.scrollLeft = r.scrollWidth; }); }
+
+function kurve(v) {
+  const W = 800, H = 220, P = 6;
+  const alle = [...v.schluss, ...v.ema50, ...v.ema200].filter(x => x != null);
+  const lo = Math.min(...alle), hi = Math.max(...alle), n = v.schluss.length;
+  const X = i => P + i * (W - 2 * P) / (n - 1), Y = y => H - P - (y - lo) * (H - 2 * P) / ((hi - lo) || 1);
+  const linie = r => r.map((y, i) => y == null ? "" : `${X(i).toFixed(1)},${Y(y).toFixed(1)}`).filter(Boolean).join(" ");
+  return `<svg class="kurve" viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+    <polyline points="${linie(v.ema200)}" fill="none" stroke="var(--faint)" stroke-width="1.2" vector-effect="non-scaling-stroke"/>
+    <polyline points="${linie(v.ema50)}" fill="none" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 4" vector-effect="non-scaling-stroke"/>
+    <polyline points="${linie(v.schluss)}" fill="none" stroke="var(--fg)" stroke-width="1.8" vector-effect="non-scaling-stroke"/>
+  </svg>
+  <div class="zeile etikett" style="gap:18px;margin-top:8px">
+    <span>━ Kurs</span><span>┅ EMA 50</span><span style="color:var(--faint)">━ EMA 200</span>
+    <span style="margin-left:auto">${datum(v.zeit[0])} – ${datum(v.zeit[n - 1])}</span></div>`;
+}
+function eigeneOptionen(liste, n) {
+  const o = {linien: [], unten: [], treffer: [], trefferName: ""};
+  (liste || []).filter(x => !x.fehler && !x.aus).forEach(x => {
+    if (x.bedingung) { o.treffer.push(...(x.treffer_chart || [])); o.trefferName = o.trefferName ? o.trefferName + ", " + x.name : x.name; }
+    else if (x.anzeige === "unten") o.unten.push({name: x.name, werte: x.werte});
+    else o.linien.push({name: x.name, werte: x.werte});
+  });
+  return o;
+}
+function zeigeIndikatoren(d) {
+  let bild;
+  if (d.chart) {
+    const o = eigeneOptionen(d.eigene);
+    const e200 = d.verlauf.ema200.slice(-d.chart.close.length);
+    o.linien.unshift({name: "EMA 200", werte: e200, stil: "ema2"});
+    bild = chart(d.chart, o);
+  } else bild = kurve(d.verlauf);
+  return `<div style="margin-bottom:6px"><div class="etikett">Gesamtbild</div>
+      <div class="urteil" style="font-size:26px;margin-top:4px">${esc(d.gesamt)}</div></div>
+    ${bild}
+    <div class="tabelle" style="margin-top:20px"><table><thead><tr><th>Indikator</th><th class="r">Wert</th><th>Deutung</th></tr></thead><tbody>
+    ${d.liste.map(x => `<tr><td>${esc(x.name)}</td><td class="r num">${zahl(x.wert)}</td><td style="color:var(--muted)">${esc(x.deutung)}</td></tr>`).join("")}
+    ${(d.eigene || []).map(x => `<tr><td>${esc(x.name)} <span class="marke-klein">eigen</span></td><td class="r num">${x.fehler ? "–" : x.bedingung ? (x.aktuell ? "trifft zu" : "nein") : zahl(x.aktuell)}</td><td style="color:var(--muted)"><code class="mono">${esc(x.formel)}</code></td></tr>`).join("")}
+    </tbody></table></div>`;
+}
+function zeigeFormel(a, mitChart = true) {
+  const st = a.statistik;
+  const o = a.bedingung ? {treffer: a.treffer_chart || [], trefferName: "Bedingung trifft zu"}
+    : a.anzeige === "unten" ? {unten: [{name: a.name || a.formel, werte: a.werte}]} : {linien: [{name: a.name || a.formel, werte: a.werte}]};
+  return `${mitChart && a.chart ? chart(a.chart, {...o, hoehe: 240}) : ""}
+    <p style="margin:12px 0 0">${a.bedingung
+      ? `Trifft gerade ${a.aktuell ? "<b>zu</b>" : "nicht zu"}. In den Daten ${ganz(st.treffer)}× erfüllt.${st.ausgewertet
+          ? ` Danach kam in <b>${pz(st.hoch)}</b> der Fälle zuerst das Ziel oben und in ${pz(st.runter)} zuerst der Stop unten. Über alle Kerzen: ${pz(st.hoch_sonst)} oben, ${pz(st.runter_sonst)} unten.` : ""}`
+      : `Aktueller Wert: <b class="num">${zahl(a.aktuell)}</b>`}</p>
+    ${a.bedingung && st.ausgewertet ? `<p class="hinweis" style="margin-top:6px">Gemessen wie bei der KI: Ziel und Stop je ${zahl(st.abstand_atr, 1)} × ATR, höchstens ${st.horizont} Kerzen.${st.ausgewertet < 30 ? " Wenige Fälle: die Zahlen schwanken stark." : ""}</p>` : ""}`;
+}
+const rTrade = x => (x >= 0 ? "+" : "−") + zahl(Math.abs(x), 3);
+function zeigeKennzahlen(d) {
+  return `<div class="raster r3">
+      <div><div class="etikett">KI richtig</div><div class="wert num">${pz(d.treffer, 1)}</div></div>
+      <div><div class="etikett">Raten („${esc(d.raten_klasse)}“)</div><div class="wert num" style="color:var(--muted)">${pz(d.raten, 1)}</div></div>
+      <div><div class="etikett">Geprüfte Kerzen</div><div class="wert num">${ganz(d.kerzen)}</div></div></div>
+    <div class="tabelle" style="margin-top:22px"><table><thead><tr><th>Handeln ab Sicherheit</th><th class="r">Trades</th><th class="r">Treffer</th><th class="r">Summe</th><th class="r">je Trade</th><th class="r">Einbruch</th></tr></thead><tbody>
+    ${d.schwellen.map(s => `<tr><td>${pz(s.schwelle)}</td><td class="r num">${ganz(s.trades)}</td><td class="r num">${s.trades ? pz(s.treffer, 1) : "–"}</td><td class="r num"><b>${s.trades ? rr(s.summe_r) : "–"}</b></td><td class="r num">${s.trades ? rTrade(s.schnitt_r) : "–"}</td><td class="r num">${s.trades ? rr(s.einbruch_r) : "–"}</td></tr>`).join("")}
+    <tr><td style="color:var(--muted)">Vergleich: immer kaufen</td><td class="r num">${ganz(d.immer_kaufen.trades)}</td><td class="r num">${pz(d.immer_kaufen.treffer, 1)}</td><td class="r num">${rr(d.immer_kaufen.summe_r)}</td><td class="r num">${rTrade(d.immer_kaufen.schnitt_r)}</td><td class="r num">${rr(d.immer_kaufen.einbruch_r)}</td></tr>
+    </tbody></table></div>
+    <div class="tabelle" style="margin-top:22px"><table><thead><tr><th>Wenn die KI sagt …</th><th class="r">so oft</th><th class="r">stimmt es</th></tr></thead><tbody>
+    ${d.klassen.map(k => `<tr><td>${esc(k.name)}</td><td class="r num">${ganz(k.gesagt)}</td><td class="r num">${k.stimmt == null ? "–" : pz(k.stimmt, 1)}</td></tr>`).join("")}
+    </tbody></table></div>
+    <p class="hinweis">Nur Kerzen ab ${datum(d.ab)}, die die KI beim Lernen nie gesehen hat. Ohne Gebühren und Spread.</p>`;
+}
+function zeigeEintrag(e) {
+  const d = e.daten;
+  if (e.bereich === "analyse") return zeigeAnalyse(d);
+  if (e.bereich === "indikatoren") return zeigeIndikatoren(d);
+  if (e.bereich === "strategie") return zeigeKennzahlen(d);
+  if (e.bereich === "training") return (d.treffer != null ? zeigeKennzahlen(d) : `<p>${esc(d.kurz)}</p>`)
+    + `<h2 style="margin-top:26px">Protokoll</h2><div class="konsole">${esc((d.protokoll || []).join("\n"))}</div>`;
+  return `<pre class="mono">${esc(JSON.stringify(d, null, 2))}</pre>`;
+}
+function eintragZeile(e, mitName = true) {
+  const wer = mitName && inhaber() && e.nutzer_name && e.nutzer !== ICH.id ? esc(e.nutzer_name) + " · " : "";
+  return `<div class="liste-eintrag" onclick="detail('${e.id}')" role="button" tabindex="0" aria-label="${esc(e.titel)}, ${zeit(e.zeit)}, Details öffnen">
+    <div class="symbol">${icon(e.bereich)}</div>
+    <div style="min-width:0"><div class="titel">${esc(e.titel)}</div><div class="kurz">${wer}${esc(e.kurz)}</div></div>
+    <div class="rechts"><div>${zeit(e.zeit)}</div><div class="num">${e.tokens ? "−" + tok(e.tokens) : ""}</div></div></div>`;
+}
+async function detail(id) {
+  const e = await api("/api/verlauf/" + id);
+  $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
+      <div><span class="marke-klein">${esc(BEREICH[e.bereich] || e.bereich)}</span>
+      <h1 style="font-size:22px;margin-top:10px">${esc(e.titel)}</h1>
+      <p class="unter">${zeit(e.zeit)}${e.tokens ? " · " + tok(e.tokens) : ""}${e.nutzer_name ? " · " + esc(e.nutzer_name) : ""}</p></div>
+      <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>${zeigeEintrag(e)}`;
+  blattAuf();
+  chartsNachRechts($("#blatt"));
+}
+let vorDetail = null;
+function blattAuf() {
+  vorDetail = document.activeElement;
+  document.getElementById("detail").classList.add("offen");
+  const x = $("#blatt .x"); if (x) x.focus();
+}
+function zu() {
+  if (!$("#detail").classList.contains("offen")) return;
+  $("#detail").classList.remove("offen");
+  if (vorDetail && document.body.contains(vorDetail)) vorDetail.focus();
+}
+
+async function nutzerDetail(id) {
+  const d = await api("/api/nutzer/" + id), u = d.nutzer, n = d.stand;
+  const summe = Object.values(d.zaehler).reduce((a, b) => a + b, 0);
+  $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
+      <div><span class="marke-klein ${u.rolle === "inhaber" ? "voll" : ""}">${esc(n.abo_name)}</span>
+      <h1 style="font-size:24px;margin-top:10px">${esc(u.name)}</h1>
+      <p class="unter">seit ${datum(u.erstellt)} · ${ganz(summe)} Aktionen${n.unbegrenzt ? "" : " · frei ab " + datum(n.auffuellung)}<br>
+        ${u.rolle === "inhaber" ? "" : u.zustimmungen?.nutzung ? `Zugestimmt am ${zeit(u.zustimmungen.nutzung.zeit)} (Stand ${datum(u.zustimmungen.nutzung.version)})` : "Hat noch nicht zugestimmt"}</p></div>
+      <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>
+    <h2>Nutzung diesen Monat</h2>
+    <div class="raster r3 drei">${MREIHE.map(id => { const m = n.modelle[id];
+      const breite = m.limit ? Math.min(100, 100 * m.verbraucht / m.limit) : 0;
+      return `<div class="karte" style="padding:14px"><div class="etikett">${esc(m.name)}</div>
+        <div class="wert num" style="font-size:20px">${m.gesperrt ? "–" : ganz(m.verbraucht)}</div>
+        <div class="leiste"><i style="width:${breite}%"></i></div>
+        <div class="etikett">${m.gesperrt ? "gesperrt" : m.limit == null ? "ohne Grenze" : m.rest === 0 ? "Limit erreicht" : ganz(m.rest) + " übrig"}</div></div>`; }).join("")}</div>
+    <div class="zeile" style="gap:8px;margin-top:14px">${Object.entries(BEREICH).map(([b, name]) => `<span class="chip" style="cursor:default">${name} · ${ganz(d.zaehler[b] || 0)}</span>`).join("")}</div>
+    <h2 style="margin-top:28px">Verlauf</h2>
+    ${d.verlauf.length ? d.verlauf.map(e => eintragZeile(e, false)).join("") : `<div class="leer">Noch keine Aktionen.</div>`}
+    <h2 style="margin-top:28px">Buchungen</h2>
+    ${d.buchungen.length ? `<div class="tabelle"><table><tbody>${d.buchungen.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}</tbody></table></div>` : `<div class="leer">Noch keine.</div>`}`;
+  blattAuf();
+  $("#blatt").scrollTop = 0;
+}
+document.addEventListener("keydown", e => { if (e.key === "Escape") zu(); });
+
+/* ---------- Chat ---------- */
+const VORSCHLAEGE = {
+  allgemein: ["Was kannst du alles?", "Wie steht Gold gerade?", "Welches Modell schneidet am besten ab?"],
+  analyse: ["Analysiere den Markt mit Standard", "Warum genau dieses Setup?", "Was spricht gegen den Trade?"],
+  indikatoren: ["Bau mir einen RSI 21, der unter 30 anschlägt", "Wie gut ist ein Hammer als Signal?", "Erklär mir den ADX"],
+  strategie: ["Welches Modell ist am besten?", "Was bedeutet R?", "Lohnt sich Max für mich?"],
+};
+let chatBereich = "allgemein", chatLaeuft = false;
+function md(text) {
+  const zeilen = esc(text).split("\n"), raus = []; let liste = null, absatz = [];
+  const fett = s => s.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>").replace(/`([^`]+)`/g, '<code class="mono">$1</code>');
+  const absatzZu = () => { if (absatz.length) { raus.push(`<p>${fett(absatz.join("<br>"))}</p>`); absatz = []; } };
+  const listeZu = () => { if (liste) { raus.push(`<ul>${liste.map(l => `<li>${fett(l)}</li>`).join("")}</ul>`); liste = null; } };
+  zeilen.forEach(z => {
+    const m = z.match(/^\s*(?:[-*•]|\d+\.)\s+(.*)$/);
+    if (m) { absatzZu(); (liste ||= []).push(m[1]); }
+    else if (!z.trim()) { absatzZu(); listeZu(); }
+    else { listeZu(); absatz.push(z.replace(/^#+\s*/, "")); }
+  });
+  absatzZu(); listeZu();
+  return raus.join("");
+}
+function zeigeAnhang(a) {
+  if (a.art === "formel") return `<div class="anhang"><div class="zeile weit"><span class="marke-klein ${a.gespeichert ? "voll" : ""}">${a.gespeichert ? "Gespeichert" : "Indikator"}</span>${a.gespeichert ? `<a class="etikett" href="#indikatoren" style="color:inherit">Unter Indikatoren ansehen →</a>` : ""}</div>
+      <div style="margin-top:8px"><b>${esc(a.name)}</b> <code class="mono" style="color:var(--muted)">${a.name === a.formel ? "" : esc(a.formel)}</code></div>
+      ${zeigeFormel({...a.auswertung, name: a.name, anzeige: a.anzeige})}</div>`;
+  const e = a.eintrag, d = e.daten;
+  const inhalt = e.bereich === "analyse" ? zeigeAnalyse(d, true)
+    : e.bereich === "strategie" ? `<div class="raster r3 drei"><div><div class="etikett">KI richtig</div><div class="wert num" style="font-size:20px">${pz(d.treffer, 1)}</div></div>
+        <div><div class="etikett">Raten</div><div class="wert num" style="font-size:20px;color:var(--muted)">${pz(d.raten, 1)}</div></div>
+        <div><div class="etikett">Kerzen</div><div class="wert num" style="font-size:20px">${ganz(d.kerzen)}</div></div></div>`
+    : e.bereich === "indikatoren" ? zeigeIndikatoren(d) : `<p>${esc(d.kurz || "")}</p>`;
+  return `<div class="anhang"><div class="zeile weit"><span class="marke-klein">${esc(e.titel)}</span><button class="chip" onclick="detail('${e.id}')">Details</button></div>${inhalt}</div>`;
+}
+function zeigeNachricht(m) {
+  if (m.rolle === "nutzer") return `<div class="msg-ich">${esc(m.text)}</div>`;
+  if (m.rolle === "hinweis") return `<div class="msg-hinweis">${esc(m.text)}</div>`;
+  return `<div class="msg-ki"><div class="ki-zeichen">B</div><div style="min-width:0"><div class="ki-text">${md(m.text)}</div>${(m.anhaenge || []).map(zeigeAnhang).join("")}</div></div>`;
+}
+function chatBox(bereich, voll = false) {
+  return `<div class="chat ${voll ? "voll" : ""}" id="chat" data-bereich="${bereich}">
+    <div class="chat-liste" id="chat-liste"><div class="leer"><span class="lade"></span></div></div>
+    <div class="vorschlaege" id="chat-vorschlaege"></div>
+    <form class="chat-eingabe" id="chat-form"><textarea id="chat-text" rows="1" placeholder="Schreib der KI …" aria-label="Nachricht an die KI"></textarea>
+      <button class="knopf" type="submit" id="chat-senden">Senden</button></form>
+    <div class="chat-fuss"><span id="chat-stand"></span><button class="abmelden" type="button" id="chat-neu">Neues Gespräch</button></div></div>`;
+}
+function chatKontingent(k) {
+  if (!k) return "";
+  return k.gesperrt ? "Chat ist im Abo nicht enthalten" : k.limit == null ? (inhaber() ? `${ganz(k.verbraucht)} ${k.verbraucht === 1 ? "Nachricht" : "Nachrichten"} diesen Monat` : "Chat ohne Grenze")
+    : `${ganz(k.rest)} von ${ganz(k.limit)} Nachrichten frei diesen Monat`;
+}
+async function chatStarten(bereich) {
+  chatBereich = bereich;
+  const d = await api("/api/chat?bereich=" + bereich);
+  const liste = $("#chat-liste"); if (!liste) return;
+  liste.innerHTML = d.nachrichten.length ? d.nachrichten.map(zeigeNachricht).join("")
+    : `<div class="msg-ki"><div class="ki-zeichen">B</div><div class="ki-text"><p>${bereich === "allgemein" ? "Hallo! Ich bin deine BENGX KI. Frag mich zum Markt, zu Analysen, Indikatoren oder deinen Strategien. Ich rechne dabei mit deinen echten Modellen." : bereich === "indikatoren" ? "Beschreib mir einen Indikator in eigenen Worten, dann baue und prüfe ich ihn für dich." : bereich === "analyse" ? "Frag mich, warum die KI ein Setup sieht, oder lass mich eine neue Analyse machen." : "Frag mich, wie gut die Modelle handeln und was die Zahlen bedeuten."}</p></div></div>`;
+  chartsNachRechts(liste);
+  liste.scrollTop = liste.scrollHeight;
+  $("#chat-stand").textContent = chatKontingent(d.kontingent);
+  $("#chat-vorschlaege").innerHTML = d.nachrichten.length ? "" : (VORSCHLAEGE[bereich] || VORSCHLAEGE.allgemein).map(v => `<button class="chip" type="button">${esc(v)}</button>`).join("");
+  $$("#chat-vorschlaege .chip").forEach(c => c.onclick = () => chatSenden(c.textContent));
+  const feld = $("#chat-text"), knopf = $("#chat-senden");
+  feld.disabled = knopf.disabled = false;
+  if (d.bereit && !ICHDATEN.chat_hinweis) {
+    feld.disabled = knopf.disabled = true;
+    $("#chat-vorschlaege").innerHTML = `<div class="risiko" style="width:100%"><p style="margin:0 0 10px">${esc(ICHDATEN.chat_hinweis_text)}
+      <a href="#datenschutz" style="color:inherit">Datenschutz</a></p><button class="knopf hell" type="button" id="chat-ok">Verstanden</button></div>`;
+    $("#chat-ok").onclick = async () => { try { await api("/api/zustimmung", {art: "chat"}); ICHDATEN.chat_hinweis = true; chatStarten(bereich); } catch (err) { toast(err.message); } };
+  }
+  if (!d.bereit) {
+    feld.disabled = knopf.disabled = true;
+    feld.placeholder = "Chat noch nicht eingerichtet";
+    $("#chat-vorschlaege").innerHTML = `<p class="etikett" style="margin:0">${esc(d.grund)}${inhaber() ? " Schlüssel gibt es unter console.anthropic.com. Danach die Oberfläche neu starten." : " Sag dem Inhaber Bescheid."}</p>`;
+  }
+  feld.oninput = () => { feld.style.height = "auto"; feld.style.height = Math.min(180, feld.scrollHeight) + "px"; };
+  feld.onkeydown = e => { if (e.key === "Enter" && !e.shiftKey && !e.isComposing) { e.preventDefault(); $("#chat-form").requestSubmit(); } };
+  $("#chat-form").onsubmit = e => { e.preventDefault(); chatSenden(feld.value); };
+  const neu = $("#chat-neu");
+  neu.onclick = async () => {
+    if (neu.dataset.sicher !== "1") { neu.dataset.sicher = "1"; neu.textContent = "Gespräch wirklich löschen?"; setTimeout(() => { neu.dataset.sicher = ""; neu.textContent = "Neues Gespräch"; }, 4000); return; }
+    await api("/api/chat/neu", {bereich}); chatStarten(bereich);
+  };
+}
+async function chatSenden(text) {
+  text = (text || "").trim(); if (!text || chatLaeuft) return;
+  const liste = $("#chat-liste"), feld = $("#chat-text"), knopf = $("#chat-senden");
+  chatLaeuft = true; knopf.disabled = true; feld.value = ""; feld.style.height = "auto";
+  $("#chat-vorschlaege").innerHTML = "";
+  if (liste.querySelector(".leer")) liste.innerHTML = "";
+  liste.insertAdjacentHTML("beforeend", zeigeNachricht({rolle: "nutzer", text}) +
+    `<div class="msg-ki" id="denkt"><div class="ki-zeichen">B</div><div style="min-width:0"><div class="etikett" style="padding-top:5px"><span class="punkte-lade"><i></i><i></i><i></i></span><span id="denkt-text">denkt nach und rechnet …</span></div><div class="ki-text" id="denkt-live" style="margin-top:6px"></div></div></div>`);
+  liste.scrollTop = liste.scrollHeight;
+  try {
+    const r = await api("/api/chat", {bereich: chatBereich, text});
+    $("#denkt").outerHTML = zeigeNachricht(r.antwort);
+    $("#chat-stand").textContent = chatKontingent(r.kontingent);
+    chartsNachRechts(liste);
+    laden().catch(() => {});
+  } catch (err) {
+    const d = $("#denkt"); if (d) d.outerHTML = `<div class="msg-hinweis">${esc(err.message)}</div>`;
+    if (err.chat_hinweis) { ICHDATEN.chat_hinweis = false; chatStarten(chatBereich); }
+    if (!err.anmelden) feld.value = text;
+  } finally {
+    chatLaeuft = false; if (document.body.contains(knopf)) knopf.disabled = false;
+    const l = $("#chat-liste"); if (l) l.scrollTop = l.scrollHeight;
+  }
+}
+// Zwischenstände, falls die Antwort schon beim Schreiben ankommt (Test-Version im Artefakt).
+function chatLive(text) { const l = $("#denkt-live"); if (l) l.innerHTML = md(text); }
+function chatSchritt(text) { const t = $("#denkt-text"); if (t) t.textContent = text; }
+const chatKarte = (bereich, titel) => `<div class="karte"><h2>${titel}</h2>${chatBox(bereich)}</div>`;
+
+/* ---------- Seiten ---------- */
+const ANSICHT = {
+  async chat() {
+    await laden();
+    $("#haupt").innerHTML = kopf("Chat", "Schreib mit deiner KI. Sie rechnet mit den echten Modellen, Indikatoren und deinem Verlauf.", pille()) +
+      `<div class="karte">${chatBox("allgemein", true)}</div>`;
+    await chatStarten("allgemein");
+    $("#chat-text").focus();
+  },
+
+  async uebersicht() {
+    await laden();
+    const s = STAND, q = s.quelle;
+    const bereit = MREIHE.filter(m => s.modelle[m].vorhanden).length;
+    const summe = Object.values(s.zaehler).reduce((a, b) => a + b, 0);
+    $("#haupt").innerHTML = kopf(`Hallo, ${esc(ICH.name)}`, "Alles, was deine KI weiß, kann und getan hat.", pille()) +
+      (s.betreiber_fehlt && s.betreiber_fehlt.length ? `<div class="warnung"><b>Impressum unvollständig.</b> Es fehlt: ${esc(s.betreiber_fehlt.join(", "))}. Bevor andere die Seite sehen, unter <a href="#rechtliches" style="color:inherit">Rechtliches</a> eintragen.</div>` : "") + `
+      <div class="raster r4">
+        <div class="karte"><div class="etikett">Abo</div><div class="wert">${esc(s.nutzung.abo_name)}</div><div class="etikett">${inhaber() ? "keine Grenzen" : "frei ab " + datum(s.nutzung.auffuellung)}</div></div>
+        <div class="karte"><div class="etikett">Modelle</div><div class="wert num">${bereit} / 3</div><div class="etikett">trainiert und bereit</div></div>
+        <div class="karte"><div class="etikett">Letzter Kurs</div><div class="wert num">${q.fehler ? "–" : zahl(q.schluss)}</div><div class="etikett">${q.fehler ? "keine Daten" : zeit(q.bis)}</div></div>
+        <div class="karte"><div class="etikett">${inhaber() ? "Aktionen aller" : "Deine Aktionen"}</div><div class="wert num">${ganz(summe)}</div><div class="etikett">${inhaber() ? ganz(s.nutzerzahl) + " Nutzer" : "im Verlauf"}</div></div>
+      </div>
+      ${q.fehler ? `<div class="karte"><b>Keine Kursdaten.</b> <span class="etikett">${esc(q.fehler)}</span></div>` : ""}
+      <div class="raster r4 aktionen">
+        ${[["chat", "Chat", "Frag die KI, was du willst"], ["analyse", "Analyse", "Was die KI jetzt erwartet, und warum"], ["indikatoren", "Indikatoren", "Klassisch oder selbst gebaut"], ["strategie", "Strategie", "Wie gut die KI handelt"]].map(([id, t, u]) => `
+        <a class="karte" href="#${id}" style="text-decoration:none;color:inherit;display:block">
+          <div class="symbol">${icon(id)}</div><div style="font-weight:600;margin-top:14px">${t}</div>
+          <div class="etikett u">${u}</div><div class="etikett kosten" style="margin-top:10px">${id === "indikatoren" ? "frei" : id === "chat" ? chatKontingent(s.nutzung.chat) : "ab " + tok(s.nutzung.kosten[id].mini)}</div></a>`).join("")}
+      </div>
+      <div class="raster r2 immer-voll">
+        <div class="karte"><div class="zeile weit"><h2>Letzte Analyse</h2>${s.letzte_analyse ? `<span class="etikett">${esc(s.modelle[s.letzte_analyse.modell]?.name || "")} · ${zeit(s.letzte_analyse.zeit)}</span>` : ""}</div>
+          ${s.letzte_analyse ? zeigeAnalyse(s.letzte_analyse.daten, true) : `<div class="leer">Noch keine Analyse.<br><br><a class="knopf" href="#analyse">Zur Analyse</a></div>`}</div>
+        <div class="karte"><div class="zeile weit"><h2>Zuletzt</h2><a href="#verlauf" class="etikett" style="color:inherit">Alles ansehen →</a></div>
+          ${s.neueste.length ? s.neueste.map(eintragZeile).join("") : `<div class="leer">Hier erscheint alles, was die KI tut.</div>`}</div>
+      </div>`;
+    chartsNachRechts();
+  },
+
+  async analyse() {
+    await laden();
+    $("#haupt").innerHTML = kopf("Analyse", "Die KI schaut auf die letzten Kerzen und schätzt, ob zuerst das Ziel oben oder der Stop unten kommt.", pille()) + `
+      <div class="karte"><h2>Modell</h2>${modellwahl("analyse", "los", "Analysieren")}
+        <div class="zeile weit" style="margin-top:16px">
+          <div class="zeile"><span class="etikett">Handeln ab</span>
+            ${[0.5, 0.6, 0.7].map(s => `<button class="chip ${s === 0.5 ? "an" : ""}" data-s="${s}">${pz(s)}</button>`).join("")}
+            <span class="etikett">Sicherheit</span></div>
+          <button class="knopf" id="los">Analysieren</button></div></div>
+      <div class="karte" id="ergebnis">${STAND.letzte_analyse ? zeigeAnalyse(STAND.letzte_analyse.daten) : `<div class="leer">Noch keine Analyse.</div>`}</div>
+      ${chatKarte("analyse", "Frag die KI zur Analyse")}
+      <div class="karte"><h2>Frühere Analysen</h2><div id="frueher"></div></div>`;
+    chartsNachRechts();
+    modellwahlNeu();
+    let schwelle = 0.5;
+    $$("[data-s]").forEach(c => c.onclick = () => { schwelle = +c.dataset.s; $$("[data-s]").forEach(x => x.classList.toggle("an", x === c)); });
+    const frueher = async () => { const l = await api("/api/verlauf?bereich=analyse");
+      $("#frueher").innerHTML = l.length ? l.slice(0, 30).map(eintragZeile).join("") : `<div class="leer">Noch keine.</div>`; };
+    $("#los").onclick = e => ausfuehren(e.currentTarget, "/api/analyse", {modell: gewaehlt, schwelle}, async r => {
+      $("#ergebnis").innerHTML = zeigeAnalyse(r.daten); chartsNachRechts($("#ergebnis")); modellwahlNeu(); await frueher(); });
+    frueher();
+    chatStarten("analyse");
+  },
+
+  async indikatoren() {
+    await laden();
+    const l = STAND.letzte_indikatoren;
+    const ich = await api("/api/indikatoren/eigene");
+    $("#haupt").innerHTML = kopf("Indikatoren", "Die klassischen Werkzeuge des Bots und deine eigenen, im Kurschart. Ohne KI, deshalb frei.", pille()) + `
+      <div class="karte"><div class="zeile weit"><span class="etikett">${l ? "Zuletzt gelesen " + zeit(l.zeit) : "Noch nicht gelesen"}</span>
+        <button class="knopf" id="los">Neu lesen <small>· frei</small></button></div>
+        <div id="ergebnis">${l ? zeigeIndikatoren(l.daten) : `<div class="leer">Einmal lesen, dann erscheinen hier Chart und Werte.</div>`}</div></div>
+      <div class="karte"><h2>Eigene Indikatoren</h2>
+        <div id="eigene-liste">${ich.liste.length ? ich.liste.map(x => `<div class="eigen-zeile">
+            <div style="min-width:0"><b>${esc(x.name)}</b> <span class="marke-klein">${x.bedingung ? "Bedingung" : x.anzeige === "unten" ? "unten" : "im Chart"}</span><br><code>${esc(x.formel)}</code></div>
+            <span class="num">${x.fehler ? "Fehler" : x.bedingung ? (x.aktuell ? "trifft zu" : "–") : zahl(x.aktuell)}</span>
+            <button class="chip" data-weg="${x.id}">Löschen</button></div>`).join("") : `<p class="etikett" style="margin-top:0">Noch keine. Bau dir unten einen, nimm eine Vorlage oder sag der KI im Chat, was du suchst.</p>`}</div>
+        <form class="formel-form" id="formel-form" style="margin-top:18px">
+          <div><label for="fn">Name</label><input class="feld" id="fn" maxlength="40" placeholder="z. B. RSI 21"></div>
+          <div><label for="ff">Formel</label><input class="feld mono" id="ff" maxlength="300" placeholder="z. B. rsi(close, 21) < 30" autocomplete="off" spellcheck="false"></div>
+          <div><label for="fa">Anzeige</label><select class="feld" id="fa"><option value="chart">Im Chart</option><option value="unten">Unter dem Chart</option></select></div>
+        </form>
+        <div class="zeile" style="margin-top:12px"><button class="knopf hell" id="pruefen" type="button">Prüfen</button><button class="knopf" id="speichern" type="button">Speichern</button></div>
+        <div class="vorschlaege" style="margin-top:16px">${ich.vorlagen.map((v, i) => `<button class="chip" data-vorlage="${i}" type="button">${esc(v.name)}</button>`).join("")}</div>
+        <details class="hilfe" style="margin-top:14px"><summary>Was kann in eine Formel?</summary>
+          <p class="etikett">Kursreihen: open, high, low, close, volume, hl2, hlc3 · Rechnen: + − × ÷ · Vergleiche: &gt; &lt; &gt;= &lt;= · Verknüpfen: and, or, not. Eine Formel mit Vergleich ist eine Bedingung: sie wird im Chart markiert und gemessen, wohin der Kurs danach ging.</p>
+          <dl class="paare" style="font-size:13px">${Object.entries(ich.hilfe).map(([k, v]) => `<dt class="mono">${esc(k)}</dt><dd>${esc(v)}</dd>`).join("")}</dl></details>
+        <div id="vorschau"></div></div>
+      ${chatKarte("indikatoren", "Indikator mit der KI bauen")}`;
+    chartsNachRechts();
+    const lesen = async () => { const r = await api("/api/indikatoren", {}); await laden(); ANSICHT.indikatoren(); return r; };
+    $("#los").onclick = e => ausfuehren(e.currentTarget, "/api/indikatoren", {}, () => ANSICHT.indikatoren());
+    $$("[data-vorlage]").forEach(c => c.onclick = () => { const v = ich.vorlagen[+c.dataset.vorlage];
+      $("#fn").value = v.name; $("#ff").value = v.formel; $("#fa").value = v.anzeige; $("#pruefen").click(); });
+    $("#pruefen").onclick = async () => {
+      try { const r = await api("/api/indikatoren/pruefen", {formel: $("#ff").value});
+        $("#vorschau").innerHTML = `<h2 style="margin-top:22px">Vorschau</h2>` + zeigeFormel({...r, name: $("#fn").value || r.formel, anzeige: $("#fa").value});
+        chartsNachRechts($("#vorschau")); }
+      catch (err) { $("#vorschau").innerHTML = `<p style="margin-top:16px"><b>Geht so nicht.</b> ${esc(err.message)}</p>`; } };
+    $("#speichern").onclick = async e => {
+      try { await api("/api/indikatoren/eigene", {name: $("#fn").value, formel: $("#ff").value, anzeige: $("#fa").value});
+        toast("Gespeichert. Er erscheint jetzt im Chart."); await lesen(); }
+      catch (err) { toast(err.message); } };
+    $$("#eigene-liste [data-weg]").forEach(k => k.onclick = async () => {
+      if (k.dataset.sicher !== "1") { k.dataset.sicher = "1"; k.classList.add("an"); k.textContent = "Wirklich?"; setTimeout(() => { if (document.body.contains(k)) { k.dataset.sicher = ""; k.classList.remove("an"); k.textContent = "Löschen"; } }, 4000); return; }
+      try { await api("/api/indikatoren/eigene/loeschen", {id: k.dataset.weg}); toast("Gelöscht."); await lesen(); } catch (err) { toast(err.message); } });
+    chatStarten("indikatoren");
+  },
+
+  async strategie() {
+    await laden();
+    const m = STAND.modelle[gewaehlt];
+    const letzter = (await api("/api/verlauf?bereich=strategie"))[0];
+    $("#haupt").innerHTML = kopf("Strategie", "Nach welchen Regeln die KI handelt und wie gut das auf Kerzen war, die sie nie gesehen hat.", pille()) + `
+      <div class="karte"><h2>Modell</h2>${modellwahl("strategie", "test", "Strategie testen")}
+        <div class="zeile weit" style="margin-top:16px"><span class="etikett">Prüft auf allen Kerzen nach dem Lernzeitraum des Modells. Nur dort ist das Ergebnis ehrlich.</span>
+        <button class="knopf" id="test">Strategie testen</button></div></div>
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Regeln</h2><dl class="paare">
+          <dt>Frage</dt><dd>Kommt zuerst das Ziel oben oder der Stop unten?</dd>
+          <dt>Stop / Ziel</dt><dd>je ${zahl(m.abstand_atr ?? 1.5, 1)} × ATR, also 1 : 1</dd>
+          <dt>Zeit</dt><dd>höchstens ${m.horizont ?? 24} Kerzen, sonst „seitwärts“</dd>
+          <dt>Position</dt><dd>immer nur eine zur Zeit</dd></dl></div>
+        <div class="karte"><h2>Die Modelle im Vergleich</h2><table><thead><tr><th>Modell</th><th class="r">Richtig</th><th class="r">Raten</th><th class="r">bestes R</th></tr></thead><tbody>
+          ${MREIHE.map(id => { const x = STAND.modelle[id], e = x.ergebnis; const best = e ? Math.max(...e.schwellen.filter(s => s.trades).map(s => s.summe_r), -1e9) : null;
+            return `<tr><td>${esc(x.name)}</td><td class="r num">${e ? pz(e.treffer, 1) : "–"}</td><td class="r num" style="color:var(--muted)">${e ? pz(e.raten, 1) : "–"}</td><td class="r num">${e && best > -1e9 ? rr(best) : "–"}</td></tr>`; }).join("")}
+          </tbody></table><p class="hinweis">Aus der Prüfung direkt nach dem Training.</p></div></div>
+      <div class="karte" id="ergebnis">${letzter ? `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${esc(letzter.titel)} · ${zeit(letzter.zeit)}</span></div><div id="erg-inhalt"></div>` : `<div class="leer">Noch kein Test.</div>`}</div>
+      ${chatKarte("strategie", "Frag die KI zur Strategie")}`;
+    chatStarten("strategie");
+    modellwahlNeu();
+    if (letzter) { const e = await api("/api/verlauf/" + letzter.id); $("#erg-inhalt").innerHTML = zeigeKennzahlen(e.daten); }
+    $("#test").onclick = e => ausfuehren(e.currentTarget, "/api/strategie", {modell: gewaehlt}, r => {
+      modellwahlNeu();
+      $("#ergebnis").innerHTML = `<div class="zeile weit"><h2>Letzter Test</h2><span class="etikett">${esc(r.titel)} · ${zeit(r.zeit)}</span></div>` + zeigeKennzahlen(r.daten); });
+  },
+
+  async verlauf() {
+    await laden();
+    let filter = VERLAUF_FILTER;
+    $("#haupt").innerHTML = kopf("Verlauf", inhaber() ? "Jede Aktion aller Nutzer, mit allen Details." : "Jede deiner Aktionen, mit allen Details.", pille()) + `
+      <div class="zeile" style="margin-bottom:16px">${[["", "Alle"], ...Object.entries(BEREICH)].map(([id, n]) =>
+        `<button class="chip ${id === filter ? "an" : ""}" data-f="${id}">${n}${id && STAND.zaehler[id] ? " · " + STAND.zaehler[id] : ""}</button>`).join("")}</div>
+      <div class="karte" id="liste"><div class="leer"><span class="lade"></span></div></div>`;
+    $$("[data-f]").forEach(c => c.onclick = () => { VERLAUF_FILTER = c.dataset.f; ANSICHT.verlauf(); });
+    const l = await api("/api/verlauf" + (filter ? "?bereich=" + filter : ""));
+    $("#liste").innerHTML = l.length ? l.map(eintragZeile).join("") : `<div class="leer">Noch nichts passiert.</div>`;
+  },
+
+  async modelle() {
+    await laden();
+    const s = STAND;
+    $("#haupt").innerHTML = kopf("Modelle", "Drei Gehirne derselben Bauart, verschieden groß. Größer erfasst mehr, braucht aber mehr Daten.", pille()) + `
+      <div class="raster r3">${MREIHE.map((id, i) => { const m = s.modelle[id], n = s.nutzung.modelle[id], b = m.bauplan;
+        return `<div class="karte"><div class="zeile weit"><b style="font-size:17px">${esc(m.name)}</b><span class="punkte">${[0, 1, 2].map(j => `<i class="${j <= i ? "v" : ""}"></i>`).join("")}</span></div>
+          <p class="etikett" style="min-height:38px">${esc(m.text)}</p>
+          <dl class="paare" style="font-size:13.5px">
+            <dt>Status</dt><dd>${m.vorhanden ? "trainiert " + datum(m.erstellt) : "noch nicht trainiert"}</dd>
+            <dt>Gewichte</dt><dd class="num">${m.vorhanden ? ganz(m.gewichte) : "–"}</dd>
+            <dt>Blick</dt><dd>${b.fenster} Kerzen</dd>
+            <dt>Aufbau</dt><dd>${b.schichten} Blöcke · ${b.koepfe} Köpfe · Breite ${b.breite}</dd>
+            <dt>Verbrauch</dt><dd>× ${m.faktor}</dd>
+            <dt>Prüfung</dt><dd>${m.ergebnis ? pz(m.ergebnis.treffer, 1) + " richtig · Raten " + pz(m.ergebnis.raten, 1) : "–"}</dd>
+            <dt>Dein Stand</dt><dd>${n.gesperrt ? "nicht im Abo" : n.limit == null ? "ohne Grenze" : ganz(n.verbraucht) + " von " + ganz(n.limit)}</dd></dl>
+          ${inhaber() ? `<div class="zeile" style="margin-top:18px"><button class="knopf ${m.vorhanden ? "hell" : ""}" data-train="${id}">${m.vorhanden ? "Neu trainieren" : "Trainieren"}</button></div>` : ""}</div>`; }).join("")}</div>
+      ${inhaber() ? `<div class="karte"><div class="zeile weit"><h2 style="margin:0">Training</h2><span class="etikett" id="trainstatus"></span></div>
+        <p class="etikett">Ein Training zur Zeit. Max lernt deutlich länger als Mini. Nur du als Inhaber kannst trainieren; es kostet nichts.</p>
+        <div class="konsole" id="log"></div></div>` : ""}
+      <div class="karte"><h2>Daten</h2><dl class="paare"><dt>Quelle</dt><dd class="mono">${esc(s.quelle.name)}</dd>
+        ${s.quelle.fehler ? `<dt>Fehler</dt><dd>${esc(s.quelle.fehler)}</dd>` : `<dt>Kerzen</dt><dd class="num">${ganz(s.quelle.kerzen)}</dd><dt>Zeitraum</dt><dd>${datum(s.quelle.von)} – ${datum(s.quelle.bis)}</dd>`}</dl></div>`;
+    $$("[data-train]").forEach(k => k.onclick = e => ausfuehren(e.currentTarget, "/api/training", {modell: k.dataset.train}, () => { setTimeout(beobachten, 0); }));
+    if (inhaber()) beobachten();
+  },
+
+  async nutzung() {
+    await laden();
+    const {stand: n, buchungen: b} = await api("/api/nutzung");
+    $("#haupt").innerHTML = kopf("Nutzung & Abo", n.unbegrenzt ? "Du bist Inhaber: für dich gibt es keine Grenzen. Gezählt wird trotzdem." :
+        `Jedes Modell hat sein eigenes Kontingent. Ist es aufgebraucht, pausiert dieses Modell bis zum ${datum(n.auffuellung)}.`, pille()) + `
+      <div class="raster r3">${MREIHE.map(id => { const m = n.modelle[id];
+        const breite = m.limit ? Math.min(100, 100 * m.verbraucht / m.limit) : 0;
+        return `<div class="karte"><div class="zeile weit"><b>${esc(m.name)}</b>${m.gesperrt ? `<span class="marke-klein">gesperrt</span>` : m.rest === 0 ? `<span class="marke-klein voll">Limit erreicht</span>` : ""}</div>
+          <div class="wert num" style="margin-top:10px">${m.gesperrt ? "–" : ganz(m.verbraucht)} <span class="etikett">${m.gesperrt ? "nicht im Abo" : m.limit == null ? "verbraucht · ohne Grenze" : "von " + ganz(m.limit) + " Tokens"}</span></div>
+          <div class="leiste"><i style="width:${breite}%"></i></div>
+          <div class="etikett">${m.gesperrt ? "Ab Abo Pro verfügbar" : m.limit == null ? "Analyse kostet " + tok(n.kosten.analyse[id]) : ganz(m.rest) + " übrig · Analyse kostet " + tok(n.kosten.analyse[id])}</div></div>`; }).join("")}</div>
+      <div class="karte"><div class="zeile weit"><b>Chat</b>${n.chat.rest === 0 ? `<span class="marke-klein voll">Limit erreicht</span>` : ""}</div>
+        <div class="wert num" style="margin-top:10px">${ganz(n.chat.verbraucht)} <span class="etikett">${n.chat.limit == null ? "Nachrichten · ohne Grenze" : "von " + ganz(n.chat.limit) + " Nachrichten"}</span></div>
+        <div class="leiste"><i style="width:${n.chat.limit ? Math.min(100, 100 * n.chat.verbraucht / n.chat.limit) : 0}%"></i></div>
+        <div class="etikett">Jede Nachricht an die KI zählt eins. Analysen, die die KI im Chat startet, verbrauchen zusätzlich das Kontingent des Modells.</div></div>
+      <h2 style="margin-top:34px">Abos</h2>
+      <div class="karte"><div class="tabelle"><table><thead><tr><th>Tokens im Monat</th>${Object.entries(n.abos).map(([id, a]) => `<th class="r">${esc(a.name)}${id === n.abo ? " ●" : ""}</th>`).join("")}</tr></thead><tbody>
+        ${MREIHE.map(id => `<tr><td>${esc(n.modelle[id].name)}</td>${Object.values(n.abos).map(a => { const l = a.limits[id]; return `<td class="r num">${l === 0 ? "–" : l == null ? "unbegrenzt" : ganz(l)}</td>`; }).join("")}</tr>`).join("")}
+        <tr><td>Chat-Nachrichten</td>${Object.values(n.abos).map(a => `<td class="r num">${a.chat === 0 ? "–" : a.chat == null ? "unbegrenzt" : ganz(a.chat)}</td>`).join("")}</tr>
+        <tr><td style="color:var(--muted)">Preis</td>${Object.values(n.abos).map(a => `<td class="r" style="color:var(--muted)">${a.preis == null ? "folgt" : esc(a.preis)}</td>`).join("")}</tr>
+        </tbody></table></div>
+        <p class="hinweis">${n.unbegrenzt ? "Abos vergibst du unter Nutzer." : "Das Abo ändert der Inhaber. Bezahlung kommt später."}</p></div>
+      <div class="karte"><h2>Was es kostet</h2><ul class="gruende">
+        <li>Derzeit ist die Nutzung kostenlos.</li>
+        <li>Sobald es Preise gibt, siehst du vor jedem Abschluss den Endpreis inklusive Umsatzsteuer. Keine versteckten Gebühren.</li>
+        <li>Ist ein Kontingent aufgebraucht, pausiert nur dieses Modell oder der Chat. Es gibt keine Nachzahlung.</li>
+        <li>Ein Abo lässt sich jederzeit zum Ende des Zeitraums kündigen. Einzelheiten in den <a href="#nutzungsbedingungen" style="color:inherit">Nutzungsbedingungen</a> und unter <a href="#widerruf" style="color:inherit">Widerruf</a>.</li></ul></div>
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Was kostet was</h2><table><thead><tr><th>Aktion</th>${MREIHE.map(id => `<th class="r">${esc(n.modelle[id].name)}</th>`).join("")}</tr></thead><tbody>
+          ${Object.entries(n.kosten).map(([a, k]) => `<tr><td>${esc(n.aktionen[a])}</td>${MREIHE.map(id => `<td class="r num">${k[id]}</td>`).join("")}</tr>`).join("")}
+          <tr><td>Indikatoren</td><td class="r" colspan="3" style="color:var(--muted)">frei</td></tr></tbody></table>
+          <p class="hinweis">Fehlt etwas, wird nichts verbraucht. Scheitert eine Aktion, kommt der Verbrauch zurück.</p></div>
+        <div class="karte"><h2>Buchungen</h2>${b.length ? `<div class="tabelle" style="max-height:360px;overflow:auto"><table><tbody>
+          ${b.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}
+          </tbody></table></div>` : `<div class="leer">Noch keine.</div>`}</div></div>`;
+  },
+
+  async konto() {
+    await laden();
+    const n = ICH, z = n.zustimmungen || {};
+    $("#haupt").innerHTML = kopf("Konto", "Deine Daten, dein Passwort, deine Rechte.", pille()) + `
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Profil</h2><dl class="paare">
+          <dt>Name</dt><dd>${esc(n.name)}</dd><dt>Rolle</dt><dd>${n.rolle === "inhaber" ? "Inhaber" : "Kunde"}</dd>
+          <dt>Abo</dt><dd>${esc(STAND.nutzung.abo_name)}</dd><dt>Konto seit</dt><dd>${datum(n.erstellt)}</dd>
+          ${n.rolle === "inhaber" ? "" : `<dt>Bedingungen</dt><dd>${z.nutzung ? "zugestimmt am " + zeit(z.nutzung.zeit) : "–"}</dd>`}
+          <dt>Chat-Hinweis</dt><dd>${z.chat ? "bestätigt am " + zeit(z.chat.zeit) : "noch nicht bestätigt"}</dd>
+          <dt>Gespeichert</dt><dd>kein E-Mail, keine Anschrift, Passwort nur als Hash</dd></dl></div>
+        <div class="karte"><h2>Passwort ändern</h2><form id="pwform" class="raster" style="gap:10px">
+          <label class="etikett" for="pa">Bisheriges Passwort</label><input class="feld" style="width:100%" type="password" id="pa" autocomplete="current-password" required>
+          <label class="etikett" for="pn">Neues Passwort (mind. 8 Zeichen)</label><input class="feld" style="width:100%" type="password" id="pn" minlength="8" autocomplete="new-password" required>
+          <div><button class="knopf" type="submit">Passwort ändern</button></div></form></div></div>
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Meine Daten</h2><p class="etikett" style="margin-top:0">Alles, was die KI über dich gespeichert hat, als Datei: Konto, Verbrauch, Verlauf, Chats und eigene Indikatoren (Art. 15 und 20 DSGVO).</p>
+          <button class="knopf hell" type="button" id="export">Meine Daten herunterladen</button></div>
+        <div class="karte"><h2>Konto löschen</h2>${n.rolle === "inhaber"
+          ? `<p class="etikett" style="margin-top:0">Das Inhaber-Konto lässt sich nicht über die Oberfläche löschen. Dafür den Ordner <code class="mono">ki/</code> auf dem Rechner entfernen.</p>`
+          : `<p class="etikett" style="margin-top:0">Löscht sofort und endgültig dein Konto mit Verbrauch, Verlauf, Chats und eigenen Indikatoren (Art. 17 DSGVO).</p>
+            <label class="etikett" for="lp">Zur Sicherheit dein Passwort</label>
+            <div class="zeile" style="margin-top:6px"><input class="feld" type="password" id="lp" autocomplete="current-password" style="flex:1;min-width:160px"><button class="knopf hell" type="button" id="loeschen">Konto löschen</button></div>`}</div></div>
+      <div class="karte"><h2>Speicher im Browser</h2><p class="etikett" style="margin-top:0">Aktuell: ${speicherWahl() === "komfort" ? "Komfort-Einstellungen erlaubt" : speicherWahl() === "notwendig" ? "nur Notwendiges" : "noch nicht entschieden"}.</p>
+        <button class="knopf hell" type="button" onclick="speicherHinweis(true)">Ändern</button></div>
+      <div class="karte"><h2>Rechtliches</h2>${fusslinks()}</div>`;
+    $("#pwform").onsubmit = async e => { e.preventDefault();
+      try { await api("/api/konto/passwort", {alt: $("#pa").value, neu: $("#pn").value}); $("#pwform").reset(); toast("Passwort geändert."); } catch (err) { toast(err.message); } };
+    $("#export").onclick = () => datenHerunterladen();
+    const l = $("#loeschen");
+    if (l) l.onclick = async () => {
+      if (l.dataset.sicher !== "1") { l.dataset.sicher = "1"; l.textContent = "Wirklich endgültig löschen?"; setTimeout(() => { if (document.body.contains(l)) { l.dataset.sicher = ""; l.textContent = "Konto löschen"; } }, 5000); return; }
+      try { await api("/api/konto/loeschen", {passwort: $("#lp").value}); ICH = null; toast("Dein Konto und alle Daten sind gelöscht."); history.replaceState(null, "", location.pathname); start(); }
+      catch (err) { toast(err.message); l.dataset.sicher = ""; l.textContent = "Konto löschen"; } };
+  },
+
+  async rechtliches() {
+    await laden();
+    const b = await api("/api/betreiber");
+    $("#haupt").innerHTML = kopf("Rechtliches", "Deine Angaben für Impressum und Datenschutz. Sie erscheinen automatisch in den Rechtstexten.", pille()) + `
+      ${b.fehlend.length ? `<div class="warnung"><b>Noch unvollständig.</b> Es fehlt: ${esc(b.fehlend.join(", "))}.</div>` : `<div class="karte"><b>Impressum vollständig.</b> <span class="etikett">Die Pflichtangaben sind eingetragen.</span></div>`}
+      <div class="karte"><h2>Betreiber</h2><form id="bform" class="raster" style="gap:12px">
+        ${Object.entries(b.felder).map(([k, [name, pflicht]]) => `<div><label class="etikett" for="b-${k}">${esc(name)}${pflicht ? " *" : ""}</label>
+          ${k === "anschrift" ? `<textarea class="feld" id="b-${k}" rows="3" style="width:100%;height:auto;padding:10px 12px">${esc(b.daten[k])}</textarea>` : `<input class="feld" id="b-${k}" style="width:100%" value="${esc(b.daten[k])}" ${k === "email" ? 'type="email"' : ""}>`}</div>`).join("")}
+        <div><button class="knopf" type="submit">Speichern</button> <span class="etikett">* Pflicht für das Impressum</span></div></form></div>
+      <div class="karte"><h2>Vor dem Start prüfen lassen</h2>
+        <p class="etikett" style="margin-top:0">Die Texte sind sorgfältige Vorlagen, aber keine Rechtsberatung. Vor dem Start mit zahlenden Kunden sollte eine Fachperson besonders diese Punkte prüfen:</p>
+        <ul class="gruende">${b.pruefen.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="karte"><h2>Was eingebaut ist</h2><ul class="gruende">
+        <li>Rechtstexte für alle sichtbar, auch ohne Anmeldung: ${Object.entries(RECHT).map(([id, n]) => `<a href="#${id}" style="color:inherit">${n}</a>`).join(", ")}.</li>
+        <li>Kunden bestätigen beim ersten Anmelden Alter (ab ${ICHDATEN.mindestalter}), Nutzungsbedingungen und Datenschutz; Zeitpunkt und Fassung werden gespeichert.</li>
+        <li>Vor der ersten Chat-Nachricht ein Hinweis, dass Nachrichten an Anthropic gehen; der Name wird nicht mitgeschickt.</li>
+        <li>Datenexport und Kontolöschung für jeden selbst unter Konto. Verlauf und Chats werden nach ${b.aufbewahrung_tage} Tagen automatisch gelöscht.</li>
+        <li>Kein Tracking, keine Inhalte von fremden Servern; Komfort-Speicher im Browser nur mit Zustimmung.</li></ul></div>`;
+    $("#bform").onsubmit = async e => { e.preventDefault();
+      const neu = Object.fromEntries(Object.keys(b.felder).map(k => [k, $("#b-" + k).value]));
+      try { await api("/api/betreiber", neu); toast("Gespeichert."); ANSICHT.rechtliches(); } catch (err) { toast(err.message); } };
+  },
+
+  async nutzer() {
+    await laden();
+    const liste = await api("/api/nutzer");
+    const abos = STAND.nutzung.abos;
+    $("#haupt").innerHTML = kopf("Nutzer", "Wer die KI nutzen darf und mit welchem Abo. Nur du siehst diese Seite.", pille()) + `
+      <div class="karte"><h2>Neuer Nutzer</h2><form class="formular" id="neu">
+        <div><label for="nn">Name</label><input class="feld" id="nn" required></div>
+        <div><label for="np">Passwort (mind. 8)</label><input class="feld" id="np" type="password" minlength="8" required autocomplete="new-password"></div>
+        <div><label for="na">Abo</label><select class="feld" id="na">${Object.entries(abos).map(([id, a]) => `<option value="${id}">${esc(a.name)}</option>`).join("")}</select></div>
+        <div><button class="knopf" type="submit">Anlegen</button></div></form>
+        <p class="hinweis">Beim ersten Anmelden bestätigt die Person, dass sie mindestens ${ICHDATEN.mindestalter} ist, und stimmt Nutzungsbedingungen und Datenschutz zu. Löschen entfernt das Konto mit Verlauf, Chats und Indikatoren.</p></div>
+      <div class="karte"><div class="tabelle"><table><thead><tr><th>Name</th><th>Abo</th>${MREIHE.map(id => `<th>${esc(STAND.modelle[id].name)}</th>`).join("")}<th>Chat</th><th class="r">Aktionen</th><th></th></tr></thead><tbody>
+        ${liste.map(u => `<tr><td><button class="namelink" data-zeig="${u.id}">${esc(u.name)}</button><div class="etikett">seit ${datum(u.erstellt)}</div></td>
+          <td>${u.rolle === "inhaber" ? `<span class="marke-klein voll">Inhaber</span>` : `<select class="feld" data-abo="${u.id}" style="height:34px">${Object.entries(abos).map(([id, a]) => `<option value="${id}" ${id === u.abo ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>`}</td>
+          ${MREIHE.map(id => { const m = u.modelle[id]; return `<td class="num" style="white-space:nowrap">${m.gesperrt ? `<span style="color:var(--faint)">gesperrt</span>` : m.limit == null ? ganz(m.verbraucht) + (u.rolle === "inhaber" ? "" : " / ∞") : `${ganz(m.verbraucht)} / ${ganz(m.limit)}${m.rest === 0 ? " ●" : ""}`}</td>`; }).join("")}
+          <td class="num" style="white-space:nowrap">${u.chat.limit == null ? ganz(u.chat.verbraucht) : `${ganz(u.chat.verbraucht)} / ${ganz(u.chat.limit)}${u.chat.rest === 0 ? " ●" : ""}`}</td>
+          <td class="r num">${ganz(u.aktionen)}</td>
+          <td class="r" style="white-space:nowrap">${u.rolle === "inhaber" ? "" : `<button class="chip" data-pw="${u.id}" data-name="${esc(u.name)}">Passwort</button> <button class="chip" data-weg="${u.id}" data-name="${esc(u.name)}">Löschen</button>`}</td></tr>`).join("")}
+        </tbody></table></div><p class="hinweis">Namen antippen für Nutzung, Verlauf und Buchungen. ● = Limit erreicht. Das Abo gilt sofort; schon Verbrauchtes zählt im Monat weiter.</p></div>`;
+    $$("[data-zeig]").forEach(k => k.onclick = () => nutzerDetail(k.dataset.zeig));
+    $("#neu").onsubmit = async e => { e.preventDefault();
+      try { await api("/api/nutzer", {name: $("#nn").value, passwort: $("#np").value, abo: $("#na").value}); toast("Angelegt."); ANSICHT.nutzer(); }
+      catch (err) { toast(err.message); } };
+    $$("[data-abo]").forEach(s => s.onchange = async () => {
+      try { await api("/api/nutzer/abo", {id: s.dataset.abo, abo: s.value}); toast("Abo geändert."); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
+    // Passwort: kleines Formular im Seitenblatt statt Browser-Dialog.
+    $$("[data-pw]").forEach(k => k.onclick = () => {
+      $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
+          <div><span class="marke-klein">Passwort</span><h1 style="font-size:22px;margin-top:10px">${esc(k.dataset.name)}</h1>
+          <p class="unter">Neues Passwort setzen. Bestehende Anmeldungen enden.</p></div>
+          <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>
+        <form id="pwform"><label class="etikett" for="pwneu" style="display:block;margin-bottom:6px">Neues Passwort (mind. 8 Zeichen)</label>
+          <input class="feld" id="pwneu" type="password" minlength="8" required autocomplete="new-password" style="width:100%">
+          <button class="knopf" type="submit" style="margin-top:16px">Passwort setzen</button></form>`;
+      blattAuf();
+      $("#pwneu").focus();
+      $("#pwform").onsubmit = async e => { e.preventDefault();
+        try { await api("/api/nutzer/passwort", {id: k.dataset.pw, passwort: $("#pwneu").value}); zu(); toast("Passwort geändert. Bestehende Anmeldungen sind beendet."); }
+        catch (err) { toast(err.message); } };
+    });
+    // Löschen: erster Klick fragt nach, zweiter Klick löscht.
+    $$("[data-weg]").forEach(k => k.onclick = async () => {
+      if (k.dataset.sicher !== "1") {
+        k.dataset.sicher = "1"; k.classList.add("an"); k.textContent = "Wirklich löschen?";
+        setTimeout(() => { if (document.body.contains(k)) { k.dataset.sicher = ""; k.classList.remove("an"); k.textContent = "Löschen"; } }, 4000);
+        return;
+      }
+      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast(`${k.dataset.name} und alle Daten dazu sind gelöscht.`); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
+  },
+};
+
+async function datenHerunterladen() {
+  try {
+    const r = await fetch("/api/konto/export");
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).fehler || "Export fehlgeschlagen.");
+    const url = URL.createObjectURL(await r.blob()), a = document.createElement("a");
+    a.href = url; a.download = "bengx-ki-meine-daten.json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (err) { toast(err.message); }
+}
+
+/* ---------- Training beobachten ---------- */
+let beobachter = null, lief = false;
+async function beobachten() {
+  clearTimeout(beobachter);
+  const log = $("#log"); if (!log) return;
+  const t = await api("/api/training");
+  log.textContent = t.zeilen.join("\n"); log.scrollTop = log.scrollHeight;
+  const name = t.modell ? STAND.modelle[t.modell].name : "";
+  $("#trainstatus").textContent = t.status === "laeuft" ? `${name} lernt …` : t.status === "fertig" ? `${name} fertig` : t.status === "fehler" ? `${name} fehlgeschlagen` : "";
+  $$("[data-train]").forEach(k => { k.disabled = t.status === "laeuft"; });
+  if (t.status === "laeuft") { lief = true; beobachter = setTimeout(beobachten, 1500); }
+  else if (lief && seite === "modelle") { lief = false; toast(t.status === "fertig" ? `${name} ist fertig trainiert.` : "Training fehlgeschlagen."); ANSICHT.modelle(); }
+}
+
+/* ---------- Thema ---------- */
+function thema(t) {
+  if (t === "auto") document.documentElement.removeAttribute("data-theme");
+  else document.documentElement.setAttribute("data-theme", t);
+  $$("#thema button").forEach(b => b.classList.toggle("an", b.dataset.t === t));
+  merken("thema", t);
+}
+(() => { const t = lesen("thema", "auto"); if (t !== "auto") document.documentElement.setAttribute("data-theme", t); })();
+start().catch(e => { $("#wurzel").innerHTML = `<div class="tor"><div class="karte">${esc(e.message)}</div></div>`; });
+</script>
+</body>
+</html>

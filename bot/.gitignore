@@ -4,3 +4,4 @@ state/
 config.toml
 data/*.csv
 .env
+ki/

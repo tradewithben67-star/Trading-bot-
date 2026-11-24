@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e13">
+  <title>Anmelden – {SITE}</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="brand-mark" data-icon="arrowUp"></span><span data-site-name></span></a>
+      <nav class="nav"><a href="index.html">Zur Startseite</a></nav>
+    </div>
+  </header>
+
+  <main class="center-page">
+    <div class="card auth-card">
+      <div class="seg" role="tablist" id="tabs">
+        <button type="button" role="tab" aria-selected="true" data-mode="login">Anmelden</button>
+        <button type="button" role="tab" aria-selected="false" data-mode="register">Registrieren</button>
+      </div>
+
+      <form id="f-login" class="grid-form" style="display:grid;gap:16px" novalidate>
+        <h1>Willkommen zurück</h1>
+        <div class="field"><label for="l-email">E-Mail</label><input class="input" id="l-email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="l-pw">Passwort</label><input class="input" id="l-pw" type="password" autocomplete="current-password" required></div>
+        <p class="form-error hidden" role="alert"></p>
+        <button class="btn btn-primary btn-lg" type="submit">Anmelden</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-goto="forgot">Passwort vergessen?</button>
+      </form>
+
+      <form id="f-register" class="hidden" style="display:grid;gap:16px" novalidate>
+        <h1>Konto erstellen</h1>
+        <p class="muted">Mit deinem Konto siehst du alle Aufträge und bekommst deine Ergebnisse ins Postfach.</p>
+        <div class="field"><label for="r-name">Name</label><input class="input" id="r-name" autocomplete="name" required></div>
+        <div class="field"><label for="r-email">E-Mail</label><input class="input" id="r-email" type="email" autocomplete="email" required></div>
+        <div class="field"><label for="r-pw">Passwort</label><input class="input" id="r-pw" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen" required></div>
+        <div class="field"><label for="r-ref">Empfehlungscode <span class="faint">(optional)</span></label><input class="input" id="r-ref" autocomplete="off" autocapitalize="characters" maxlength="12" placeholder="z. B. K7M2QX"></div>
+        <label class="check"><input type="checkbox" id="r-ok"><span>Ich akzeptiere die <a href="recht.html#agb">AGB</a> und <a href="recht.html#datenschutz">Datenschutzerklärung</a>.</span></label>
+        <p class="form-error hidden" role="alert"></p>
+        <button class="btn btn-primary btn-lg" type="submit">Konto erstellen</button>
+      </form>
+
+      <form id="f-forgot" class="hidden" style="display:grid;gap:16px" novalidate>
+        <h1>Passwort vergessen</h1>
+        <p class="muted">Gib deine E-Mail ein. Du bekommst einen Link, mit dem du ein neues Passwort setzen kannst.</p>
+        <div class="field"><label for="fg-email">E-Mail</label><input class="input" id="fg-email" type="email" autocomplete="email" required></div>
+        <p class="form-error hidden" role="alert"></p>
+        <button class="btn btn-primary btn-lg" type="submit">Link senden</button>
+        <button class="btn btn-ghost btn-sm" type="button" data-goto="login">Zurück zur Anmeldung</button>
+      </form>
+
+      <form id="f-newpw" class="hidden" style="display:grid;gap:16px" novalidate>
+        <h1>Neues Passwort</h1>
+        <div class="field"><label for="np-pw">Neues Passwort</label><input class="input" id="np-pw" type="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen" required></div>
+        <p class="form-error hidden" role="alert"></p>
+        <button class="btn btn-primary btn-lg" type="submit">Passwort speichern</button>
+      </form>
+    </div>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script>
+  (function () {
+    const $ = (s) => document.querySelector(s);
+    const forms = { login: $("#f-login"), register: $("#f-register"), forgot: $("#f-forgot"), newpw: $("#f-newpw") };
+    const next = new URLSearchParams(location.search).get("next");
+    function show(mode) {
+      Object.entries(forms).forEach(([k, f]) => f.classList.toggle("hidden", k !== mode));
+      $("#tabs").classList.toggle("hidden", mode === "forgot" || mode === "newpw");
+      document.querySelectorAll("#tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.mode === mode)));
+      const first = forms[mode].querySelector("input"); if (first && window.innerWidth > 900) first.focus();
+    }
+    document.querySelectorAll("#tabs button").forEach((b) => (b.onclick = () => show(b.dataset.mode)));
+    document.querySelectorAll("[data-goto]").forEach((b) => (b.onclick = () => show(b.dataset.goto)));
+    if (UI.getRef()) { $("#r-ref").value = UI.getRef(); show("register"); }
+    if (location.hash === "#registrieren") show("register");
+    if (location.hash === "#neues-passwort") show("newpw");
+    API.onAuthChange((ev) => { if (ev === "PASSWORD_RECOVERY") show("newpw"); });
+
+    const go = (u) => { location.href = next && /^[\w\-.]+\.html(#[\w\-/%]*)?$/.test(next) ? next : u.isAdmin ? "admin.html" : "konto.html"; };
+    function wire(form, handler) {
+      const err = form.querySelector(".form-error"), btn = form.querySelector("button[type=submit]");
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault(); err.classList.add("hidden"); btn.disabled = true;
+        try { await handler(); } catch (x) { err.textContent = x.message; err.classList.remove("hidden"); }
+        btn.disabled = false;
+      });
+    }
+    wire(forms.login, async () => { go(await API.signIn({ email: $("#l-email").value.trim(), password: $("#l-pw").value })); });
+    wire(forms.register, async () => {
+      if (!$("#r-name").value.trim()) throw new Error("Bitte gib deinen Namen ein.");
+      if ($("#r-pw").value.length < 8) throw new Error("Das Passwort muss mindestens 8 Zeichen haben.");
+      if (!$("#r-ok").checked) throw new Error("Bitte akzeptiere AGB und Datenschutzerklärung.");
+      const r = await API.signUp({ name: $("#r-name").value.trim(), email: $("#r-email").value.trim(), password: $("#r-pw").value, ref: $("#r-ref").value.trim() });
+      UI.clearRef();
+      if (r.needsConfirm) { UI.toast("Bestätige jetzt deine E-Mail – danach kannst du dich anmelden."); show("login"); return; }
+      go(r.user);
+    });
+    wire(forms.forgot, async () => { await API.resetPassword($("#fg-email").value.trim()); UI.toast("Falls ein Konto existiert, ist der Link unterwegs."); show("login"); });
+    wire(forms.newpw, async () => {
+      if ($("#np-pw").value.length < 8) throw new Error("Das Passwort muss mindestens 8 Zeichen haben.");
+      await API.setPassword($("#np-pw").value); UI.toast("Passwort gespeichert.");
+      go(await API.session(true));
+    });
+    // Bereits angemeldet? (nicht bei Passwort-Reset)
+    if (location.hash !== "#neues-passwort") API.session().then((u) => { if (u) go(u); });
+  })();
+  </script>
+</body>
+</html>

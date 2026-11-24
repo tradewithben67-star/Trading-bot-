@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e13">
+  <meta name="robots" content="noindex">
+  <title>Admin – {SITE}</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="#eingang"><span><span data-site-name></span> · Admin</span></a>
+      <nav class="side-nav" aria-label="Admin">
+        <a href="#eingang" data-view="eingang"><span class="lbl">Eingang</span><span class="count hidden" id="c-eingang"></span></a>
+        <a href="#bearbeitung" data-view="bearbeitung"><span class="lbl">In Bearbeitung</span><span class="faint" id="c-bearbeitung"></span></a>
+        <a href="#fertig" data-view="fertig"><span class="lbl">Fertig &amp; verschickt</span><span class="faint" id="c-fertig"></span></a>
+        <a href="#archiv" data-view="archiv"><span class="lbl">Archiv</span></a>
+        <a href="#unbezahlt" data-view="unbezahlt"><span class="lbl">Unbezahlt</span><span class="faint" id="c-unbezahlt"></span></a>
+        <a href="#empfehlungen" data-view="empfehlungen"><span class="lbl">Empfehlungen</span><span class="count hidden" id="c-payouts"></span></a>
+      </nav>
+      <div class="side-foot">
+        <a class="btn btn-ghost btn-sm" href="index.html" data-icon="globe">Zur Website</a>
+        <button class="btn btn-ghost btn-sm" id="logout" data-icon="logout">Abmelden</button>
+      </div>
+    </aside>
+    <main class="main" id="view"><div class="loading"><div class="spinner"></div></div></main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

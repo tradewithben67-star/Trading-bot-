@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e13">
+  <meta name="description" content="Schick ein Foto oder deinen Text und bekomm PowerPoint, Lernzettel, Karteikarten oder Zusammenfassung zurück – ab 4,99 €, im Kombi-Paket 12,99 €.">
+  <title>{SITE} – Lernmaterial aus deinem Bild oder Text</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5a6f6'/%3E%3Cpath d='M16 24V9m-6 6 6-6 6 6' stroke='%2316131f' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="container">
+      <a class="brand" href="index.html"><span class="brand-mark" data-icon="arrowUp"></span><span data-site-name></span></a>
+      <nav class="nav" aria-label="Hauptnavigation">
+        <a class="hide-sm" href="#leistungen">Leistungen</a>
+        <a class="hide-sm" href="#so-gehts">So geht's</a>
+        <a class="hide-sm" href="#empfehlen">Freunde werben</a>
+        <a class="hide-sm" href="#faq">FAQ</a>
+        <span data-auth-slot><a class="btn btn-sm" href="login.html">Anmelden</a></span>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="container hero-grid">
+        <div>
+          <p class="eyebrow">Einsenden &amp; Lernmaterial bekommen</p>
+          <h1>Schick mir dein Bild oder deinen Text.</h1>
+          <p class="lead">Foto vom Hefteintrag, Buchseite oder eigener Text – du wählst, was du daraus haben willst: PowerPoint, Lernzettel, Karteikarten, Zusammenfassung und mehr. Das Ergebnis landet in deinem persönlichen Postfach.</p>
+          <ol class="steps">
+            <li><span class="n">1</span>Bild oder Text hochladen</li>
+            <li><span class="n">2</span>Auswählen, was du bekommen willst</li>
+            <li><span class="n">3</span>Bezahlen &amp; Ergebnis im Postfach abholen</li>
+          </ol>
+          <div class="price-pill"><b>ab <span data-price-single></span></b>Kombi-Paket mit 3 Leistungen: <span data-price-combo style="margin-left:4px"></span></div>
+        </div>
+
+        <!-- Bestellformular -->
+        <form class="card order-card" id="bestellen" novalidate>
+          <div class="seg" role="tablist" aria-label="Art der Einsendung">
+            <button type="button" role="tab" aria-selected="true" data-kind="bild">Bild</button>
+            <button type="button" role="tab" aria-selected="false" data-kind="text">Text</button>
+          </div>
+
+          <div id="pane-bild">
+            <label class="dropzone" id="dropzone">
+              <input type="file" id="fileInput" accept="image/*,application/pdf" multiple>
+              <div>
+                <div class="dz-icon" data-icon="image"></div>
+                <strong>Bild hierher ziehen</strong>
+                <span class="muted" style="font-size:14px">oder <u style="color:var(--accent)">vom Gerät auswählen</u> · JPG, PNG, WEBP, PDF</span>
+              </div>
+            </label>
+            <div class="thumbs" id="thumbs" style="margin-top:12px"></div>
+          </div>
+
+          <div id="pane-text" class="field hidden">
+            <label for="textContent">Dein Text</label>
+            <textarea class="textarea" id="textContent" rows="8" placeholder="Füge hier deinen Text, deine Notizen oder das Thema ein …"></textarea>
+            <span class="hint" id="textCount">0 Zeichen</span>
+          </div>
+
+          <div class="field" role="radiogroup" aria-labelledby="productLabel">
+            <span class="label" id="productLabel">Was möchtest du bekommen?</span>
+            <div class="pick-head"><span>Einzeln</span><span class="faint">je <span data-price-single></span></span></div>
+            <div class="products" id="products"></div>
+            <div class="pick-head" style="margin-top:8px"><span>Kombi-Pakete <span class="save-pill">spare <span data-combo-saving></span></span></span><span class="faint">je <span data-price-combo></span></span></div>
+            <div class="combos" id="combos"></div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label for="subject">Fach</label>
+              <select class="select" id="subject"><option value="">Bitte wählen</option></select>
+            </div>
+            <div class="field">
+              <label for="grade">Klasse</label>
+              <select class="select" id="grade"><option value="">Bitte wählen</option></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="wish">Was soll ich beachten?</label>
+            <textarea class="textarea" id="wish" rows="3" placeholder="z. B. Thema, Umfang, Anzahl Folien, worauf dein Lehrer Wert legt …"></textarea>
+          </div>
+
+          <div class="field">
+            <label for="due">Bis wann brauchst du es? <span class="faint">(optional)</span></label>
+            <input class="input" type="date" id="due">
+          </div>
+
+          <!-- Nur ohne Login sichtbar -->
+          <div id="accountFields" class="hidden" style="display:grid;gap:12px">
+            <div id="refNote" class="notice hidden"></div>
+            <div class="row-2">
+              <div class="field"><label for="name">Name</label><input class="input" id="name" autocomplete="name" placeholder="Dein Name"></div>
+              <div class="field"><label for="email">E-Mail</label><input class="input" type="email" id="email" autocomplete="email" placeholder="du@beispiel.de"></div>
+            </div>
+            <div class="field">
+              <label for="password">Passwort für dein Konto</label>
+              <input class="input" type="password" id="password" autocomplete="new-password" placeholder="Mindestens 8 Zeichen">
+              <span class="hint">Damit erstellst du dein Konto. Schon registriert? <a href="login.html?next=index.html%23bestellen">Anmelden</a></span>
+            </div>
+          </div>
+          <div id="loggedAs" class="logged-as hidden"></div>
+
+          <label class="check"><input type="checkbox" id="c1"><span>Ich habe die Rechte an dem Inhalt, akzeptiere die <a href="recht.html#agb">AGB</a> und die <a href="recht.html#datenschutz">Datenschutzerklärung</a> und bin volljährig oder habe die Erlaubnis meiner Eltern.</span></label>
+          <label class="check"><input type="checkbox" id="c2"><span>Ich möchte, dass du sofort mit der Bearbeitung beginnst. Mir ist bekannt, dass mein <a href="recht.html#widerruf">Widerrufsrecht</a> erlischt, sobald das Ergebnis vollständig geliefert ist.</span></label>
+
+          <p class="form-error hidden" id="formError" role="alert"></p>
+
+          <div class="total"><span class="muted" id="totalLabel">Gesamt (Endpreis)</span><strong id="totalPrice">–</strong></div>
+          <button class="btn btn-primary btn-lg" type="submit" id="submitBtn">Weiter zur Bezahlung</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="section" id="leistungen">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">Leistungen</p>
+          <h2>Einzeln oder als Kombi-Paket.</h2>
+          <p>Egal ob du ein Referat vorbereitest oder für eine Klassenarbeit lernst – such dir aus, was dir am meisten hilft. Jede Leistung einzeln für <b data-price-single></b>, drei passende zusammen im Kombi-Paket für <b data-price-combo></b>.</p>
+        </div>
+        <div class="feature-grid" id="features"></div>
+        <h3 style="font-size:22px;margin:44px 0 6px">Kombi-Pakete</h3>
+        <p class="muted" style="margin-bottom:18px">Drei Leistungen, die zusammenpassen – für <b data-price-combo></b> statt 14,97 €.</p>
+        <div class="combo-grid" id="comboFeatures"></div>
+      </div>
+    </section>
+
+    <section class="section" id="so-gehts">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">So geht's</p>
+          <h2>In drei Schritten zum fertigen Lernmaterial.</h2>
+        </div>
+        <div class="how-grid">
+          <div class="how"><div class="n">01</div><h3>Hochladen</h3><p>Mach ein Foto von deinem Hefteintrag, der Buchseite oder dem Arbeitsblatt – oder füge deinen Text ein.</p></div>
+          <div class="how"><div class="n">02</div><h3>Auswählen &amp; bezahlen</h3><p>Wähl aus, was du bekommen willst, schreib dazu, worauf es ankommt, und bezahl sicher online.</p></div>
+          <div class="how"><div class="n">03</div><h3>Im Postfach abholen</h3><p>Ich bearbeite deinen Auftrag persönlich. Du bekommst das Ergebnis <span data-delivery></span> in dein Postfach.</p></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="preis">
+      <div class="container">
+        <div class="section-head"><p class="eyebrow">Preise</p><h2>Einfach &amp; fair.</h2><p>Einmal bezahlen, kein Abo, keine versteckten Kosten.</p></div>
+        <div class="price-tiles">
+          <div class="card price-tile">
+            <p class="eyebrow">Einzeln</p>
+            <div class="price-big" data-price-single></div>
+            <p class="muted">eine Leistung deiner Wahl – z. B. Lernzettel oder PowerPoint</p>
+            <a class="btn" href="#bestellen" data-pick="einzeln">Einzeln bestellen</a>
+          </div>
+          <div class="card price-tile featured">
+            <p class="eyebrow">Kombi-Paket <span class="save-pill">spare <span data-combo-saving></span></span></p>
+            <div class="price-big" data-price-combo></div>
+            <p class="muted">drei passende Leistungen – z. B. PowerPoint + Karteikarten + Handout</p>
+            <a class="btn btn-primary" href="#bestellen" data-pick="paket_referat">Kombi-Paket wählen</a>
+          </div>
+        </div>
+        <div class="card price-card" style="margin-top:14px;grid-template-columns:1fr">
+          <ul class="ticks" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));display:grid">
+            <li><span data-icon="check"></span>Alle Formate zum gleichen Preis</li>
+            <li><span data-icon="check"></span>Persönlich bearbeitet – nicht einfach kopiert</li>
+            <li><span data-icon="check"></span>Ergebnis als Datei (PowerPoint, PDF, Word …) in deinem Postfach</li>
+            <li><span data-icon="check"></span>Rückfragen direkt über dein Konto</li>
+            <li><span data-icon="check"></span>Sicher bezahlen, z. B. mit Karte, Apple Pay oder Google Pay</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="empfehlen">
+      <div class="container">
+        <div class="card ref-hero">
+          <div>
+            <p class="eyebrow">Freunde werben</p>
+            <h2 style="font-size:clamp(28px,3.6vw,40px);margin:12px 0 14px">Empfiehl uns weiter – <span style="color:var(--accent)"><span data-bonus></span></span> pro Freund.</h2>
+            <p class="muted" style="font-size:16px;max-width:520px">Jeder Schüler bekommt in seinem Konto einen eigenen Empfehlungslink. Teile ihn per WhatsApp, Instagram oder in der Klassengruppe. Sobald jemand über deinen Link seinen ersten Auftrag bezahlt, bekommst du <b data-bonus></b> Guthaben.</p>
+            <a class="btn btn-primary" href="konto.html#empfehlen" style="margin-top:24px" data-icon="gift">Meinen Link holen</a>
+          </div>
+          <ol class="steps" style="margin:0">
+            <li><span class="n">1</span>Link aus deinem Konto teilen</li>
+            <li><span class="n">2</span>Freund meldet sich an und bestellt</li>
+            <li><span class="n">3</span>Du bekommst <b data-bonus style="margin:0 4px"></b> Guthaben</li>
+            <li><span class="n">4</span>Guthaben einlösen oder ab <span data-min-payout style="margin:0 4px"></span> auszahlen lassen</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="faq">
+      <div class="container">
+        <div class="section-head">
+          <p class="eyebrow">FAQ</p>
+          <h2>Häufige Fragen</h2>
+        </div>
+        <div class="faq">
+          <details><summary>Was kostet das?</summary><p>Jede einzelne Leistung kostet <span data-price-single></span>. Ein Kombi-Paket mit drei passenden Leistungen (z. B. PowerPoint, Karteikarten und Handout fürs Referat) kostet <span data-price-combo></span> – du sparst <span data-combo-saving></span>.</p></details>
+          <details><summary>Wie lange dauert es?</summary><p>Du bekommst dein Ergebnis <span data-delivery></span>. Wenn du einen Termin angibst, plane ich danach. Sobald es fertig ist, liegt es in deinem Postfach.</p></details>
+          <details><summary>Was kann ich hochladen?</summary><p>Fotos (JPG, PNG, WEBP – auch direkt aus der Handy-Kamera), PDFs oder einfach Text. Pro Auftrag kannst du mehrere Bilder hochladen.</p></details>
+          <details><summary>Wie bezahle ich?</summary><p>Die Bezahlung läuft sicher über Stripe – je nach Gerät z. B. mit Karte, Apple Pay, Google Pay oder Klarna. Deine Zahlungsdaten sehe ich nicht.</p></details>
+          <details><summary>Wo finde ich mein Ergebnis?</summary><p>In deinem Konto unter „Postfach“. Dort kannst du die Dateien herunterladen und mir auch Rückfragen schicken.</p></details>
+          <details><summary>Was, wenn ich nicht zufrieden bin?</summary><p>Schreib mir einfach über dein Postfach, was nicht passt – ich bessere nach.</p></details>
+          <details><summary>Darf ich das als meine Hausaufgabe abgeben?</summary><p>Die Materialien sind zum Lernen gedacht – nicht dafür, sie als eigene Leistung abzugeben. Nutze sie zum Verstehen und Wiederholen.</p></details>
+          <details><summary>Wie funktioniert „Freunde werben“?</summary><p>In deinem Konto unter „Freunde werben“ findest du deinen persönlichen Link und Code. Für jeden Freund, der sich darüber anmeldet und seinen ersten Auftrag bezahlt, bekommst du <span data-bonus></span> Guthaben. Damit kannst du eigene Aufträge bezahlen oder es dir ab <span data-min-payout></span> per PayPal oder Überweisung auszahlen lassen.</p></details>
+          <details><summary>Wer sieht meine Dateien?</summary><p>Nur du und ich. Alles liegt in einem geschützten Speicher; andere Nutzer haben keinen Zugriff.</p></details>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container">
+      <span>© <span data-year></span> <span data-site-name></span></span>
+      <nav><a href="recht.html#impressum">Impressum</a><a href="recht.html#datenschutz">Datenschutz</a><a href="recht.html#agb">AGB</a><a href="recht.html#widerruf">Widerruf</a></nav>
+    </div>
+  </footer>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>

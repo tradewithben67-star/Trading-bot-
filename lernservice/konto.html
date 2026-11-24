@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0e0e13">
+  <title>Mein Konto – {SITE}</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar">
+      <a class="brand" href="index.html"><span class="brand-mark" data-icon="arrowUp"></span><span data-site-name></span></a>
+      <nav class="side-nav" aria-label="Konto">
+        <a href="#auftraege" data-view="auftraege"><span class="lbl" data-icon="folder">Meine Aufträge</span></a>
+        <a href="#postfach" data-view="postfach"><span class="lbl" data-icon="inbox">Postfach</span><span class="count hidden" id="unread"></span></a>
+        <a href="#empfehlen" data-view="empfehlen"><span class="lbl" data-icon="gift">Freunde werben</span></a>
+        <a href="#konto" data-view="konto"><span class="lbl" data-icon="user">Konto</span></a>
+      </nav>
+      <div class="side-foot">
+        <a class="btn btn-primary" href="index.html#bestellen" data-icon="plus">Neuer Auftrag</a>
+        <div class="side-user"><b id="uName"></b><span id="uEmail"></span></div>
+      </div>
+    </aside>
+    <main class="main" id="view"><div class="loading"><div class="spinner"></div></div></main>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="vendor/supabase.js"></script>
+  <script src="js/api.js"></script>
+  <script src="js/common.js"></script>
+  <script src="js/konto.js"></script>
+</body>
+</html>

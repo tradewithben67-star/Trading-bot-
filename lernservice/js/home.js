@@ -1,0 +1,147 @@
+/* Startseite: Bestellformular */
+(function () {
+  const { icon, PRODUCTS, COMBOS, SUBJECTS, GRADES, esc, toast, fmtSize, eur, productById } = window.UI;
+  const $ = (s) => document.querySelector(s);
+  const state = { kind: "bild", product: null, files: [], user: null };
+
+  // Leistungen + Produktauswahl
+  $("#features").innerHTML = PRODUCTS.map((p) => '<div class="feature"><div class="fi">' + icon(p.icon) + "</div><h3>" + esc(p.long) + "</h3><p>" + esc(p.desc) + "</p></div>").join("");
+  $("#products").innerHTML = PRODUCTS.map((p) => '<button type="button" class="product pick" role="radio" aria-checked="false" data-id="' + p.id + '">' + icon(p.icon) + "<span>" + esc(p.name) + "</span></button>").join("");
+  const chips = (c) => '<div class="item-chips">' + c.items.map((i) => { const p = productById(i); return '<span class="item-chip">' + icon(p.icon) + esc(p.name) + "</span>"; }).join("") + "</div>";
+  $("#combos").innerHTML = COMBOS.map((c) => '<button type="button" class="combo-opt pick" role="radio" aria-checked="false" data-id="' + c.id + '"><div class="top"><span>' + icon(c.icon) + esc(c.name) + '</span><span class="pr">' + eur(c.price) + "</span></div>" + chips(c) + "</button>").join("");
+  $("#comboFeatures").innerHTML = COMBOS.map((c) => '<div class="combo-card" data-id="' + c.id + '"><h3>' + esc(c.name) + "</h3>" + chips(c) + "<p>" + esc(c.desc) + '</p><div class="pr">' + eur(c.price) + " <s>" + eur(c.items.length * 499) + "</s></div></div>").join("");
+
+  function pick(id) {
+    const b = document.querySelector('.pick[data-id="' + CSS.escape(id) + '"]'); if (!b) return;
+    state.product = id;
+    document.querySelectorAll(".pick").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    const p = productById(id);
+    $("#totalPrice").textContent = eur(p.price);
+    $("#totalLabel").textContent = p.combo ? p.name + " · du sparst " + eur(p.saving) : "Gesamt (Endpreis)";
+    $("#submitBtn").textContent = "Weiter zur Bezahlung · " + eur(p.price);
+  }
+  document.querySelector("#bestellen").addEventListener("click", (e) => { const b = e.target.closest(".pick"); if (b) pick(b.dataset.id); });
+  // Klick auf Leistung / Paket weiter unten → im Formular auswählen
+  const goForm = (id) => { pick(id); $("#bestellen").scrollIntoView({ behavior: "smooth" }); };
+  document.querySelectorAll("#features .feature").forEach((el, i) => { el.style.cursor = "pointer"; el.addEventListener("click", () => goForm(PRODUCTS[i].id)); });
+  document.querySelectorAll("#comboFeatures .combo-card").forEach((el) => el.addEventListener("click", () => goForm(el.dataset.id)));
+  document.querySelectorAll("[data-pick]").forEach((a) => a.addEventListener("click", () => { if (a.dataset.pick !== "einzeln") pick(a.dataset.pick); }));
+  $("#subject").insertAdjacentHTML("beforeend", SUBJECTS.map((s) => "<option>" + esc(s) + "</option>").join(""));
+  $("#grade").insertAdjacentHTML("beforeend", GRADES.map((g) => '<option value="' + esc(g) + '">' + (/^\d+$/.test(g) ? "Klasse " + g : esc(g)) + "</option>").join(""));
+  $("#due").min = new Date().toISOString().slice(0, 10);
+
+  // Produkt per URL vorwählen (?paket=lernzettel)
+  const pre = new URLSearchParams(location.search).get("paket");
+  if (pre) pick(pre);
+
+  // Bild / Text umschalten
+  document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {
+    state.kind = b.dataset.kind;
+    document.querySelectorAll(".seg button").forEach((x) => x.setAttribute("aria-selected", String(x === b)));
+    $("#pane-bild").classList.toggle("hidden", state.kind !== "bild");
+    $("#pane-text").classList.toggle("hidden", state.kind !== "text");
+  }));
+  $("#textContent").addEventListener("input", (e) => ($("#textCount").textContent = e.target.value.length.toLocaleString("de-DE") + " Zeichen"));
+
+  // Dateien
+  function addFiles(list) {
+    for (const f of list) {
+      if (!/^image\//.test(f.type) && f.type !== "application/pdf") { toast("„" + f.name + "“ ist kein Bild oder PDF.", true); continue; }
+      if (f.size > 25 * 1024 * 1024) { toast("„" + f.name + "“ ist zu groß (max. 25 MB).", true); continue; }
+      if (state.files.length >= 10) { toast("Maximal 10 Dateien pro Auftrag.", true); break; }
+      state.files.push(f);
+    }
+    renderThumbs();
+  }
+  function renderThumbs() {
+    $("#thumbs").innerHTML = state.files.map((f, i) => {
+      const inner = /^image\//.test(f.type) ? '<img alt="" src="' + URL.createObjectURL(f) + '">' : '<div class="file-ph">' + icon("file") + "<br>" + esc(f.name) + "</div>";
+      return '<div class="thumb" title="' + esc(f.name) + " · " + fmtSize(f.size) + '">' + inner + '<button type="button" aria-label="Entfernen" data-i="' + i + '">' + icon("x") + "</button></div>";
+    }).join("");
+  }
+  $("#thumbs").addEventListener("click", (e) => { const b = e.target.closest("button[data-i]"); if (b) { state.files.splice(+b.dataset.i, 1); renderThumbs(); } });
+  $("#fileInput").addEventListener("change", (e) => { addFiles(e.target.files); e.target.value = ""; });
+  const dz = $("#dropzone");
+  ["dragenter", "dragover"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.add("drag"); }));
+  ["dragleave", "drop"].forEach((ev) => dz.addEventListener(ev, (e) => { e.preventDefault(); dz.classList.remove("drag"); }));
+  dz.addEventListener("drop", (e) => addFiles(e.dataTransfer.files));
+
+  // Eingeladen von einem Freund?
+  const ref = window.UI.getRef();
+  if (ref) {
+    $("#refNote").innerHTML = icon("gift") + "<span>Du wurdest von einem Freund eingeladen (Code <b>" + esc(ref) + "</b>). Mit deinem ersten Auftrag hilfst du ihm – danach kannst du selbst Freunde werben.</span>";
+    $("#refNote").classList.remove("hidden");
+  }
+
+  // Login-Status
+  async function refreshAuth() {
+    state.user = await window.UI.renderAuthNav();
+    const u = state.user;
+    $("#accountFields").classList.toggle("hidden", !!u);
+    $("#loggedAs").classList.toggle("hidden", !u);
+    if (u) {
+      $("#loggedAs").innerHTML = "<span>Angemeldet als <b>" + esc(u.name || u.email) + "</b></span>" + '<button type="button" class="btn btn-ghost btn-sm" id="logoutBtn">Abmelden</button>';
+      $("#logoutBtn").onclick = async () => { await window.API.signOut(); refreshAuth(); };
+    }
+  }
+  refreshAuth();
+
+  // Absenden
+  const errBox = $("#formError");
+  const fail = (msg, el) => { errBox.textContent = msg; errBox.classList.remove("hidden"); if (el) el.focus(); return false; };
+  function validate() {
+    errBox.classList.add("hidden");
+    if (state.kind === "bild" && !state.files.length) return fail("Bitte lade mindestens ein Bild hoch.");
+    if (state.kind === "text" && $("#textContent").value.trim().length < 20) return fail("Bitte füge deinen Text ein (mindestens 20 Zeichen).", $("#textContent"));
+    if (!state.product) return fail("Bitte wähle aus, was du bekommen möchtest.");
+    if (!state.user) {
+      if (!$("#name").value.trim()) return fail("Bitte gib deinen Namen ein.", $("#name"));
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test($("#email").value.trim())) return fail("Bitte gib eine gültige E-Mail-Adresse ein.", $("#email"));
+      if ($("#password").value.length < 8) return fail("Das Passwort muss mindestens 8 Zeichen haben.", $("#password"));
+    }
+    if (!$("#c1").checked || !$("#c2").checked) return fail("Bitte bestätige die beiden Kästchen.");
+    return true;
+  }
+
+  $("#bestellen").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (!validate()) return;
+    const btn = $("#submitBtn");
+    const label = btn.textContent;
+    const step = (t) => (btn.textContent = t);
+    btn.disabled = true;
+    try {
+      if (!state.user) {
+        step("Konto wird erstellt …");
+        const r = await window.API.signUp({ name: $("#name").value.trim(), email: $("#email").value.trim(), password: $("#password").value, ref: window.UI.getRef() });
+        window.UI.clearRef();
+        if (r.needsConfirm) {
+          fail("Fast geschafft! Wir haben dir eine E-Mail geschickt. Bestätige deine Adresse, melde dich an und sende den Auftrag dann noch einmal ab.");
+          btn.disabled = false; step(label); return;
+        }
+        state.user = r.user;
+      }
+      if (state.user.isAdmin) throw new Error("Du bist als Admin angemeldet. Teste Bestellungen bitte mit einem Schüler-Konto.");
+      step("Auftrag wird angelegt …");
+      const order = await window.API.createOrder({
+        kind: state.kind, product: state.product,
+        subject: $("#subject").value, grade: $("#grade").value,
+        wish: $("#wish").value.trim(), due_date: $("#due").value || null,
+        text_content: state.kind === "text" ? $("#textContent").value.trim() : null
+      });
+      if (state.kind === "bild") {
+        for (let i = 0; i < state.files.length; i++) {
+          step("Datei " + (i + 1) + " von " + state.files.length + " wird hochgeladen …");
+          await window.API.uploadFile(order, state.files[i]);
+        }
+      }
+      step("Weiterleitung zur Bezahlung …");
+      const url = window.API.paymentUrl(order, state.user.email);
+      location.href = url || "konto.html#auftrag/" + order.id;
+    } catch (err) {
+      fail(err.message || String(err));
+      btn.disabled = false; step(label);
+      refreshAuth();
+    }
+  });
+})();

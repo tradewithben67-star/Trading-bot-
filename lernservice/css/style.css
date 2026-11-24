@@ -525,3 +525,14 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 14px; border-radius: 
 .toast-wrap { bottom: calc(24px + env(safe-area-inset-bottom, 0px)); }
 @media (max-width: 920px) { .sidebar { top: env(safe-area-inset-top, 0px); } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+/* Vorschau: Umschalter Schüler | Admin */
+.role-switch { position: fixed; right: calc(16px + env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 150; display: flex; align-items: center; gap: 4px; padding: 4px; background: var(--surface-3); border: 1px solid var(--border-strong); border-radius: 999px; box-shadow: var(--shadow); }
+.role-switch .rs-label { font-size: 11px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 0 6px 0 10px; }
+.role-switch button { height: 36px; padding: 0 13px; border: 0; border-radius: 999px; background: transparent; color: var(--muted); font-size: 13.5px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+.role-switch button svg { width: 16px; height: 16px; }
+.role-switch button:hover { color: var(--text); }
+.role-switch button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+body.has-role-switch { padding-bottom: 76px; }
+body.has-role-switch .toast-wrap { bottom: calc(80px + env(safe-area-inset-bottom, 0px)); }
+@media (max-width: 400px) { .role-switch .rs-label { display: none; } }

@@ -172,7 +172,7 @@
         keys() { let ks = []; try { ks = real ? Object.keys(real) : []; } catch (e) { ks = []; } return Array.from(new Set(ks.concat(Array.from(mem.keys())))); }
       };
     })();
-    const KEY = "lk_demo_v3", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
+    const KEY = "lk_demo_v3", SKEY = "lk_demo_session", FKEY = "lk_demo_file_", LAST_STUDENT = "lk_demo_last_student";
     const now = () => new Date().toISOString();
     const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     const wait = (ms) => new Promise((r) => setTimeout(r, ms || 120));
@@ -283,7 +283,7 @@
         if (db.users.some((u) => u.email === email)) throw new Error("Für diese E-Mail gibt es schon ein Konto. Bitte melde dich an.");
         const referrer = ref ? db.users.find((x) => x.ref_code === String(ref).trim().toUpperCase()) : null;
         const u = { id: "u-" + Date.now(), name, email, password, isAdmin: false, created_at: now(), ref_code: newCode(db), referred_by: referrer ? referrer.id : null };
-        db.users.push(u); save(db); LS.setItem(SKEY, u.id);
+        db.users.push(u); save(db); LS.setItem(SKEY, u.id); LS.setItem(LAST_STUDENT, u.id);
         return { user: pub(u) };
       },
       async signIn({ email, password }) {
@@ -292,9 +292,25 @@
         const u = db.users.find((x) => x.email === String(email).trim().toLowerCase() && x.password === password);
         if (!u) throw new Error("E-Mail oder Passwort ist falsch.");
         LS.setItem(SKEY, u.id);
+        if (!u.isAdmin) LS.setItem(LAST_STUDENT, u.id);
         return pub(u);
       },
       async signOut() { LS.removeItem(SKEY); },
+      // Nur Vorschau: sofort zwischen Schüler- und Admin-Ansicht wechseln
+      async demoSwitch(role) {
+        const db = load();
+        const u = role === "admin"
+          ? db.users.find((x) => x.isAdmin)
+          : db.users.find((x) => x.id === LS.getItem(LAST_STUDENT) && !x.isAdmin) || db.users.find((x) => x.id === "u-mia") || db.users.find((x) => !x.isAdmin);
+        LS.setItem(SKEY, u.id);
+        if (!u.isAdmin) LS.setItem(LAST_STUDENT, u.id);
+        return pub(u);
+      },
+      async demoStudentName() {
+        const db = load();
+        const u = db.users.find((x) => x.id === LS.getItem(LAST_STUDENT) && !x.isAdmin) || db.users.find((x) => x.id === "u-mia");
+        return u ? u.name : "Schüler";
+      },
       async resetPassword() { await wait(300); },
       async setPassword(pw) { const db = load(); need(db).password = pw; save(db); },
       async updateName(name) { const db = load(); need(db).name = name; save(db); },

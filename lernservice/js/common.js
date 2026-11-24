@@ -141,9 +141,35 @@
     if (!window.API || window.API.mode !== "demo" || document.querySelector(".demo-bar")) return;
     const bar = document.createElement("div");
     bar.className = "demo-bar";
-    bar.innerHTML = "<b>Vorschau-Modus</b> – Daten bleiben nur in diesem Browser. Schüler-Test: <b>mia@demo.de</b> · Admin-Test: <b>admin@demo.de</b> · Passwort <b>demo1234</b> <button type=\"button\">Demo zurücksetzen</button>";
+    bar.innerHTML = "<b>Vorschau-Modus</b> – Daten bleiben nur in diesem Browser. Unten rechts wechselst du zwischen Schüler- und Admin-Ansicht. <button type=\"button\">Demo zurücksetzen</button>";
     bar.querySelector("button").onclick = () => { window.API.demoReset(); location.reload(); };
     document.body.prepend(bar);
+  }
+
+  // Nur Vorschau: schwebender Umschalter Schüler | Admin
+  async function demoSwitcher() {
+    if (!window.API || window.API.mode !== "demo" || document.querySelector(".role-switch")) return;
+    const u = await window.API.session().catch(() => null);
+    const studentName = await window.API.demoStudentName().catch(() => "Schüler");
+    const role = u ? (u.isAdmin ? "admin" : "schueler") : "";
+    const el = document.createElement("div");
+    el.className = "role-switch";
+    el.setAttribute("role", "group");
+    el.setAttribute("aria-label", "Ansicht wechseln");
+    el.innerHTML = '<span class="rs-label">Ansicht</span>' +
+      '<button type="button" data-role="schueler" aria-pressed="' + (role === "schueler") + '" title="Als ' + esc(studentName) + ' ansehen">' + icon("user") + "Schüler</button>" +
+      '<button type="button" data-role="admin" aria-pressed="' + (role === "admin") + '" title="Als Admin ansehen">' + icon("inbox") + "Admin</button>";
+    el.addEventListener("click", async (e) => {
+      const b = e.target.closest("button[data-role]"); if (!b) return;
+      const r = b.dataset.role;
+      const target = r === "admin" ? "admin.html" : "konto.html";
+      if (r === role && location.pathname.endsWith(target)) return;
+      el.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", String(x === b)));
+      await window.API.demoSwitch(r);
+      location.href = target;
+    });
+    document.body.appendChild(el);
+    document.body.classList.add("has-role-switch");
   }
 
   function onScrollHeader() {
@@ -191,5 +217,5 @@
 
   window.UI = { ask, COMBOS, eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
 
-  document.addEventListener("DOMContentLoaded", () => { applySiteName(); demoBar(); onScrollHeader(); });
+  document.addEventListener("DOMContentLoaded", () => { applySiteName(); demoBar(); demoSwitcher(); onScrollHeader(); });
 })();

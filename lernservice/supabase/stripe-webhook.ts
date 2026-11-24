@@ -12,7 +12,6 @@
 const WEBHOOK_SECRET = Deno.env.get("STRIPE_WEBHOOK_SECRET") ?? "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
 const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-const PRICE_CENTS = 799;
 
 async function hmacHex(key: string, message: string): Promise<string> {
   const enc = new TextEncoder();
@@ -52,21 +51,25 @@ Deno.serve(async (req) => {
   if (event.type === "checkout.session.completed" || event.type === "checkout.session.async_payment_succeeded") {
     const s = event.data.object;
     const orderId = Number(s.client_reference_id);
+    const amount = Number(s.amount_total);
     const ok = s.payment_status === "paid" && Number.isInteger(orderId) && orderId > 0 &&
-      s.currency === "eur" && Number(s.amount_total) >= PRICE_CENTS;
+      s.currency === "eur" && Number.isInteger(amount) && amount > 0;
 
     if (ok) {
-      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&status=eq.unbezahlt`, {
+      // Nur wenn der bezahlte Betrag den Preis des Auftrags deckt (4,99 € Einzel / 12,99 € Kombi)
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/orders?id=eq.${orderId}&status=eq.unbezahlt&price_cents=lte.${amount}`, {
         method: "PATCH",
         headers: {
           apikey: SERVICE_KEY,
           Authorization: `Bearer ${SERVICE_KEY}`,
           "Content-Type": "application/json",
-          Prefer: "return=minimal",
+          Prefer: "return=representation",
         },
         body: JSON.stringify({ status: "neu", paid_at: new Date().toISOString(), paid_via: "stripe", stripe_session_id: s.id }),
       });
       if (!res.ok) return new Response("Datenbank-Fehler: " + (await res.text()), { status: 500 }); // Stripe versucht es dann erneut
+      const rows = await res.json();
+      if (!rows.length) console.log("Kein passender Auftrag (schon bezahlt oder Betrag zu gering):", orderId, amount);
     } else {
       console.log("Ignoriert (nicht bezahlt / keine Auftragsnummer / falscher Betrag):", s.id, s.client_reference_id, s.amount_total);
     }

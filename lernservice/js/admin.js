@@ -127,7 +127,9 @@
         '<aside class="side-panel">' +
           "<div><div class=\"section-label\">Wunsch des Absenders</div>" +
             (o.wish ? '<div class="quote">' + esc(o.wish) + "</div>" : '<div class="quote faint">Kein zusätzlicher Wunsch angegeben.</div>') +
-            '<dl class="kv" style="margin-top:12px"><dt>Paket</dt><dd><b>' + esc(p.long) + "</b></dd>" +
+            '<dl class="kv" style="margin-top:12px"><dt>Paket</dt><dd><b>' + esc(p.combo ? p.name : p.long) + "</b></dd>" +
+            (p.combo ? '<dt>Liefern</dt><dd class="contents">' + p.items.map((i) => '<span class="item-chip">' + icon(productById(i).icon) + esc(productById(i).name) + "</span>").join("") + "</dd>" : "") +
+            "<dt>Preis</dt><dd>" + eur(o.price_cents) + "</dd>" +
             (o.subject ? "<dt>Fach</dt><dd>" + esc(o.subject) + "</dd>" : "") + (o.grade ? "<dt>Klasse</dt><dd>" + esc(o.grade) + "</dd>" : "") +
             (o.due_date ? "<dt>Bis</dt><dd class=\"" + (daysLeft <= 2 ? "due-soon" : "") + "\">" + fmtDate(o.due_date) + (daysLeft != null ? " (" + (daysLeft < 0 ? "überfällig" : daysLeft === 0 ? "heute" : "noch " + daysLeft + " T.") + ")" : "") + "</dd>" : "") +
             "<dt>Bezahlt</dt><dd>" + (o.paid_at ? fmtDateTime(o.paid_at) : '<span class="badge badge-unbezahlt">offen</span>') + "</dd></dl></div>" +

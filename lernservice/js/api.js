@@ -10,6 +10,8 @@
   const MAX_FILE = 25 * 1024 * 1024;
   const baseUrl = () => new URL(".", location.href).href;
   const byDate = (a, b) => new Date(a.created_at) - new Date(b.created_at);
+  // gleiche Regel wie product_price_cents() in schema.sql
+  const priceOf = (product) => (/^paket_/.test(product) ? 1299 : 499);
   const safeName = (n) => (String(n || "datei").normalize("NFKD").replace(/[̀-ͯ]/g, "").replace(/[^\w.\-]+/g, "_").slice(-80)) || "datei";
 
   function tidy(o) {
@@ -145,8 +147,9 @@
       async finishPayout(id, paid) { chk(await sb.rpc("admin_finish_payout", { p_id: id, p_paid: !!paid })); },
       async reverseCredit(id) { chk(await sb.rpc("admin_reverse_credit", { p_id: id })); },
       paymentUrl(order, email) {
-        if (!C.STRIPE_PAYMENT_LINK) return null;
-        const u = new URL(C.STRIPE_PAYMENT_LINK);
+        const link = order.price_cents >= 1299 ? C.STRIPE_LINK_COMBO : C.STRIPE_LINK_SINGLE;
+        if (!link) return null;
+        const u = new URL(link);
         u.searchParams.set("client_reference_id", String(order.id));
         if (email) u.searchParams.set("prefilled_email", email);
         return u.href;
@@ -157,7 +160,7 @@
 
   /* ═════════════════════════ DEMO (localStorage) ═════════════════════════ */
   function makeDemo() {
-    const KEY = "lk_demo_v2", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
+    const KEY = "lk_demo_v3", SKEY = "lk_demo_session", FKEY = "lk_demo_file_";
     const now = () => new Date().toISOString();
     const ago = (h) => new Date(Date.now() - h * 3600e3).toISOString();
     const wait = (ms) => new Promise((r) => setTimeout(r, ms || 120));
@@ -199,7 +202,7 @@
       db.users.push(admin, mia, leon, ela);
       db.users.forEach((u) => (u.ref_code = newCode(db)));
       leon.referred_by = mia.id; ela.referred_by = mia.id;
-      const mk = (u, o) => { const r = Object.assign({ id: id(), user_id: u.id, price_cents: 799, draft_message: null, due_date: null, text_content: null, wish: "", created_at: ago(o.h), updated_at: ago(o.h), paid_at: o.status === "unbezahlt" ? null : ago(o.h - 0.1) }, o); delete r.h; db.orders.push(r); return r; };
+      const mk = (u, o) => { const r = Object.assign({ id: id(), user_id: u.id, price_cents: priceOf(o.product), draft_message: null, due_date: null, text_content: null, wish: "", created_at: ago(o.h), updated_at: ago(o.h), paid_at: o.status === "unbezahlt" ? null : ago(o.h - 0.1) }, o); delete r.h; db.orders.push(r); return r; };
       const file = (o, name, mime, data, fromAdmin, msgId, h) => { const f = { id: id(), order_id: o.id, path: "demo/" + name, name, mime, size: Math.round(data.length * 0.75), from_admin: !!fromAdmin, message_id: msgId || null, created_at: ago(h) }; db.files.push(f); localStorage.setItem(FKEY + f.id, data); return f; };
       const msg = (o, fromAdmin, body, h, read) => { const m = { id: id(), order_id: o.id, from_admin: fromAdmin, body, created_at: ago(h), read_at: read ? ago(h - 0.5) : null }; db.messages.push(m); return m; };
 
@@ -207,7 +210,7 @@
       file(o1, "zellatmung-heft.svg", "image/svg+xml", noteSvg("Zellatmung", ["C6H12O6 + 6 O2 → 6 CO2 + 6 H2O", "1. Glykolyse (Zellplasma)", "2. Citratzyklus (Mitochondrien)", "3. Atmungskette → ATP", "Energie: ca. 36–38 ATP"], 150), false, null, 3);
       const o2 = mk(leon, { kind: "text", product: "zusammenfassung", subject: "Geschichte", grade: "10", status: "neu", wish: "Kurze Zusammenfassung, max. 1 Seite.", h: 7,
         text_content: "Die Weimarer Republik war die erste parlamentarische Demokratie in Deutschland. Sie entstand nach dem Ersten Weltkrieg und der Novemberrevolution 1918. Die Verfassung wurde 1919 in Weimar beschlossen. Von Anfang an hatte die Republik viele Probleme: den Versailler Vertrag, die Inflation 1923, politische Morde und Putschversuche von links und rechts. In den Goldenen Zwanzigern stabilisierte sich die Lage kurzzeitig, doch mit der Weltwirtschaftskrise 1929 stieg die Arbeitslosigkeit stark an …" });
-      const o3 = mk(ela, { kind: "bild", product: "powerpoint", subject: "Erdkunde", grade: "8", status: "in_arbeit", wish: "Referat über Vulkane, ca. 8 Folien. Bitte schlichtes Design.", h: 26, draft_message: "Hi Ela, hier ist deine Präsentation …" });
+      const o3 = mk(ela, { kind: "bild", product: "paket_referat", subject: "Erdkunde", grade: "8", status: "in_arbeit", wish: "Referat über Vulkane, ca. 8 Folien. Bitte schlichtes Design.", h: 26, draft_message: "Hi Ela, hier ist deine Präsentation …" });
       file(o3, "vulkane-buch.svg", "image/svg+xml", noteSvg("Vulkane", ["Aufbau: Magmakammer, Schlot, Krater", "Schildvulkan vs. Schichtvulkan", "Ring of Fire – Pazifik", "Beispiele: Ätna, Vesuv, Mauna Loa"], 15), false, null, 26);
       file(o3, "vulkane-seite2.svg", "image/svg+xml", noteSvg("Ausbruch", ["Plattentektonik", "Lava, Asche, pyroklastische Ströme", "Frühwarnsysteme"], 15), false, null, 26);
       const o4 = mk(mia, { kind: "text", product: "karteikarten", subject: "Englisch", grade: "9", status: "fertig", wish: "Vokabeln Unit 4 als Karteikarten bitte.", h: 80, text_content: "environment – Umwelt\nto reduce – verringern\nwaste – Müll, Abfall\nsustainable – nachhaltig\nclimate change – Klimawandel" });
@@ -287,7 +290,7 @@
       async createOrder(f) {
         await wait(200);
         const db = load(); const u = need(db);
-        const o = { id: ++db.seq, user_id: u.id, kind: f.kind, product: f.product, subject: f.subject || null, grade: f.grade || null, wish: f.wish || null, text_content: f.text_content || null, due_date: f.due_date || null, status: "unbezahlt", price_cents: 799, paid_at: null, draft_message: null, created_at: now(), updated_at: now() };
+        const o = { id: ++db.seq, user_id: u.id, kind: f.kind, product: f.product, subject: f.subject || null, grade: f.grade || null, wish: f.wish || null, text_content: f.text_content || null, due_date: f.due_date || null, status: "unbezahlt", price_cents: priceOf(f.product), paid_at: null, draft_message: null, created_at: now(), updated_at: now() };
         db.orders.push(o); save(db);
         return full(db, o);
       },

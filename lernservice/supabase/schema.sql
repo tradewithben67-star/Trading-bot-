@@ -20,20 +20,24 @@ create table if not exists public.orders (
   id                bigint generated always as identity (start with 1001) primary key,
   user_id           uuid not null default auth.uid() references public.profiles(id) on delete cascade,
   kind              text not null check (kind in ('bild', 'text')),
-  product           text not null check (product in ('powerpoint','lernzettel','zusammenfassung','karteikarten','mindmap','uebungsfragen','text','handout')),
+  product           text not null check (product in ('powerpoint','lernzettel','zusammenfassung','karteikarten','mindmap','uebungsfragen','text','handout','paket_referat','paket_pruefung','paket_verstehen','paket_lektuere')),
   subject           text check (char_length(subject) <= 60),
   grade             text check (char_length(grade) <= 30),
   wish              text check (char_length(wish) <= 5000),
   text_content      text check (char_length(text_content) <= 100000),
   due_date          date,
   status            text not null default 'unbezahlt' check (status in ('unbezahlt','neu','in_arbeit','fertig','archiv')),
-  price_cents       integer not null default 799,
+  price_cents       integer not null default 499,
   paid_at           timestamptz,
   stripe_session_id text,
   draft_message     text,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now()
 );
+-- Produktliste aktualisieren (Einzel-Leistungen + Kombi-Pakete)
+alter table public.orders drop constraint if exists orders_product_check;
+alter table public.orders add constraint orders_product_check check (product in ('powerpoint','lernzettel','zusammenfassung','karteikarten','mindmap','uebungsfragen','text','handout','paket_referat','paket_pruefung','paket_verstehen','paket_lektuere'));
+alter table public.orders alter column price_cents set default 499;
 alter table public.orders add column if not exists paid_via text check (paid_via in ('stripe', 'guthaben', 'manuell'));
 create index if not exists orders_user_idx   on public.orders (user_id);
 create index if not exists orders_status_idx on public.orders (status);
@@ -88,6 +92,13 @@ insert into public.profiles (id, name, email)
   select id, left(coalesce(raw_user_meta_data->>'name', ''), 100), coalesce(email, '') from auth.users
   on conflict (id) do nothing;
 
+-- ── PREISE ── Einzel-Leistung 4,99 €, Kombi-Paket (paket_…) 12,99 €
+-- Hier ändern, wenn du die Preise anpasst (und die Stripe-Links + config.js auch).
+create or replace function public.product_price_cents(p text) returns integer
+language sql immutable as $$
+  select case when p like 'paket\_%' then 1299 else 499 end;
+$$;
+
 -- Schüler dürfen Status/Preis nicht selbst setzen
 create or replace function public.orders_guard() returns trigger
 language plpgsql security definer set search_path = public as $$
@@ -95,7 +106,7 @@ begin
   if tg_op = 'INSERT' and not public.is_admin() then
     new.user_id := auth.uid();
     new.status := 'unbezahlt';
-    new.price_cents := 799;
+    new.price_cents := public.product_price_cents(new.product);
     new.paid_at := null;
     new.stripe_session_id := null;
     new.draft_message := null;

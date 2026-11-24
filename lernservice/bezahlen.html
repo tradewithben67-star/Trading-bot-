@@ -32,8 +32,8 @@
       box.innerHTML =
         '<div class="notice">' + UI.icon("info") + '<span><b>Vorschau:</b> Hier erscheint später die sichere Stripe-Bezahlseite (Karte, Apple Pay, Google Pay …). Es wird nichts abgebucht.</span></div>' +
         '<h1 style="font-size:26px">Bezahlen</h1>' +
-        '<div class="pay-line"><span>' + UI.esc(p.long) + " · Auftrag " + UI.orderNo(o) + '</span><span data-price></span></div>' +
-        '<div class="pay-line total"><span>Gesamt</span><span data-price></span></div>' +
+        '<div class="pay-line"><span>' + UI.esc(p.long) + " · Auftrag " + UI.orderNo(o) + '</span><span>' + UI.eur(o.price_cents) + '</span></div>' +
+        '<div class="pay-line total"><span>Gesamt</span><span>' + UI.eur(o.price_cents) + '</span></div>' +
         '<button class="btn btn-primary btn-lg" id="pay">' + UI.icon("card") + 'Testzahlung abschließen</button>' +
         '<a class="btn btn-ghost btn-sm" href="konto.html#auftraege">Später bezahlen</a>';
       UI.applySiteName();

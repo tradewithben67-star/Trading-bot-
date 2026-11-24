@@ -121,7 +121,7 @@
           (o.kind === "text" ? '<div class="text-doc">' + esc(o.text_content) + "</div>" : "") +
           (imgs.length ? '<div class="img-list">' + imgs.map((f, i) => '<a href="' + esc(imgUrls[i]) + '" target="_blank" rel="noopener"><img alt="' + esc(f.name) + '" src="' + esc(imgUrls[i]) + '"></a>').join("") + "</div>" : "") +
           (others.length ? '<div class="files">' + (await fileLinks(others)) + "</div>" : "") +
-          '<dl class="kv"><dt>Paket</dt><dd>' + esc(p.long) + "</dd>" + (o.subject ? "<dt>Fach</dt><dd>" + esc(o.subject) + "</dd>" : "") + (o.grade ? "<dt>Klasse</dt><dd>" + esc(o.grade) + "</dd>" : "") + (o.due_date ? "<dt>Gewünscht bis</dt><dd>" + fmtDate(o.due_date) + "</dd>" : "") + "<dt>Preis</dt><dd>" + (o.price_cents / 100).toFixed(2).replace(".", ",") + " €</dd></dl>" +
+          '<dl class="kv"><dt>' + (p.combo ? "Kombi-Paket" : "Leistung") + "</dt><dd>" + esc(p.combo ? p.name : p.long) + "</dd>" + (p.combo ? '<dt>Enthält</dt><dd>' + esc(p.itemNames.join(", ")) + "</dd>" : "") + (o.subject ? "<dt>Fach</dt><dd>" + esc(o.subject) + "</dd>" : "") + (o.grade ? "<dt>Klasse</dt><dd>" + esc(o.grade) + "</dd>" : "") + (o.due_date ? "<dt>Gewünscht bis</dt><dd>" + fmtDate(o.due_date) + "</dd>" : "") + "<dt>Preis</dt><dd>" + (o.price_cents / 100).toFixed(2).replace(".", ",") + " €</dd></dl>" +
           (o.wish ? '<div><div class="section-label">Dein Wunsch</div><div class="quote">' + esc(o.wish) + "</div></div>" : "") +
         "</section></div>" +
         '<section class="panel"><h2>Nachrichten &amp; Ergebnis</h2>' +
@@ -203,7 +203,7 @@
       "</section>" +
       '<div class="detail-grid"><div style="display:grid;gap:20px">' +
         '<section class="panel"><h2>Guthaben verwenden</h2>' +
-          '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Einlösen:</b> Hast du mindestens ' + esc(window.APP_CONFIG.PRICE_LABEL || "7,99 €") + " Guthaben, kannst du einen Auftrag damit bezahlen.</p>" +
+          '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Einlösen:</b> Reicht dein Guthaben für einen Auftrag (einzeln ' + esc(window.APP_CONFIG.PRICE_SINGLE_LABEL || "4,99 €") + ", Kombi-Paket " + esc(window.APP_CONFIG.PRICE_COMBO_LABEL || "12,99 €") + "), kannst du ihn damit bezahlen.</p>" +
           (unpaid.some((o) => info.balance_cents >= o.price_cents) ? '<div class="files">' + unpaid.map((o) => '<a class="file" href="#auftrag/' + o.id + '">' + icon("wallet") + '<span class="fn">' + esc(productById(o.product).long) + " " + orderNo(o) + '</span><span class="fs">jetzt bezahlen →</span></a>').join("") + "</div>" : "") +
           '<form id="payoutForm" style="display:grid;gap:12px;border-top:1px solid var(--border);padding-top:14px">' +
             '<p class="muted" style="font-size:14px"><b style="color:var(--text)">Auszahlen:</b> ab ' + minP + " – das ganze Guthaben wird ausgezahlt.</p>" +

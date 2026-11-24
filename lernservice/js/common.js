@@ -60,7 +60,23 @@
     { id: "text", name: "Text überarbeiten", long: "Text schreiben / überarbeiten", icon: "write", desc: "Rechtschreibung, Ausdruck, Aufbau – dein Text wird klarer und besser." },
     { id: "handout", name: "Referat-Handout", long: "Handout fürs Referat", icon: "handout", desc: "Eine Seite für deine Mitschüler – kompakt, sauber und gut lesbar." }
   ];
-  const productById = (id) => PRODUCTS.find((p) => p.id === id) || { id, name: id, long: id, icon: "file" };
+  const PRICE_SINGLE = 499, PRICE_COMBO = 1299;
+  PRODUCTS.forEach((p) => { p.price = PRICE_SINGLE; p.combo = false; p.items = [p.id]; });
+
+  // ── Kombi-Pakete: je 3 passende Leistungen für 12,99 € statt 3 × 4,99 € ──
+  const COMBOS = [
+    { id: "paket_referat", name: "Referat-Paket", icon: "presentation", items: ["powerpoint", "karteikarten", "handout"], desc: "Alles für deinen Vortrag: Folien, Sprechkarten zum Ablesen und ein Handout für die Klasse." },
+    { id: "paket_pruefung", name: "Prüfungs-Paket", icon: "quiz", items: ["lernzettel", "karteikarten", "uebungsfragen"], desc: "Perfekt vor der Klassenarbeit: lernen, wiederholen und dich selbst testen." },
+    { id: "paket_verstehen", name: "Verstehen-Paket", icon: "mindmap", items: ["zusammenfassung", "mindmap", "lernzettel"], desc: "Ein schwieriges Thema endlich durchblicken – vom Überblick bis zum fertigen Lernzettel." },
+    { id: "paket_lektuere", name: "Lektüre-Paket", icon: "notebook", items: ["zusammenfassung", "mindmap", "uebungsfragen"], desc: "Für Bücher in Deutsch oder Englisch: Inhalt, Figuren-Mindmap und Fragen zum Text." }
+  ];
+  COMBOS.forEach((c) => {
+    c.combo = true; c.price = PRICE_COMBO;
+    c.itemNames = c.items.map((i) => PRODUCTS.find((p) => p.id === i).name);
+    c.long = c.name + " (" + c.itemNames.join(" + ") + ")";
+    c.saving = c.items.length * PRICE_SINGLE - PRICE_COMBO;
+  });
+  const productById = (id) => PRODUCTS.find((p) => p.id === id) || COMBOS.find((p) => p.id === id) || { id, name: id, long: id, icon: "file", items: [id], price: PRICE_SINGLE };
 
   const SUBJECTS = ["Deutsch", "Englisch", "Mathe", "Biologie", "Chemie", "Physik", "Geschichte", "Erdkunde", "Politik / Sozialkunde", "Wirtschaft", "Religion / Ethik", "Französisch", "Latein", "Spanisch", "Informatik", "Kunst", "Musik", "Sport", "Sonstiges"];
   const GRADES = ["5", "6", "7", "8", "9", "10", "11", "12", "13", "Berufsschule", "Studium", "Sonstiges"];
@@ -108,7 +124,9 @@
   // ── Seitenname einsetzen ──
   function applySiteName() {
     document.querySelectorAll("[data-site-name]").forEach((el) => (el.textContent = C.SITE_NAME || "Lernkiste"));
-    document.querySelectorAll("[data-price]").forEach((el) => (el.textContent = C.PRICE_LABEL || "7,99 €"));
+    document.querySelectorAll("[data-price-single]").forEach((el) => (el.textContent = C.PRICE_SINGLE_LABEL || "4,99 €"));
+    document.querySelectorAll("[data-price-combo]").forEach((el) => (el.textContent = C.PRICE_COMBO_LABEL || "12,99 €"));
+    document.querySelectorAll("[data-combo-saving]").forEach((el) => (el.textContent = C.COMBO_SAVING_LABEL || "1,98 €"));
     document.querySelectorAll("[data-bonus]").forEach((el) => (el.textContent = C.REFERRAL_BONUS_LABEL || "2,99 €"));
     document.querySelectorAll("[data-min-payout]").forEach((el) => (el.textContent = C.MIN_PAYOUT_LABEL || "10,00 €"));
     document.querySelectorAll("[data-delivery]").forEach((el) => (el.textContent = C.DELIVERY_TEXT || ""));
@@ -154,7 +172,7 @@
     input.style.setProperty("--p", ((input.value - min) / (max - min)) * 100 + "%");
   }
 
-  window.UI = { eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
+  window.UI = { COMBOS, eur, getRef, clearRef, refLink, icon, PRODUCTS, productById, SUBJECTS, GRADES, STATUS, STATUS_STUDENT, esc, fmtDate, fmtDateTime, fmtSize, isImage, badge, orderNo, toast, applySiteName, demoBar, onScrollHeader, renderAuthNav, setRangeFill };
 
   document.addEventListener("DOMContentLoaded", () => { applySiteName(); demoBar(); onScrollHeader(); });
 })();

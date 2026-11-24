@@ -6,7 +6,7 @@ Alles hier geht **im Browser (Safari)**. Du brauchst keinen Computer und keinen 
 |---|---|---|
 | Webseite | **Netlify** (holt die Dateien aus GitHub) | kostenlos |
 | Konten, Datenbank, Dateien | **Supabase** | kostenlos (Free-Plan) |
-| Bezahlung 7,99 € | **Stripe** (Zahlungslink) | nur Gebühr pro Zahlung |
+| Bezahlung (4,99 € einzeln / 12,99 € Kombi) | **Stripe** (2 Zahlungslinks) | nur Gebühr pro Zahlung |
 
 > Solange Schritt 2 noch nicht erledigt ist, läuft die Seite im **Vorschau-Modus** mit Beispieldaten.
 > Du kannst sie so schon ansehen und alles ausprobieren. Admin-Test: `admin@demo.de` / `demo1234`.
@@ -70,18 +70,30 @@ Bei jeder Änderung in GitHub aktualisiert Netlify die Seite automatisch.
 
 ---
 
-## Schritt 4 – Bezahlung mit Stripe (7,99 €)
+## Schritt 4 – Bezahlung mit Stripe (4,99 € / 12,99 €)
 
 > Stripe erfordert, dass du volljährig bist (oder ein Elternteil das Konto führt) und du brauchst für regelmäßige Verkäufe meist ein Gewerbe. Siehe „Wichtig“ unten.
 
 1. **dashboard.stripe.com** → Konto erstellen. Oben bleibst du erst einmal im **Testmodus**.
-2. **Produktkatalog → Produkt hinzufügen:** Name „Lernpaket“, Preis **7,99 EUR**, einmalig.
-3. **Zahlungslinks → Neu** → das Produkt wählen.
+2. **Produktkatalog → Produkt hinzufügen**, zweimal:
+   - „Einzel-Leistung“, Preis **4,99 EUR**, einmalig
+   - „Kombi-Paket“, Preis **12,99 EUR**, einmalig
+3. **Zahlungslinks → Neu**, für **jedes** der beiden Produkte einen Link:
    - „Kunden können die Menge anpassen“: **aus**
    - Reiter „Nach der Zahlung“ → **„Kunden auf eure Website weiterleiten“** →
      `https://DEINE-SEITE.netlify.app/konto.html?bezahlt=1`
    - Erstellen → Link kopieren (`https://buy.stripe.com/test_...`)
-4. In GitHub `config.js` → `STRIPE_PAYMENT_LINK: "https://buy.stripe.com/..."` → Commit.
+4. In GitHub `config.js` eintragen → Commit:
+   ```js
+   STRIPE_LINK_SINGLE: "https://buy.stripe.com/...",   // 4,99 €
+   STRIPE_LINK_COMBO:  "https://buy.stripe.com/...",   // 12,99 €
+   ```
+   Die Seite wählt automatisch den richtigen Link. Der Webhook prüft, dass der bezahlte Betrag zum Auftrag passt.
+   Wer ein Kombi-Paket bestellt, aber nur 4,99 € bezahlt, bekommt seinen Auftrag also nicht freigeschaltet.
+
+**Preise ändern:** Neue Stripe-Links anlegen, in `schema.sql` die Funktion `product_price_cents` anpassen (499 / 1299) und das Skript erneut ausführen.
+Danach in `config.js` die Anzeige anpassen (`PRICE_SINGLE_LABEL`, `PRICE_COMBO_LABEL`, `COMBO_SAVING_LABEL`).
+Die Kombi-Pakete selbst (Name, Inhalt) stehen in `js/common.js` unter `COMBOS`.
 
 Unter Einstellungen → Zahlungsmethoden kannst du Apple Pay, Google Pay, Klarna, PayPal usw. einschalten.
 
@@ -137,7 +149,14 @@ Die Edge Function `stripe-webhook` bitte ebenfalls mit dem neuen Code neu deploy
 **Beträge ändern:** In `schema.sql` die Zahlen in `referral_bonus_cents` (299) und `min_payout_cents` (1000) ändern und das Skript erneut ausführen.
 Danach die Anzeige in `config.js` anpassen (`REFERRAL_BONUS_LABEL`, `MIN_PAYOUT_LABEL`).
 
-**Rechnung:** Von 7,99 € gehen ca. 0,40 € Stripe-Gebühr ab. Bei einem geworbenen Erstkauf bleiben dir nach dem Bonus ca. 4,60 €, bei jedem weiteren Kauf des Freundes wieder die vollen ca. 7,60 €.
+**Rechnung (Stripe-Gebühr ca. 0,25 € + 1,5 %):**
+
+| Erster Kauf eines geworbenen Freundes | Einnahme | − Stripe | − Bonus | bleibt dir |
+|---|---|---|---|---|
+| Einzeln | 4,99 € | ≈ 0,32 € | 2,99 € | **≈ 1,68 €** |
+| Kombi-Paket | 12,99 € | ≈ 0,44 € | 2,99 € | **≈ 9,56 €** |
+
+Jeder weitere Kauf des Freundes bringt dir wieder den vollen Betrag (ca. 4,67 € bzw. 12,55 €).
 
 ---
 

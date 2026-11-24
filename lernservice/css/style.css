@@ -479,3 +479,37 @@ input[type=range]::-moz-range-thumb { width: 22px; height: 14px; border-radius: 
   .link-box .btn { flex: 1; }
   .stat .v { font-size: 22px; }
 }
+
+/* Kombi-Pakete */
+.pick-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.save-pill { display: inline-flex; align-items: center; gap: 4px; height: 20px; padding: 0 8px; margin-left: 6px; border-radius: 999px; background: var(--ok-bg); color: var(--ok-ink); font-size: 11.5px; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.combos { display: grid; gap: 8px; }
+.combo-opt { display: grid; gap: 8px; text-align: left; padding: 12px 14px; border: 1px solid var(--border-strong); border-radius: var(--r-sm); background: var(--surface-2); cursor: pointer; color: var(--text); }
+.combo-opt:hover { border-color: var(--faint); }
+.combo-opt[aria-checked="true"] { border-color: var(--accent); background: var(--accent-soft); box-shadow: inset 0 0 0 1px var(--accent); }
+.combo-opt .top { display: flex; justify-content: space-between; align-items: center; gap: 10px; font-weight: 600; font-size: 14.5px; }
+.combo-opt .top span:first-child { display: inline-flex; align-items: center; gap: 9px; }
+.combo-opt .top svg { color: var(--muted); }
+.combo-opt[aria-checked="true"] .top svg { color: var(--accent); }
+.combo-opt .top .pr { font-weight: 700; font-variant-numeric: tabular-nums; }
+.item-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.item-chip { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; background: var(--surface-3); color: var(--muted); font-size: 12px; font-weight: 500; }
+.item-chip svg { width: 13px; height: 13px; }
+.combo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+.combo-card { padding: 22px; border-radius: var(--r-lg); background: linear-gradient(160deg, rgba(181,166,246,.12), transparent 55%), var(--surface); border: 1px solid var(--border); display: grid; gap: 12px; align-content: start; cursor: pointer; }
+.combo-card:hover { border-color: var(--accent-line); }
+.combo-card h3 { font-size: 18px; }
+.combo-card p { color: var(--muted); font-size: 14px; }
+.combo-card .pr { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-display); font-size: 24px; font-weight: 700; }
+.combo-card .pr s { font-family: var(--font); font-size: 14px; color: var(--faint); font-weight: 400; }
+.price-tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.price-tile { padding: 32px; display: grid; gap: 10px; align-content: start; }
+.price-tile .price-big { margin: 6px 0 2px; }
+.price-tile .btn { justify-self: start; margin-top: 12px; }
+.price-tile.featured { border-color: var(--accent-line); background: linear-gradient(160deg, rgba(181,166,246,.16), transparent 60%), var(--surface); }
+.kv .contents { display: flex; flex-wrap: wrap; gap: 6px; }
+@media (max-width: 1100px) { .combo-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 640px) {
+  .combo-grid, .price-tiles { grid-template-columns: 1fr; }
+  .price-tile { padding: 24px; }
+}

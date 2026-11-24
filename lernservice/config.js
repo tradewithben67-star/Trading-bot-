@@ -9,8 +9,11 @@ window.APP_CONFIG = {
   // Name deiner Seite (erscheint oben links, im Titel und im Admin-Bereich)
   SITE_NAME: "Lernkiste",
 
-  // Preis – nur für die Anzeige. Der echte Preis steht in deinem Stripe-Zahlungslink.
-  PRICE_LABEL: "7,99 €",
+  // Preise – nur für die Anzeige. Die echten Preise stehen in deinen zwei
+  // Stripe-Zahlungslinks und in supabase/schema.sql (product_price_cents).
+  PRICE_SINGLE_LABEL: "4,99 €",   // eine einzelne Leistung
+  PRICE_COMBO_LABEL: "12,99 €",   // ein Kombi-Paket (3 passende Leistungen)
+  COMBO_SAVING_LABEL: "1,98 €",   // 3 × 4,99 € − 12,99 €
 
   // Empfehlungsprogramm – nur Anzeige. Die echten Beträge stehen in supabase/schema.sql
   // (Funktionen referral_bonus_cents und min_payout_cents).
@@ -24,8 +27,9 @@ window.APP_CONFIG = {
   SUPABASE_URL: "",
   SUPABASE_ANON_KEY: "",
 
-  // Stripe → Zahlungslinks → dein 7,99 €-Link (beginnt mit https://buy.stripe.com/...)
-  STRIPE_PAYMENT_LINK: "",
+  // Stripe → Zahlungslinks (beginnen mit https://buy.stripe.com/...)
+  STRIPE_LINK_SINGLE: "",   // Link über 4,99 €
+  STRIPE_LINK_COMBO: "",    // Link über 12,99 €
 
   // Kontakt-E-Mail (für FAQ / Rechtliches)
   CONTACT_EMAIL: "kontakt@example.de"

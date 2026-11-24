@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#0e0e13">
-  <meta name="description" content="Schick ein Foto oder deinen Text und bekomm PowerPoint, Lernzettel, Karteikarten oder Zusammenfassung zurück – für 7,99 €.">
+  <meta name="description" content="Schick ein Foto oder deinen Text und bekomm PowerPoint, Lernzettel, Karteikarten oder Zusammenfassung zurück – ab 4,99 €, im Kombi-Paket 12,99 €.">
   <title>{SITE} – Lernmaterial aus deinem Bild oder Text</title>
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23b5a6f6'/%3E%3Cpath d='M16 24V9m-6 6 6-6 6 6' stroke='%2316131f' stroke-width='3' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="css/style.css">
@@ -35,7 +35,7 @@
             <li><span class="n">2</span>Auswählen, was du bekommen willst</li>
             <li><span class="n">3</span>Bezahlen &amp; Ergebnis im Postfach abholen</li>
           </ol>
-          <div class="price-pill"><b data-price></b>für jedes Paket – egal was du wählst</div>
+          <div class="price-pill"><b>ab <span data-price-single></span></b>Kombi-Paket mit 3 Leistungen: <span data-price-combo style="margin-left:4px"></span></div>
         </div>
 
         <!-- Bestellformular -->
@@ -63,9 +63,12 @@
             <span class="hint" id="textCount">0 Zeichen</span>
           </div>
 
-          <div class="field">
+          <div class="field" role="radiogroup" aria-labelledby="productLabel">
             <span class="label" id="productLabel">Was möchtest du bekommen?</span>
-            <div class="products" id="products" role="radiogroup" aria-labelledby="productLabel"></div>
+            <div class="pick-head"><span>Einzeln</span><span class="faint">je <span data-price-single></span></span></div>
+            <div class="products" id="products"></div>
+            <div class="pick-head" style="margin-top:8px"><span>Kombi-Pakete <span class="save-pill">spare <span data-combo-saving></span></span></span><span class="faint">je <span data-price-combo></span></span></div>
+            <div class="combos" id="combos"></div>
           </div>
 
           <div class="row-2">
@@ -109,7 +112,7 @@
 
           <p class="form-error hidden" id="formError" role="alert"></p>
 
-          <div class="total"><span class="muted">Gesamt (Endpreis)</span><strong data-price></strong></div>
+          <div class="total"><span class="muted" id="totalLabel">Gesamt (Endpreis)</span><strong id="totalPrice">–</strong></div>
           <button class="btn btn-primary btn-lg" type="submit" id="submitBtn">Weiter zur Bezahlung</button>
         </form>
       </div>
@@ -119,10 +122,13 @@
       <div class="container">
         <div class="section-head">
           <p class="eyebrow">Leistungen</p>
-          <h2>Ein Preis. Acht Möglichkeiten.</h2>
-          <p>Egal ob du ein Referat vorbereitest oder für eine Klassenarbeit lernst – such dir aus, was dir am meisten hilft. Jedes Paket kostet <b data-price></b>.</p>
+          <h2>Einzeln oder als Kombi-Paket.</h2>
+          <p>Egal ob du ein Referat vorbereitest oder für eine Klassenarbeit lernst – such dir aus, was dir am meisten hilft. Jede Leistung einzeln für <b data-price-single></b>, drei passende zusammen im Kombi-Paket für <b data-price-combo></b>.</p>
         </div>
         <div class="feature-grid" id="features"></div>
+        <h3 style="font-size:22px;margin:44px 0 6px">Kombi-Pakete</h3>
+        <p class="muted" style="margin-bottom:18px">Drei Leistungen, die zusammenpassen – für <b data-price-combo></b> statt 14,97 €.</p>
+        <div class="combo-grid" id="comboFeatures"></div>
       </div>
     </section>
 
@@ -142,15 +148,24 @@
 
     <section class="section" id="preis">
       <div class="container">
-        <div class="card price-card">
-          <div>
-            <p class="eyebrow">Preis</p>
-            <div class="price-big" data-price style="margin:14px 0 10px"></div>
-            <p class="muted">pro Auftrag · einmalig · kein Abo</p>
-            <a class="btn btn-primary" href="#bestellen" style="margin-top:24px">Jetzt einsenden</a>
+        <div class="section-head"><p class="eyebrow">Preise</p><h2>Einfach &amp; fair.</h2><p>Einmal bezahlen, kein Abo, keine versteckten Kosten.</p></div>
+        <div class="price-tiles">
+          <div class="card price-tile">
+            <p class="eyebrow">Einzeln</p>
+            <div class="price-big" data-price-single></div>
+            <p class="muted">eine Leistung deiner Wahl – z. B. Lernzettel oder PowerPoint</p>
+            <a class="btn" href="#bestellen" data-pick="einzeln">Einzeln bestellen</a>
           </div>
-          <ul class="ticks">
-            <li><span data-icon="check"></span>Gleicher Preis für alle Formate</li>
+          <div class="card price-tile featured">
+            <p class="eyebrow">Kombi-Paket <span class="save-pill">spare <span data-combo-saving></span></span></p>
+            <div class="price-big" data-price-combo></div>
+            <p class="muted">drei passende Leistungen – z. B. PowerPoint + Karteikarten + Handout</p>
+            <a class="btn btn-primary" href="#bestellen" data-pick="paket_referat">Kombi-Paket wählen</a>
+          </div>
+        </div>
+        <div class="card price-card" style="margin-top:14px;grid-template-columns:1fr">
+          <ul class="ticks" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr));display:grid">
+            <li><span data-icon="check"></span>Alle Formate zum gleichen Preis</li>
             <li><span data-icon="check"></span>Persönlich bearbeitet – nicht einfach kopiert</li>
             <li><span data-icon="check"></span>Ergebnis als Datei (PowerPoint, PDF, Word …) in deinem Postfach</li>
             <li><span data-icon="check"></span>Rückfragen direkt über dein Konto</li>
@@ -186,6 +201,7 @@
           <h2>Häufige Fragen</h2>
         </div>
         <div class="faq">
+          <details><summary>Was kostet das?</summary><p>Jede einzelne Leistung kostet <span data-price-single></span>. Ein Kombi-Paket mit drei passenden Leistungen (z. B. PowerPoint, Karteikarten und Handout fürs Referat) kostet <span data-price-combo></span> – du sparst <span data-combo-saving></span>.</p></details>
           <details><summary>Wie lange dauert es?</summary><p>Du bekommst dein Ergebnis <span data-delivery></span>. Wenn du einen Termin angibst, plane ich danach. Sobald es fertig ist, liegt es in deinem Postfach.</p></details>
           <details><summary>Was kann ich hochladen?</summary><p>Fotos (JPG, PNG, WEBP – auch direkt aus der Handy-Kamera), PDFs oder einfach Text. Pro Auftrag kannst du mehrere Bilder hochladen.</p></details>
           <details><summary>Wie bezahle ich?</summary><p>Die Bezahlung läuft sicher über Stripe – je nach Gerät z. B. mit Karte, Apple Pay, Google Pay oder Klarna. Deine Zahlungsdaten sehe ich nicht.</p></details>

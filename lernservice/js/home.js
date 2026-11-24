@@ -1,29 +1,38 @@
 /* Startseite: Bestellformular */
 (function () {
-  const { icon, PRODUCTS, SUBJECTS, GRADES, esc, toast, fmtSize } = window.UI;
+  const { icon, PRODUCTS, COMBOS, SUBJECTS, GRADES, esc, toast, fmtSize, eur, productById } = window.UI;
   const $ = (s) => document.querySelector(s);
   const state = { kind: "bild", product: null, files: [], user: null };
 
   // Leistungen + Produktauswahl
   $("#features").innerHTML = PRODUCTS.map((p) => '<div class="feature"><div class="fi">' + icon(p.icon) + "</div><h3>" + esc(p.long) + "</h3><p>" + esc(p.desc) + "</p></div>").join("");
-  $("#products").innerHTML = PRODUCTS.map((p) => '<button type="button" class="product" role="radio" aria-checked="false" data-id="' + p.id + '">' + icon(p.icon) + "<span>" + esc(p.name) + "</span></button>").join("");
-  $("#products").addEventListener("click", (e) => {
-    const b = e.target.closest(".product"); if (!b) return;
-    state.product = b.dataset.id;
-    document.querySelectorAll(".product").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
-  });
-  // Klick auf Leistung unten → im Formular auswählen
-  document.querySelectorAll("#features .feature").forEach((el, i) => {
-    el.style.cursor = "pointer";
-    el.addEventListener("click", () => { document.querySelectorAll(".product")[i].click(); $("#bestellen").scrollIntoView({ behavior: "smooth" }); });
-  });
+  $("#products").innerHTML = PRODUCTS.map((p) => '<button type="button" class="product pick" role="radio" aria-checked="false" data-id="' + p.id + '">' + icon(p.icon) + "<span>" + esc(p.name) + "</span></button>").join("");
+  const chips = (c) => '<div class="item-chips">' + c.items.map((i) => { const p = productById(i); return '<span class="item-chip">' + icon(p.icon) + esc(p.name) + "</span>"; }).join("") + "</div>";
+  $("#combos").innerHTML = COMBOS.map((c) => '<button type="button" class="combo-opt pick" role="radio" aria-checked="false" data-id="' + c.id + '"><div class="top"><span>' + icon(c.icon) + esc(c.name) + '</span><span class="pr">' + eur(c.price) + "</span></div>" + chips(c) + "</button>").join("");
+  $("#comboFeatures").innerHTML = COMBOS.map((c) => '<div class="combo-card" data-id="' + c.id + '"><h3>' + esc(c.name) + "</h3>" + chips(c) + "<p>" + esc(c.desc) + '</p><div class="pr">' + eur(c.price) + " <s>" + eur(c.items.length * 499) + "</s></div></div>").join("");
+
+  function pick(id) {
+    const b = document.querySelector('.pick[data-id="' + CSS.escape(id) + '"]'); if (!b) return;
+    state.product = id;
+    document.querySelectorAll(".pick").forEach((x) => x.setAttribute("aria-checked", String(x === b)));
+    const p = productById(id);
+    $("#totalPrice").textContent = eur(p.price);
+    $("#totalLabel").textContent = p.combo ? p.name + " · du sparst " + eur(p.saving) : "Gesamt (Endpreis)";
+    $("#submitBtn").textContent = "Weiter zur Bezahlung · " + eur(p.price);
+  }
+  document.querySelector("#bestellen").addEventListener("click", (e) => { const b = e.target.closest(".pick"); if (b) pick(b.dataset.id); });
+  // Klick auf Leistung / Paket weiter unten → im Formular auswählen
+  const goForm = (id) => { pick(id); $("#bestellen").scrollIntoView({ behavior: "smooth" }); };
+  document.querySelectorAll("#features .feature").forEach((el, i) => { el.style.cursor = "pointer"; el.addEventListener("click", () => goForm(PRODUCTS[i].id)); });
+  document.querySelectorAll("#comboFeatures .combo-card").forEach((el) => el.addEventListener("click", () => goForm(el.dataset.id)));
+  document.querySelectorAll("[data-pick]").forEach((a) => a.addEventListener("click", () => { if (a.dataset.pick !== "einzeln") pick(a.dataset.pick); }));
   $("#subject").insertAdjacentHTML("beforeend", SUBJECTS.map((s) => "<option>" + esc(s) + "</option>").join(""));
   $("#grade").insertAdjacentHTML("beforeend", GRADES.map((g) => '<option value="' + esc(g) + '">' + (/^\d+$/.test(g) ? "Klasse " + g : esc(g)) + "</option>").join(""));
   $("#due").min = new Date().toISOString().slice(0, 10);
 
   // Produkt per URL vorwählen (?paket=lernzettel)
   const pre = new URLSearchParams(location.search).get("paket");
-  if (pre) { const b = document.querySelector('.product[data-id="' + CSS.escape(pre) + '"]'); if (b) b.click(); }
+  if (pre) pick(pre);
 
   // Bild / Text umschalten
   document.querySelectorAll(".seg button").forEach((b) => b.addEventListener("click", () => {

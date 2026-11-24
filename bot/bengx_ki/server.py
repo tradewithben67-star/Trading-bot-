@@ -13,7 +13,12 @@ den Inhaber an. Danach legt nur der Inhaber weitere Nutzer an.
 
 Schnittstelle (alles JSON, alles außer Anmeldung nur angemeldet):
 
-    GET  /api/ich                   wer bin ich, muss eingerichtet werden?
+    GET  /api/ich                   wer bin ich, muss eingerichtet oder zugestimmt werden?
+    GET  /api/rechtliches?seite=…   Impressum, Datenschutz, Nutzungsbedingungen, Widerruf, Cookies (öffentlich)
+    POST /api/zustimmung            {"art": "nutzung", "volljaehrig", "nutzungsbedingungen", "datenschutz"} | {"art": "chat"}
+    GET  /api/konto/export          alle eigenen Daten als JSON-Datei
+    POST /api/konto/passwort        {"alt", "neu"}
+    POST /api/konto/loeschen        {"passwort"} — Konto und alle Daten löschen
     POST /api/einrichten            {"name", "passwort"} — nur solange es keinen Nutzer gibt
     POST /api/anmelden              {"name", "passwort"}
     POST /api/abmelden
@@ -39,6 +44,7 @@ Schnittstelle (alles JSON, alles außer Anmeldung nur angemeldet):
     POST /api/nutzer/abo   {"id", "abo"}
     POST /api/nutzer/passwort {"id", "passwort"}
     POST /api/nutzer/loeschen {"id"}
+    GET  /api/betreiber    POST /api/betreiber     Angaben für Impressum und Datenschutz
 """
 
 from __future__ import annotations
@@ -47,13 +53,14 @@ import json
 import threading
 import time
 import traceback
+from datetime import datetime, timezone
 from http import HTTPStatus
 from http.cookies import SimpleCookie
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import dienste, eigene
+from . import dienste, eigene, rechtliches
 from .chat import BEREICHE, Chat
 from .auswertung import kennzahlen
 from .gehirn import Bauplan
@@ -73,6 +80,19 @@ class Verboten(Exception):
 
 class NichtAngemeldet(Exception):
     pass
+
+
+class ZustimmungFehlt(Exception):
+    pass
+
+
+class ChatHinweisFehlt(Exception):
+    pass
+
+
+CHAT_HINWEIS_VERSION = "1"
+# Was ohne Zustimmung zu den aktuellen Bedingungen noch geht: zustimmen, gehen, Daten holen, löschen.
+OHNE_ZUSTIMMUNG = {"/api/ich", "/api/zustimmung", "/api/abmelden", "/api/konto/export", "/api/konto/loeschen"}
 
 
 class Training:
@@ -121,6 +141,10 @@ class App:
         self.training = Training()
         self.eigene = eigene.Ablage(ordner / "indikatoren.json")
         self.chat = Chat(self, ordner / "chats")
+        self.betreiber = rechtliches.Betreiber(ordner / "betreiber.json")
+        # Alte Verlaufseinträge und ruhende Chats löschen (Speicherbegrenzung, Art. 5 Abs. 1 lit. e DSGVO).
+        self.verlauf.bereinigen(rechtliches.AUFBEWAHRUNG_TAGE)
+        self.chat.bereinigen(rechtliches.AUFBEWAHRUNG_TAGE)
         self.epochen = epochen
 
     # -- bezahlte Aktionen ---------------------------------------------
@@ -205,6 +229,8 @@ class App:
                 "nachrichten": self.anhaenge_aufloesen(n, self.chat.verlauf(n, bereich))}
 
     def chat_senden(self, n: dict, body: dict) -> dict:
+        if not self.chat_hinweis_ok(n):
+            raise ChatHinweisFehlt()
         bereich = str(body.get("bereich", "allgemein"))
         antwort = self.chat.senden(n, bereich, str(body.get("text", "")))
         return {"antwort": self.anhaenge_aufloesen(n, [antwort])[0],
@@ -282,11 +308,68 @@ class App:
                                    str(body.get("abo", "start")))
 
     def nutzer_loeschen(self, body: dict) -> dict:
-        nid = str(body.get("id", ""))
+        self.alles_loeschen(str(body.get("id", "")))
+        return {"ok": True}
+
+    def alles_loeschen(self, nid: str) -> None:
+        """Ein Konto und alle Daten dazu endgültig löschen (Art. 17 DSGVO)."""
         self.nutzer.loeschen(nid)
         self.sitzungen.alle_beenden(nid)
         self.nutzung.vergessen(nid)
         self.eigene.vergessen(nid)
+        self.verlauf.nutzer_loeschen(nid)
+        self.chat.vergessen(nid)
+
+    # -- Rechtliches und eigenes Konto -------------------------------------
+
+    @staticmethod
+    def zustimmung_noetig(n: dict) -> bool:
+        z = (n.get("zustimmungen") or {}).get("nutzung")
+        return n["rolle"] != "inhaber" and (not z or z.get("version") != rechtliches.STAND)
+
+    @staticmethod
+    def chat_hinweis_ok(n: dict) -> bool:
+        z = (n.get("zustimmungen") or {}).get("chat")
+        return bool(z) and z.get("version") == CHAT_HINWEIS_VERSION
+
+    def zustimmen(self, n: dict, body: dict) -> dict:
+        art = str(body.get("art", ""))
+        if art == "nutzung":
+            if not (body.get("volljaehrig") is True and body.get("nutzungsbedingungen") is True
+                    and body.get("datenschutz") is True):
+                raise ValueError(f"Bitte alle drei Punkte bestätigen. Die KI ist erst ab {rechtliches.MINDESTALTER} Jahren.")
+            return self.nutzer.zustimmen(n["id"], "nutzung", rechtliches.STAND)
+        if art == "chat":
+            return self.nutzer.zustimmen(n["id"], "chat", CHAT_HINWEIS_VERSION)
+        raise ValueError("Unbekannte Zustimmung.")
+
+    def export(self, n: dict) -> dict:
+        """Alles, was über diesen Nutzer gespeichert ist (Art. 15 und 20 DSGVO)."""
+        with self.verlauf._sperre:
+            verlauf = [e for e in self.verlauf._alle() if e.get("nutzer") == n["id"]]
+        return {
+            "hinweis": "Alle Daten, die die BENGX KI über dich gespeichert hat. Das Passwort ist nur als Hash gespeichert und daher nicht enthalten.",
+            "erstellt": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "konto": n,
+            "nutzung": self.nutzung.stand(n),
+            "buchungen": self.nutzung.buchungen(n["id"], anzahl=100000),
+            "eigene_indikatoren": self.eigene.liste(n["id"]),
+            "verlauf": verlauf,
+            "chats": self.chat.alles(n),
+        }
+
+    def passwort_aendern(self, n: dict, body: dict) -> dict:
+        if not self.nutzer.passwort_stimmt(n["id"], str(body.get("alt", ""))):
+            raise ValueError("Das bisherige Passwort stimmt nicht.")
+        self.nutzer.passwort_setzen(n["id"], str(body.get("neu", "")))
+        return {"ok": True}
+
+    def konto_loeschen(self, n: dict, body: dict) -> dict:
+        if n["rolle"] == "inhaber":
+            raise ValueError("Das Inhaber-Konto lässt sich hier nicht löschen. Dafür den Ordner ki/ entfernen.")
+        if not self.nutzer.passwort_stimmt(n["id"], str(body.get("passwort", ""))):
+            raise ValueError("Das Passwort stimmt nicht.")
+        self.alles_loeschen(n["id"])
         return {"ok": True}
 
     def nutzer_passwort(self, body: dict) -> dict:
@@ -310,6 +393,7 @@ class App:
             "neueste": self.verlauf.liste(anzahl=6, nutzer=wer),
             "nutzerzahl": len(self.nutzer.liste()) if not wer else None,
             "chat": dict(zip(("bereit", "grund"), self.chat.bereit())),
+            "betreiber_fehlt": self.betreiber.fehlend() if not wer else None,
         }
 
 
@@ -328,6 +412,7 @@ def handler_fuer(app: App):
             self.send_header("Content-Type", "application/json; charset=utf-8")
             self.send_header("Content-Length", str(len(roh)))
             self.send_header("Cache-Control", "no-store")
+            self._sicherheit()
             if keks is not None:
                 alter = app.sitzungen.DAUER if keks else 0
                 self.send_header("Set-Cookie", f"{KEKS}={keks}; Path=/; HttpOnly; "
@@ -335,8 +420,18 @@ def handler_fuer(app: App):
             self.end_headers()
             self.wfile.write(roh)
 
+        def _sicherheit(self) -> None:
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.send_header("Referrer-Policy", "no-referrer")
+
         def _fehler(self, exc: Exception) -> None:
-            if isinstance(exc, NichtAngemeldet):
+            if isinstance(exc, ZustimmungFehlt):
+                self._json({"fehler": "Bitte zuerst den aktuellen Nutzungsbedingungen zustimmen.", "zustimmung": True},
+                           HTTPStatus.FORBIDDEN)
+            elif isinstance(exc, ChatHinweisFehlt):
+                self._json({"fehler": "Bitte zuerst den Hinweis zum Chat bestätigen.", "chat_hinweis": True},
+                           HTTPStatus.CONFLICT)
+            elif isinstance(exc, NichtAngemeldet):
                 self._json({"fehler": "Bitte anmelden.", "anmelden": True}, HTTPStatus.UNAUTHORIZED)
             elif isinstance(exc, Verboten):
                 self._json({"fehler": str(exc) or "Nur für den Inhaber."}, HTTPStatus.FORBIDDEN)
@@ -365,6 +460,8 @@ def handler_fuer(app: App):
             n = self._nutzer()
             if n is None:
                 raise NichtAngemeldet()
+            if App.zustimmung_noetig(n) and urlparse(self.path).path not in OHNE_ZUSTIMMUNG:
+                raise ZustimmungFehlt()
             return n
 
         def _inhaber(self) -> dict:
@@ -385,10 +482,40 @@ def handler_fuer(app: App):
                     self.send_header("Content-Type", "text/html; charset=utf-8")
                     self.send_header("Content-Length", str(len(roh)))
                     self.send_header("X-Frame-Options", "DENY")
+                    self.send_header("Content-Security-Policy",
+                                     "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+                                     "style-src 'self' 'unsafe-inline'; img-src 'self' data:; "
+                                     "connect-src 'self'; frame-ancestors 'none'; base-uri 'none'; form-action 'self'")
+                    self._sicherheit()
                     self.end_headers()
                     self.wfile.write(roh)
                 elif pfad == "/api/ich":
-                    self._json({"nutzer": self._nutzer(), "einrichten": app.nutzer.leer()})
+                    n = self._nutzer()
+                    self._json({"nutzer": n, "einrichten": app.nutzer.leer(),
+                                "zustimmung_noetig": bool(n) and App.zustimmung_noetig(n),
+                                "chat_hinweis": bool(n) and App.chat_hinweis_ok(n),
+                                "stand": rechtliches.STAND, "mindestalter": rechtliches.MINDESTALTER,
+                                "chat_hinweis_text": rechtliches.CHAT_HINWEIS, "risiko": rechtliches.RISIKO})
+                elif pfad == "/api/rechtliches":
+                    name = parse_qs(url.query).get("seite", ["impressum"])[0]
+                    self._json({**rechtliches.seite(name, app.betreiber.daten()),
+                                "vollstaendig": app.betreiber.vollstaendig()})
+                elif pfad == "/api/betreiber":
+                    self._inhaber()
+                    self._json({"daten": app.betreiber.daten(), "felder": rechtliches.FELDER,
+                                "fehlend": app.betreiber.fehlend(), "pruefen": rechtliches.PRUEFEN,
+                                "aufbewahrung_tage": rechtliches.AUFBEWAHRUNG_TAGE})
+                elif pfad == "/api/konto/export":
+                    n = self._angemeldet()
+                    roh = json.dumps(app.export(n), ensure_ascii=False, indent=1).encode("utf-8")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Content-Disposition", 'attachment; filename="bengx-ki-meine-daten.json"')
+                    self.send_header("Content-Length", str(len(roh)))
+                    self.send_header("Cache-Control", "no-store")
+                    self._sicherheit()
+                    self.end_headers()
+                    self.wfile.write(roh)
                 elif pfad == "/api/stand":
                     self._json(app.stand(self._angemeldet()))
                 elif pfad == "/api/verlauf":
@@ -464,6 +591,17 @@ def handler_fuer(app: App):
                         raise ValueError("Name oder Passwort stimmt nicht.")
                     app.sitzungen.erfolg(name)
                     self._json({"nutzer": n}, keks=app.sitzungen.neu(n["id"]))
+                elif pfad == "/api/zustimmung":
+                    self._json(app.zustimmen(self._angemeldet(), body))
+                elif pfad == "/api/konto/passwort":
+                    self._json(app.passwort_aendern(self._angemeldet(), body))
+                elif pfad == "/api/konto/loeschen":
+                    n = self._angemeldet()
+                    app.konto_loeschen(n, body)
+                    self._json({"ok": True}, keks="")
+                elif pfad == "/api/betreiber":
+                    self._inhaber()
+                    self._json(app.betreiber.setzen(body))
                 elif pfad == "/api/abmelden":
                     app.sitzungen.beenden(self._token())
                     self._json({"ok": True}, keks="")
@@ -518,6 +656,9 @@ def starten(app: App, port: int = 8765, browser: bool = True, offen: bool = Fals
     print(f"BENGX KI läuft: {adresse}")
     if offen:
         print("Offen fürs Netz. Fürs Internet nur hinter HTTPS betreiben!")
+        if not app.betreiber.vollstaendig():
+            print("ACHTUNG: Impressum unvollständig (" + ", ".join(app.betreiber.fehlend())
+                  + "). Unter Rechtliches ausfüllen, bevor andere die Seite sehen.")
     print(f"Daten: {app.quelle.name}")
     if app.nutzer.leer():
         print("Noch kein Nutzer: beim ersten Öffnen legst du den Inhaber an.")

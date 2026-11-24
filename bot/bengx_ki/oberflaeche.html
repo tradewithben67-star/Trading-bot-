@@ -6,7 +6,7 @@
 <title>BENGX KI</title>
 <style>
 :root {
-  --bg: #ffffff; --fg: #0a0a0a; --muted: #6e6e6e; --faint: #a3a3a3;
+  --bg: #ffffff; --fg: #0a0a0a; --muted: #5c5c5c; --faint: #767676;
   --line: #e9e9e9; --soft: #f6f6f6; --hover: #f0f0f0;
   --inv-bg: #0a0a0a; --inv-fg: #ffffff;
   --radius: 14px;
@@ -16,13 +16,13 @@
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --bg: #0a0a0a; --fg: #f5f5f5; --muted: #8c8c8c; --faint: #5c5c5c;
+    --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a8a8a8; --faint: #8a8a8a;
     --line: #232323; --soft: #141414; --hover: #1b1b1b;
     --inv-bg: #f5f5f5; --inv-fg: #0a0a0a; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
-  --bg: #0a0a0a; --fg: #f5f5f5; --muted: #8c8c8c; --faint: #5c5c5c;
+  --bg: #0a0a0a; --fg: #f5f5f5; --muted: #a8a8a8; --faint: #8a8a8a;
   --line: #232323; --soft: #141414; --hover: #1b1b1b;
   --inv-bg: #f5f5f5; --inv-fg: #0a0a0a; color-scheme: dark;
 }
@@ -226,6 +226,35 @@ details.hilfe dl { margin-top: 10px; }
 @keyframes puls { 0%, 80%, 100% { opacity: .2; } 40% { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) { .punkte-lade i, .lade { animation: none; } }
 
+/* ---------- Bedienbarkeit ---------- */
+:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: 6px; }
+.knopf:focus-visible { outline-offset: 3px; }
+.springen { position: absolute; left: -9999px; top: 0; }
+.springen:focus { left: 16px; top: 16px; z-index: 50; background: var(--inv-bg); color: var(--inv-fg);
+                  border: 0; padding: 10px 14px; border-radius: 9px; font-weight: 600; }
+[role="button"][tabindex] { cursor: pointer; }
+.fusslinks { display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12px; padding: 0 4px; }
+.fusslinks a, .fusslinks button { color: var(--muted); text-decoration: none; background: none; border: 0; padding: 0;
+                                  font: inherit; cursor: pointer; }
+.fusslinks a:hover, .fusslinks button:hover { color: var(--fg); text-decoration: underline; }
+.speicher-hinweis { position: fixed; z-index: 40; left: max(16px, env(safe-area-inset-left, 0px));
+                    right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+                    max-width: 620px; margin: 0 auto; background: var(--bg); border: 1px solid var(--fg); border-radius: 14px;
+                    padding: 18px; box-shadow: 0 10px 30px rgba(0,0,0,.12); }
+.speicher-hinweis p { margin: 0 0 14px; font-size: 14px; }
+.speicher-hinweis .zeile .knopf { flex: 1; min-width: 160px; }
+.risiko { border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; font-size: 13.5px; color: var(--muted); background: var(--soft); }
+.haken { display: grid; grid-template-columns: 20px 1fr; gap: 10px; align-items: start; margin: 14px 0 0; font-size: 14px; line-height: 1.45; color: var(--fg) !important; }
+.tor label.haken { display: grid; margin: 14px 0 0; font-size: 14px; color: var(--fg); }
+.haken input { width: 18px; height: 18px; margin: 1px 0 0; accent-color: var(--fg); }
+.recht { max-width: 70ch; line-height: 1.6; }
+.recht h2 { margin: 26px 0 8px; }
+.recht p { margin: 0 0 10px; }
+.recht ul { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 6px; }
+.recht .adresse { margin: 0 0 10px; }
+.warnung { border: 1.5px solid var(--fg); border-radius: var(--radius); padding: 16px 20px; margin-bottom: 16px; }
+.tor.breit .karte { width: min(780px, 100%); }
+
 /* ---------- Telefon ---------- */
 @media (max-width: 860px) {
   .app { grid-template-columns: minmax(0, 1fr); }
@@ -306,8 +335,8 @@ select.feld { width: auto; appearance: none; padding-right: 28px; cursor: pointe
 </head>
 <body>
 <div id="wurzel"></div>
-<div class="detail" id="detail" onclick="if(event.target===this)zu()"><div class="blatt" id="blatt"></div></div>
-<div class="toast" id="toast"></div>
+<div class="detail" id="detail" onclick="if(event.target===this)zu()"><div class="blatt" id="blatt" role="dialog" aria-modal="true" aria-label="Details"></div></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script>
 "use strict";
@@ -321,6 +350,8 @@ const ICON = {
   modelle: '<rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 1v4M15 1v4M9 19v4M15 19v4M1 9h4M1 15h4M19 9h4M19 15h4"/>',
   nutzung: '<path d="M4 19h16M6 15V9M12 15V5M18 15v-3"/>',
   chat: '<path d="M4 5h16v11H9l-5 4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  konto: '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4.4 4.2-6.5 8-6.5s7 2.1 8 6.5"/>',
+  rechtliches: '<path d="M12 3v18M5 7h14M7 7l-3 7a3.5 3.5 0 0 0 6 0zM17 7l-3 7a3.5 3.5 0 0 0 6 0zM8 21h8"/>',
   nutzer: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.6 3.4-5.5 6.5-5.5s5.7 1.9 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.8c1.6.8 2.6 2.5 3 5.2"/>',
 };
 const SEITEN = [
@@ -329,12 +360,15 @@ const SEITEN = [
   ["#KI"],
   ["analyse", "Analyse"], ["indikatoren", "Indikatoren"], ["strategie", "Strategie"],
   ["#Daten"],
-  ["verlauf", "Verlauf"], ["modelle", "Modelle"], ["nutzung", "Nutzung & Abo"],
+  ["verlauf", "Verlauf"], ["modelle", "Modelle"], ["nutzung", "Nutzung & Abo"], ["konto", "Konto"],
   ["#Inhaber", null, "inhaber"],
+  ["rechtliches", "Rechtliches", "inhaber"],
   ["nutzer", "Nutzer", "inhaber"],
 ];
 const MREIHE = ["mini", "standard", "max"];
-const icon = n => `<svg viewBox="0 0 24 24">${ICON[n] || ICON.verlauf}</svg>`;
+const icon = n => `<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">${ICON[n] || ICON.verlauf}</svg>`;
+const RECHT = {impressum: "Impressum", datenschutz: "Datenschutz", nutzungsbedingungen: "Nutzungsbedingungen", widerruf: "Widerruf", cookies: "Cookies"};
+let ICHDATEN = {}, VERLAUF_FILTER = "";
 const $ = s => document.querySelector(s);
 const $$ = s => document.querySelectorAll(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -346,8 +380,26 @@ const zeit = s => s ? new Date(s).toLocaleString("de-DE", {day: "2-digit", month
 const datum = s => s ? new Date(s).toLocaleDateString("de-DE") : "–";
 const tok = n => `${ganz(n)} ${n === 1 ? "Token" : "Tokens"}`;
 const BEREICH = {analyse: "Analyse", indikatoren: "Indikatoren", strategie: "Strategie", training: "Training"};
-const merken = (k, v) => { try { localStorage.setItem(k, v); } catch (_) {} };
-const lesen = (k, d) => { try { return localStorage.getItem(k) || d; } catch (_) { return d; } };
+// Komfort-Einstellungen landen nur im Browser, wenn die Person das erlaubt hat (§ 25 TDDDG).
+const KOMFORT = ["thema", "modell", "filter"];
+const speicherWahl = () => { try { return localStorage.getItem("speicher-wahl") || ""; } catch (_) { return ""; } };
+const merken = (k, v) => { if (KOMFORT.includes(k) && speicherWahl() !== "komfort") return; try { localStorage.setItem(k, v); } catch (_) {} };
+const lesen = (k, d) => { if (KOMFORT.includes(k) && speicherWahl() !== "komfort") return d; try { return localStorage.getItem(k) || d; } catch (_) { return d; } };
+function speicherHinweis(zwingend = false) {
+  if (!zwingend && speicherWahl()) return;
+  document.querySelector(".speicher-hinweis")?.remove();
+  document.body.insertAdjacentHTML("beforeend", `<div class="speicher-hinweis" role="dialog" aria-label="Speicher-Einstellungen">
+    <p><b>Kein Tracking, keine Werbung.</b> Für die Anmeldung brauchen wir ein notwendiges Cookie. Auf Wunsch merken wir uns außerdem
+      Komfort-Einstellungen in deinem Browser (Hell/Dunkel, zuletzt gewähltes Modell). <a href="#cookies" style="color:inherit">Mehr dazu</a></p>
+    <div class="zeile"><button class="knopf hell" data-wahl="notwendig">Nur Notwendiges</button><button class="knopf hell" data-wahl="komfort">Komfort erlauben</button></div></div>`);
+  document.querySelectorAll("[data-wahl]").forEach(b => b.onclick = () => {
+    try { localStorage.setItem("speicher-wahl", b.dataset.wahl); } catch (_) {}
+    if (b.dataset.wahl === "notwendig") { KOMFORT.forEach(k => { try { localStorage.removeItem(k); sessionStorage.removeItem(k); } catch (_) {} }); }
+    document.querySelector(".speicher-hinweis").remove();
+    toast(b.dataset.wahl === "komfort" ? "Komfort-Einstellungen werden gemerkt." : "Nur Notwendiges. Nichts weiter wird gespeichert.");
+  });
+}
+const fusslinks = () => `<div class="fusslinks">${Object.entries(RECHT).map(([id, n]) => `<a href="#${id}">${n}</a>`).join("")}<button type="button" onclick="speicherHinweis(true)">Speicher-Einstellungen</button></div>`;
 
 let ICH = null, STAND = null, seite = "uebersicht";
 let gewaehlt = lesen("modell", "standard");
@@ -370,10 +422,61 @@ function toast(text) {
 /* ---------- Anmeldung ---------- */
 async function start() {
   const d = await api("/api/ich");
-  ICH = d.nutzer;
+  ICHDATEN = d; ICH = d.nutzer;
+  speicherHinweis();
+  if (RECHT[location.hash.slice(1)] && !ICH) return rechtZeigen();
   if (!ICH) return tor(d.einrichten);
-  geruest();
+  if (d.zustimmung_noetig) return zustimmungZeigen();
+  if (!document.querySelector(".app")) geruest();
   zeigen();
+}
+function zustimmungZeigen() {
+  const a = ICHDATEN.mindestalter;
+  $("#wurzel").innerHTML = `<div class="tor"><form class="karte" id="zform" style="width:min(520px,100%)">
+    <div class="marke" style="padding:0">BENGX <span>KI</span></div>
+    <h1>Bevor es losgeht</h1>
+    <p class="unter" style="margin:0 0 16px">Hallo ${esc(ICH.name)}. Bitte lies und bestätige diese Punkte. ${ICH.zustimmungen?.nutzung ? "Die Bedingungen haben sich seit deiner letzten Zustimmung geändert." : ""}</p>
+    <div class="risiko">${esc(ICHDATEN.risiko)}</div>
+    <label class="haken"><input type="checkbox" id="z1"><span>Ich bin mindestens ${a} Jahre alt.</span></label>
+    <label class="haken"><input type="checkbox" id="z2"><span>Ich akzeptiere die <a href="#nutzungsbedingungen" target="_blank" rel="noopener" style="color:inherit">Nutzungsbedingungen</a> und verstehe, dass die KI keine Anlageberatung gibt.</span></label>
+    <label class="haken"><input type="checkbox" id="z3"><span>Ich habe die <a href="#datenschutz" target="_blank" rel="noopener" style="color:inherit">Datenschutzerklärung</a> zur Kenntnis genommen.</span></label>
+    <button class="knopf" type="submit" id="zweiter" disabled>Zustimmen und weiter</button>
+    <div class="fehler" id="zf"></div>
+    <div class="zeile weit" style="margin-top:8px"><button class="abmelden" type="button" onclick="abmelden()">Abmelden</button>
+      <button class="abmelden" type="button" id="zlos">Konto stattdessen löschen</button></div>
+    <div id="zloeschen" hidden style="margin-top:12px"><label class="etikett" for="zpw">Zum Löschen dein Passwort</label>
+      <div class="zeile" style="margin-top:6px"><input class="feld" type="password" id="zpw" autocomplete="current-password" style="flex:1"><button class="knopf hell" type="button" id="zweg">Endgültig löschen</button></div></div>
+  </form><div style="margin-top:16px">${fusslinks()}</div></div>`;
+  const boxen = ["#z1", "#z2", "#z3"].map(x => $(x));
+  boxen.forEach(b => b.onchange = () => { $("#zweiter").disabled = !boxen.every(x => x.checked); });
+  $("#zlos").onclick = () => { $("#zloeschen").hidden = false; $("#zpw").focus(); };
+  $("#zweg").onclick = async () => {
+    try { await api("/api/konto/loeschen", {passwort: $("#zpw").value}); ICH = null; toast("Dein Konto und alle Daten sind gelöscht."); start(); }
+    catch (err) { $("#zf").textContent = err.message; } };
+  $("#zform").onsubmit = async e => { e.preventDefault();
+    try { await api("/api/zustimmung", {art: "nutzung", volljaehrig: $("#z1").checked, nutzungsbedingungen: $("#z2").checked, datenschutz: $("#z3").checked}); start(); }
+    catch (err) { $("#zf").textContent = err.message; } };
+}
+async function rechtInhalt(name) {
+  const d = await api("/api/rechtliches?seite=" + name);
+  const block = b => b.h ? `<h2>${esc(b.h)}</h2>` : b.p ? `<p>${esc(b.p)}</p>` : b.ul ? `<ul>${b.ul.map(x => `<li>${esc(x)}</li>`).join("")}</ul>`
+    : b.adresse ? `<p class="adresse">${b.adresse.map(esc).join("<br>")}</p>` : "";
+  return {d, html: `${d.vollstaendig ? "" : `<div class="warnung">${ICH && inhaber() ? `Es fehlen noch Angaben des Betreibers. <a href="#rechtliches" style="color:inherit">Jetzt unter Rechtliches eintragen</a>.` : "Einige Angaben des Betreibers werden gerade ergänzt."}</div>`}
+    <div class="recht">${d.bloecke.map(block).join("")}</div>`};
+}
+async function rechtZeigen() {
+  const name = location.hash.slice(1);
+  const {d, html} = await rechtInhalt(name);
+  if (ICH && document.querySelector(".app")) {
+    $("#haupt").innerHTML = kopf(esc(d.titel), `Stand ${datum(d.stand)}`) + `<div class="karte">${html}</div>`;
+    navZeichnen(); window.scrollTo(0, 0); return;
+  }
+  $("#wurzel").innerHTML = `<div class="tor breit"><div class="karte">
+    <div class="zeile weit"><div class="marke" style="padding:0">BENGX <span>KI</span></div><a href="#" class="abmelden" id="zurueck">← Zurück</a></div>
+    <h1>${esc(d.titel)}</h1><p class="unter">Stand ${datum(d.stand)}</p>${html}</div>
+    <div style="margin-top:16px">${fusslinks()}</div></div>`;
+  $("#zurueck").onclick = e => { e.preventDefault(); history.replaceState(null, "", location.pathname); start(); };
+  window.scrollTo(0, 0);
 }
 function tor(einrichten = false) {
   $("#wurzel").innerHTML = `<div class="tor"><form class="karte" id="torform">
@@ -384,13 +487,16 @@ function tor(einrichten = false) {
     <label for="tp">Passwort</label><input class="feld" id="tp" type="password" autocomplete="${einrichten ? "new-password" : "current-password"}" required minlength="${einrichten ? 8 : 1}">
     ${einrichten ? `<p class="etikett" style="margin:8px 0 0">Mindestens 8 Zeichen.</p>` : ""}
     <button class="knopf" type="submit">${einrichten ? "Inhaber anlegen" : "Anmelden"}</button>
-    <div class="fehler" id="tf"></div></form></div>`;
+    <div class="fehler" id="tf" role="alert"></div>
+    <p class="etikett" style="margin:14px 0 0;font-size:12px">${esc(ICHDATEN.risiko || "")}</p></form>
+    <div style="margin-top:16px">${fusslinks()}</div></div>`;
   $("#tn").focus();
   $("#torform").onsubmit = async e => {
     e.preventDefault();
     try {
-      const d = await api(einrichten ? "/api/einrichten" : "/api/anmelden", {name: $("#tn").value, passwort: $("#tp").value});
-      ICH = d.nutzer; geruest(); location.hash = "uebersicht"; zeigen();
+      await api(einrichten ? "/api/einrichten" : "/api/anmelden", {name: $("#tn").value, passwort: $("#tp").value});
+      if (!RECHT[location.hash.slice(1)]) history.replaceState(null, "", "#uebersicht");
+      start();
     } catch (err) { $("#tf").textContent = err.message; }
   };
 }
@@ -398,22 +504,23 @@ async function abmelden() { await api("/api/abmelden", {}); ICH = null; tor(); }
 
 /* ---------- Gerüst ---------- */
 function geruest() {
-  $("#wurzel").innerHTML = `<div class="app">
-    <aside class="seite">
+  $("#wurzel").innerHTML = `<button class="springen" type="button" onclick="document.getElementById('haupt').focus()">Zum Inhalt springen</button><div class="app">
+    <aside class="seite" aria-label="Navigation">
       <div class="marke">BENGX <span>KI</span></div>
       <nav id="nav"></nav>
       <div class="unten">
-        <div class="token-karte" onclick="geh('nutzung')">
+        <div class="token-karte" onclick="geh('nutzung')" role="button" tabindex="0" aria-label="Nutzung und Abo öffnen">
           <div class="zeile weit"><b style="font-size:14px">${esc(ICH.name)}</b><span class="marke-klein ${inhaber() ? "voll" : ""}" id="sb-abo">–</span></div>
           <div id="sb-nutzung" style="margin-top:6px"></div>
         </div>
         <div class="zeile weit" style="padding:0 4px"><button class="abmelden" onclick="abmelden()">Abmelden</button></div>
+        ${fusslinks()}
         <div class="thema" id="thema">
           <button data-t="light">Hell</button><button data-t="auto">Auto</button><button data-t="dark">Dunkel</button>
         </div>
       </div>
     </aside>
-    <main id="haupt"></main></div>`;
+    <main id="haupt" tabindex="-1"></main></div>`;
   $$("#thema button").forEach(b => b.onclick = () => thema(b.dataset.t));
   thema(lesen("thema", "auto"));
 }
@@ -439,9 +546,20 @@ function navZeichnen() {
         id === "nutzer" && STAND && STAND.nutzerzahl ? `<span class="zahl">${STAND.nutzerzahl}</span>` : ""}</a>`).join("");
 }
 function geh(id) { location.hash = id; }
-window.addEventListener("hashchange", () => ICH && zeigen());
+window.addEventListener("hashchange", () => {
+  if (RECHT[location.hash.slice(1)]) return rechtZeigen();
+  if (!ICH) return start();
+  if (!document.querySelector(".app")) return start();
+  zeigen();
+});
+// Tastatur: Elemente mit role="button" reagieren auf Enter und Leertaste wie ein Knopf.
+document.addEventListener("keydown", e => {
+  const el = e.target.closest && e.target.closest('[role="button"][tabindex]');
+  if (el && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); el.click(); }
+});
 async function zeigen() {
   seite = location.hash.slice(1) || "uebersicht";
+  if (RECHT[seite]) return rechtZeigen();
   const eintrag = SEITEN.find(([id]) => id === seite);
   if (!eintrag || (eintrag[2] && !inhaber())) seite = "uebersicht";
   navZeichnen(); zu(); window.scrollTo(0, 0);
@@ -519,7 +637,7 @@ function zeigeAnalyse(d, kompakt = false) {
       <div><div class="etikett">Ziel</div><div class="wert num" style="font-size:20px">${zahl(i.ziel)}</div></div></div>`
       : `<p class="etikett" style="margin-top:14px">Weder hoch noch runter erreicht ${pz(d.schwelle)} Sicherheit. Die KI hält sich zurück.</p>`}
     ${d.gruende ? zeigeWarum(d, kompakt) : ""}
-    <p class="hinweis">Stop und Ziel je ${zahl(d.abstand)} entfernt · Blick ${d.horizont} Kerzen nach vorn · Schwelle ${pz(d.schwelle)}</p>`;
+    <p class="hinweis">Stop und Ziel je ${zahl(d.abstand)} entfernt · Blick ${d.horizont} Kerzen nach vorn · Schwelle ${pz(d.schwelle)} · Keine Anlageberatung, Handel mit hohem Verlustrisiko.</p>`;
 }
 function zeigeWarum(d, kompakt) {
   const wann = f => f.vor === 0 ? "jüngste Kerze" : f.vor === 1 ? "Kerze davor" : `${f.vor} Kerzen zurück`;
@@ -603,7 +721,7 @@ function chart(d, o = {}) {
     ...((o.fokus || []).length ? [`<span><i class="punkt"></i>Fokus der KI</span>`] : []),
     ...(o.trefferName ? [`<span><i class="dreieck"></i>${esc(o.trefferName)}</span>`] : [])];
   return `<div class="chartrahmen" data-chart="${id}">
-    <svg viewBox="0 0 ${W} ${gesH}" role="img" aria-label="Kerzenchart">
+    <svg viewBox="0 0 ${W} ${gesH}" role="img" aria-label="${esc(`Kerzenchart, ${n} Kerzen vom ${datum(d.zeit[0])} bis ${datum(d.zeit[n - 1])}, letzter Schluss ${zahl(d.close[n - 1])}${o.niveaus ? `, Einstieg ${zahl(o.niveaus.einstieg)}, Ziel ${zahl(o.niveaus.ziel)}, Stop ${zahl(o.niveaus.stop)}` : ""}`)}">
       <defs><pattern id="${id}-schraffur" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="6" stroke="var(--fg)" stroke-width="1" opacity=".25"/></pattern></defs>
       ${t.join("")}
       <line class="faden" x1="0" x2="0" y1="0" y2="${gesH - ZH}" stroke="var(--fg)" stroke-dasharray="2 3" opacity="0"/>
@@ -708,7 +826,7 @@ function zeigeEintrag(e) {
 }
 function eintragZeile(e, mitName = true) {
   const wer = mitName && inhaber() && e.nutzer_name && e.nutzer !== ICH.id ? esc(e.nutzer_name) + " · " : "";
-  return `<div class="liste-eintrag" onclick="detail('${e.id}')">
+  return `<div class="liste-eintrag" onclick="detail('${e.id}')" role="button" tabindex="0" aria-label="${esc(e.titel)}, ${zeit(e.zeit)}, Details öffnen">
     <div class="symbol">${icon(e.bereich)}</div>
     <div style="min-width:0"><div class="titel">${esc(e.titel)}</div><div class="kurz">${wer}${esc(e.kurz)}</div></div>
     <div class="rechts"><div>${zeit(e.zeit)}</div><div class="num">${e.tokens ? "−" + tok(e.tokens) : ""}</div></div></div>`;
@@ -720,10 +838,20 @@ async function detail(id) {
       <h1 style="font-size:22px;margin-top:10px">${esc(e.titel)}</h1>
       <p class="unter">${zeit(e.zeit)}${e.tokens ? " · " + tok(e.tokens) : ""}${e.nutzer_name ? " · " + esc(e.nutzer_name) : ""}</p></div>
       <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>${zeigeEintrag(e)}`;
-  $("#detail").classList.add("offen");
+  blattAuf();
   chartsNachRechts($("#blatt"));
 }
-function zu() { $("#detail").classList.remove("offen"); }
+let vorDetail = null;
+function blattAuf() {
+  vorDetail = document.activeElement;
+  document.getElementById("detail").classList.add("offen");
+  const x = $("#blatt .x"); if (x) x.focus();
+}
+function zu() {
+  if (!$("#detail").classList.contains("offen")) return;
+  $("#detail").classList.remove("offen");
+  if (vorDetail && document.body.contains(vorDetail)) vorDetail.focus();
+}
 
 async function nutzerDetail(id) {
   const d = await api("/api/nutzer/" + id), u = d.nutzer, n = d.stand;
@@ -731,7 +859,8 @@ async function nutzerDetail(id) {
   $("#blatt").innerHTML = `<div class="zeile weit" style="margin-bottom:22px;align-items:flex-start;flex-wrap:nowrap">
       <div><span class="marke-klein ${u.rolle === "inhaber" ? "voll" : ""}">${esc(n.abo_name)}</span>
       <h1 style="font-size:24px;margin-top:10px">${esc(u.name)}</h1>
-      <p class="unter">seit ${datum(u.erstellt)} · ${ganz(summe)} Aktionen${n.unbegrenzt ? "" : " · frei ab " + datum(n.auffuellung)}</p></div>
+      <p class="unter">seit ${datum(u.erstellt)} · ${ganz(summe)} Aktionen${n.unbegrenzt ? "" : " · frei ab " + datum(n.auffuellung)}<br>
+        ${u.rolle === "inhaber" ? "" : u.zustimmungen?.nutzung ? `Zugestimmt am ${zeit(u.zustimmungen.nutzung.zeit)} (Stand ${datum(u.zustimmungen.nutzung.version)})` : "Hat noch nicht zugestimmt"}</p></div>
       <button class="x" onclick="zu()" aria-label="Schließen">×</button></div>
     <h2>Nutzung diesen Monat</h2>
     <div class="raster r3 drei">${MREIHE.map(id => { const m = n.modelle[id];
@@ -745,7 +874,7 @@ async function nutzerDetail(id) {
     ${d.verlauf.length ? d.verlauf.map(e => eintragZeile(e, false)).join("") : `<div class="leer">Noch keine Aktionen.</div>`}
     <h2 style="margin-top:28px">Buchungen</h2>
     ${d.buchungen.length ? `<div class="tabelle"><table><tbody>${d.buchungen.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}</tbody></table></div>` : `<div class="leer">Noch keine.</div>`}`;
-  $("#detail").classList.add("offen");
+  blattAuf();
   $("#blatt").scrollTop = 0;
 }
 document.addEventListener("keydown", e => { if (e.key === "Escape") zu(); });
@@ -814,6 +943,13 @@ async function chatStarten(bereich) {
   $("#chat-vorschlaege").innerHTML = d.nachrichten.length ? "" : (VORSCHLAEGE[bereich] || VORSCHLAEGE.allgemein).map(v => `<button class="chip" type="button">${esc(v)}</button>`).join("");
   $$("#chat-vorschlaege .chip").forEach(c => c.onclick = () => chatSenden(c.textContent));
   const feld = $("#chat-text"), knopf = $("#chat-senden");
+  feld.disabled = knopf.disabled = false;
+  if (d.bereit && !ICHDATEN.chat_hinweis) {
+    feld.disabled = knopf.disabled = true;
+    $("#chat-vorschlaege").innerHTML = `<div class="risiko" style="width:100%"><p style="margin:0 0 10px">${esc(ICHDATEN.chat_hinweis_text)}
+      <a href="#datenschutz" style="color:inherit">Datenschutz</a></p><button class="knopf hell" type="button" id="chat-ok">Verstanden</button></div>`;
+    $("#chat-ok").onclick = async () => { try { await api("/api/zustimmung", {art: "chat"}); ICHDATEN.chat_hinweis = true; chatStarten(bereich); } catch (err) { toast(err.message); } };
+  }
   if (!d.bereit) {
     feld.disabled = knopf.disabled = true;
     feld.placeholder = "Chat noch nicht eingerichtet";
@@ -845,6 +981,7 @@ async function chatSenden(text) {
     laden().catch(() => {});
   } catch (err) {
     const d = $("#denkt"); if (d) d.outerHTML = `<div class="msg-hinweis">${esc(err.message)}</div>`;
+    if (err.chat_hinweis) { ICHDATEN.chat_hinweis = false; chatStarten(chatBereich); }
     if (!err.anmelden) feld.value = text;
   } finally {
     chatLaeuft = false; if (document.body.contains(knopf)) knopf.disabled = false;
@@ -871,7 +1008,8 @@ const ANSICHT = {
     const s = STAND, q = s.quelle;
     const bereit = MREIHE.filter(m => s.modelle[m].vorhanden).length;
     const summe = Object.values(s.zaehler).reduce((a, b) => a + b, 0);
-    $("#haupt").innerHTML = kopf(`Hallo, ${esc(ICH.name)}`, "Alles, was deine KI weiß, kann und getan hat.", pille()) + `
+    $("#haupt").innerHTML = kopf(`Hallo, ${esc(ICH.name)}`, "Alles, was deine KI weiß, kann und getan hat.", pille()) +
+      (s.betreiber_fehlt && s.betreiber_fehlt.length ? `<div class="warnung"><b>Impressum unvollständig.</b> Es fehlt: ${esc(s.betreiber_fehlt.join(", "))}. Bevor andere die Seite sehen, unter <a href="#rechtliches" style="color:inherit">Rechtliches</a> eintragen.</div>` : "") + `
       <div class="raster r4">
         <div class="karte"><div class="etikett">Abo</div><div class="wert">${esc(s.nutzung.abo_name)}</div><div class="etikett">${inhaber() ? "keine Grenzen" : "frei ab " + datum(s.nutzung.auffuellung)}</div></div>
         <div class="karte"><div class="etikett">Modelle</div><div class="wert num">${bereit} / 3</div><div class="etikett">trainiert und bereit</div></div>
@@ -993,12 +1131,12 @@ const ANSICHT = {
 
   async verlauf() {
     await laden();
-    let filter = ""; try { filter = sessionStorage.getItem("filter") || ""; } catch (_) {}
+    let filter = VERLAUF_FILTER;
     $("#haupt").innerHTML = kopf("Verlauf", inhaber() ? "Jede Aktion aller Nutzer, mit allen Details." : "Jede deiner Aktionen, mit allen Details.", pille()) + `
       <div class="zeile" style="margin-bottom:16px">${[["", "Alle"], ...Object.entries(BEREICH)].map(([id, n]) =>
         `<button class="chip ${id === filter ? "an" : ""}" data-f="${id}">${n}${id && STAND.zaehler[id] ? " · " + STAND.zaehler[id] : ""}</button>`).join("")}</div>
       <div class="karte" id="liste"><div class="leer"><span class="lade"></span></div></div>`;
-    $$("[data-f]").forEach(c => c.onclick = () => { try { sessionStorage.setItem("filter", c.dataset.f); } catch (_) {} ANSICHT.verlauf(); });
+    $$("[data-f]").forEach(c => c.onclick = () => { VERLAUF_FILTER = c.dataset.f; ANSICHT.verlauf(); });
     const l = await api("/api/verlauf" + (filter ? "?bereich=" + filter : ""));
     $("#liste").innerHTML = l.length ? l.map(eintragZeile).join("") : `<div class="leer">Noch nichts passiert.</div>`;
   },
@@ -1050,6 +1188,11 @@ const ANSICHT = {
         <tr><td style="color:var(--muted)">Preis</td>${Object.values(n.abos).map(a => `<td class="r" style="color:var(--muted)">${a.preis == null ? "folgt" : esc(a.preis)}</td>`).join("")}</tr>
         </tbody></table></div>
         <p class="hinweis">${n.unbegrenzt ? "Abos vergibst du unter Nutzer." : "Das Abo ändert der Inhaber. Bezahlung kommt später."}</p></div>
+      <div class="karte"><h2>Was es kostet</h2><ul class="gruende">
+        <li>Derzeit ist die Nutzung kostenlos.</li>
+        <li>Sobald es Preise gibt, siehst du vor jedem Abschluss den Endpreis inklusive Umsatzsteuer. Keine versteckten Gebühren.</li>
+        <li>Ist ein Kontingent aufgebraucht, pausiert nur dieses Modell oder der Chat. Es gibt keine Nachzahlung.</li>
+        <li>Ein Abo lässt sich jederzeit zum Ende des Zeitraums kündigen. Einzelheiten in den <a href="#nutzungsbedingungen" style="color:inherit">Nutzungsbedingungen</a> und unter <a href="#widerruf" style="color:inherit">Widerruf</a>.</li></ul></div>
       <div class="raster r2 immer-voll">
         <div class="karte"><h2>Was kostet was</h2><table><thead><tr><th>Aktion</th>${MREIHE.map(id => `<th class="r">${esc(n.modelle[id].name)}</th>`).join("")}</tr></thead><tbody>
           ${Object.entries(n.kosten).map(([a, k]) => `<tr><td>${esc(n.aktionen[a])}</td>${MREIHE.map(id => `<td class="r num">${k[id]}</td>`).join("")}</tr>`).join("")}
@@ -1058,6 +1201,65 @@ const ANSICHT = {
         <div class="karte"><h2>Buchungen</h2>${b.length ? `<div class="tabelle" style="max-height:360px;overflow:auto"><table><tbody>
           ${b.map(x => `<tr><td class="num" style="color:var(--muted);white-space:nowrap">${zeit(x.zeit)}</td><td>${esc(x.text)}</td><td class="r num"><b>${x.menge > 0 ? "+" : "−"}${ganz(Math.abs(x.menge))}</b></td></tr>`).join("")}
           </tbody></table></div>` : `<div class="leer">Noch keine.</div>`}</div></div>`;
+  },
+
+  async konto() {
+    await laden();
+    const n = ICH, z = n.zustimmungen || {};
+    $("#haupt").innerHTML = kopf("Konto", "Deine Daten, dein Passwort, deine Rechte.", pille()) + `
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Profil</h2><dl class="paare">
+          <dt>Name</dt><dd>${esc(n.name)}</dd><dt>Rolle</dt><dd>${n.rolle === "inhaber" ? "Inhaber" : "Kunde"}</dd>
+          <dt>Abo</dt><dd>${esc(STAND.nutzung.abo_name)}</dd><dt>Konto seit</dt><dd>${datum(n.erstellt)}</dd>
+          ${n.rolle === "inhaber" ? "" : `<dt>Bedingungen</dt><dd>${z.nutzung ? "zugestimmt am " + zeit(z.nutzung.zeit) : "–"}</dd>`}
+          <dt>Chat-Hinweis</dt><dd>${z.chat ? "bestätigt am " + zeit(z.chat.zeit) : "noch nicht bestätigt"}</dd>
+          <dt>Gespeichert</dt><dd>kein E-Mail, keine Anschrift, Passwort nur als Hash</dd></dl></div>
+        <div class="karte"><h2>Passwort ändern</h2><form id="pwform" class="raster" style="gap:10px">
+          <label class="etikett" for="pa">Bisheriges Passwort</label><input class="feld" style="width:100%" type="password" id="pa" autocomplete="current-password" required>
+          <label class="etikett" for="pn">Neues Passwort (mind. 8 Zeichen)</label><input class="feld" style="width:100%" type="password" id="pn" minlength="8" autocomplete="new-password" required>
+          <div><button class="knopf" type="submit">Passwort ändern</button></div></form></div></div>
+      <div class="raster r2 immer-voll">
+        <div class="karte"><h2>Meine Daten</h2><p class="etikett" style="margin-top:0">Alles, was die KI über dich gespeichert hat, als Datei: Konto, Verbrauch, Verlauf, Chats und eigene Indikatoren (Art. 15 und 20 DSGVO).</p>
+          <button class="knopf hell" type="button" id="export">Meine Daten herunterladen</button></div>
+        <div class="karte"><h2>Konto löschen</h2>${n.rolle === "inhaber"
+          ? `<p class="etikett" style="margin-top:0">Das Inhaber-Konto lässt sich nicht über die Oberfläche löschen. Dafür den Ordner <code class="mono">ki/</code> auf dem Rechner entfernen.</p>`
+          : `<p class="etikett" style="margin-top:0">Löscht sofort und endgültig dein Konto mit Verbrauch, Verlauf, Chats und eigenen Indikatoren (Art. 17 DSGVO).</p>
+            <label class="etikett" for="lp">Zur Sicherheit dein Passwort</label>
+            <div class="zeile" style="margin-top:6px"><input class="feld" type="password" id="lp" autocomplete="current-password" style="flex:1;min-width:160px"><button class="knopf hell" type="button" id="loeschen">Konto löschen</button></div>`}</div></div>
+      <div class="karte"><h2>Speicher im Browser</h2><p class="etikett" style="margin-top:0">Aktuell: ${speicherWahl() === "komfort" ? "Komfort-Einstellungen erlaubt" : speicherWahl() === "notwendig" ? "nur Notwendiges" : "noch nicht entschieden"}.</p>
+        <button class="knopf hell" type="button" onclick="speicherHinweis(true)">Ändern</button></div>
+      <div class="karte"><h2>Rechtliches</h2>${fusslinks()}</div>`;
+    $("#pwform").onsubmit = async e => { e.preventDefault();
+      try { await api("/api/konto/passwort", {alt: $("#pa").value, neu: $("#pn").value}); $("#pwform").reset(); toast("Passwort geändert."); } catch (err) { toast(err.message); } };
+    $("#export").onclick = () => datenHerunterladen();
+    const l = $("#loeschen");
+    if (l) l.onclick = async () => {
+      if (l.dataset.sicher !== "1") { l.dataset.sicher = "1"; l.textContent = "Wirklich endgültig löschen?"; setTimeout(() => { if (document.body.contains(l)) { l.dataset.sicher = ""; l.textContent = "Konto löschen"; } }, 5000); return; }
+      try { await api("/api/konto/loeschen", {passwort: $("#lp").value}); ICH = null; toast("Dein Konto und alle Daten sind gelöscht."); history.replaceState(null, "", location.pathname); start(); }
+      catch (err) { toast(err.message); l.dataset.sicher = ""; l.textContent = "Konto löschen"; } };
+  },
+
+  async rechtliches() {
+    await laden();
+    const b = await api("/api/betreiber");
+    $("#haupt").innerHTML = kopf("Rechtliches", "Deine Angaben für Impressum und Datenschutz. Sie erscheinen automatisch in den Rechtstexten.", pille()) + `
+      ${b.fehlend.length ? `<div class="warnung"><b>Noch unvollständig.</b> Es fehlt: ${esc(b.fehlend.join(", "))}.</div>` : `<div class="karte"><b>Impressum vollständig.</b> <span class="etikett">Die Pflichtangaben sind eingetragen.</span></div>`}
+      <div class="karte"><h2>Betreiber</h2><form id="bform" class="raster" style="gap:12px">
+        ${Object.entries(b.felder).map(([k, [name, pflicht]]) => `<div><label class="etikett" for="b-${k}">${esc(name)}${pflicht ? " *" : ""}</label>
+          ${k === "anschrift" ? `<textarea class="feld" id="b-${k}" rows="3" style="width:100%;height:auto;padding:10px 12px">${esc(b.daten[k])}</textarea>` : `<input class="feld" id="b-${k}" style="width:100%" value="${esc(b.daten[k])}" ${k === "email" ? 'type="email"' : ""}>`}</div>`).join("")}
+        <div><button class="knopf" type="submit">Speichern</button> <span class="etikett">* Pflicht für das Impressum</span></div></form></div>
+      <div class="karte"><h2>Vor dem Start prüfen lassen</h2>
+        <p class="etikett" style="margin-top:0">Die Texte sind sorgfältige Vorlagen, aber keine Rechtsberatung. Vor dem Start mit zahlenden Kunden sollte eine Fachperson besonders diese Punkte prüfen:</p>
+        <ul class="gruende">${b.pruefen.map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>
+      <div class="karte"><h2>Was eingebaut ist</h2><ul class="gruende">
+        <li>Rechtstexte für alle sichtbar, auch ohne Anmeldung: ${Object.entries(RECHT).map(([id, n]) => `<a href="#${id}" style="color:inherit">${n}</a>`).join(", ")}.</li>
+        <li>Kunden bestätigen beim ersten Anmelden Alter (ab ${ICHDATEN.mindestalter}), Nutzungsbedingungen und Datenschutz; Zeitpunkt und Fassung werden gespeichert.</li>
+        <li>Vor der ersten Chat-Nachricht ein Hinweis, dass Nachrichten an Anthropic gehen; der Name wird nicht mitgeschickt.</li>
+        <li>Datenexport und Kontolöschung für jeden selbst unter Konto. Verlauf und Chats werden nach ${b.aufbewahrung_tage} Tagen automatisch gelöscht.</li>
+        <li>Kein Tracking, keine Inhalte von fremden Servern; Komfort-Speicher im Browser nur mit Zustimmung.</li></ul></div>`;
+    $("#bform").onsubmit = async e => { e.preventDefault();
+      const neu = Object.fromEntries(Object.keys(b.felder).map(k => [k, $("#b-" + k).value]));
+      try { await api("/api/betreiber", neu); toast("Gespeichert."); ANSICHT.rechtliches(); } catch (err) { toast(err.message); } };
   },
 
   async nutzer() {
@@ -1069,7 +1271,8 @@ const ANSICHT = {
         <div><label for="nn">Name</label><input class="feld" id="nn" required></div>
         <div><label for="np">Passwort (mind. 8)</label><input class="feld" id="np" type="password" minlength="8" required autocomplete="new-password"></div>
         <div><label for="na">Abo</label><select class="feld" id="na">${Object.entries(abos).map(([id, a]) => `<option value="${id}">${esc(a.name)}</option>`).join("")}</select></div>
-        <div><button class="knopf" type="submit">Anlegen</button></div></form></div>
+        <div><button class="knopf" type="submit">Anlegen</button></div></form>
+        <p class="hinweis">Beim ersten Anmelden bestätigt die Person, dass sie mindestens ${ICHDATEN.mindestalter} ist, und stimmt Nutzungsbedingungen und Datenschutz zu. Löschen entfernt das Konto mit Verlauf, Chats und Indikatoren.</p></div>
       <div class="karte"><div class="tabelle"><table><thead><tr><th>Name</th><th>Abo</th>${MREIHE.map(id => `<th>${esc(STAND.modelle[id].name)}</th>`).join("")}<th>Chat</th><th class="r">Aktionen</th><th></th></tr></thead><tbody>
         ${liste.map(u => `<tr><td><button class="namelink" data-zeig="${u.id}">${esc(u.name)}</button><div class="etikett">seit ${datum(u.erstellt)}</div></td>
           <td>${u.rolle === "inhaber" ? `<span class="marke-klein voll">Inhaber</span>` : `<select class="feld" data-abo="${u.id}" style="height:34px">${Object.entries(abos).map(([id, a]) => `<option value="${id}" ${id === u.abo ? "selected" : ""}>${esc(a.name)}</option>`).join("")}</select>`}</td>
@@ -1093,7 +1296,7 @@ const ANSICHT = {
         <form id="pwform"><label class="etikett" for="pwneu" style="display:block;margin-bottom:6px">Neues Passwort (mind. 8 Zeichen)</label>
           <input class="feld" id="pwneu" type="password" minlength="8" required autocomplete="new-password" style="width:100%">
           <button class="knopf" type="submit" style="margin-top:16px">Passwort setzen</button></form>`;
-      $("#detail").classList.add("offen");
+      blattAuf();
       $("#pwneu").focus();
       $("#pwform").onsubmit = async e => { e.preventDefault();
         try { await api("/api/nutzer/passwort", {id: k.dataset.pw, passwort: $("#pwneu").value}); zu(); toast("Passwort geändert. Bestehende Anmeldungen sind beendet."); }
@@ -1106,9 +1309,19 @@ const ANSICHT = {
         setTimeout(() => { if (document.body.contains(k)) { k.dataset.sicher = ""; k.classList.remove("an"); k.textContent = "Löschen"; } }, 4000);
         return;
       }
-      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast(`${k.dataset.name} gelöscht. Der Verlauf bleibt.`); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
+      try { await api("/api/nutzer/loeschen", {id: k.dataset.weg}); toast(`${k.dataset.name} und alle Daten dazu sind gelöscht.`); ANSICHT.nutzer(); } catch (err) { toast(err.message); } });
   },
 };
+
+async function datenHerunterladen() {
+  try {
+    const r = await fetch("/api/konto/export");
+    if (!r.ok) throw new Error((await r.json().catch(() => ({}))).fehler || "Export fehlgeschlagen.");
+    const url = URL.createObjectURL(await r.blob()), a = document.createElement("a");
+    a.href = url; a.download = "bengx-ki-meine-daten.json"; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  } catch (err) { toast(err.message); }
+}
 
 /* ---------- Training beobachten ---------- */
 let beobachter = null, lief = false;

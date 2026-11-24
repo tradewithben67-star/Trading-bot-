@@ -8,9 +8,10 @@ die letzte Zeile verloren.
 from __future__ import annotations
 
 import json
+import os
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 
@@ -76,6 +77,32 @@ class Verlauf:
                 if e["bereich"] == bereich and (not nutzer or e.get("nutzer") == nutzer):
                     return e
         return None
+
+    def _schreiben(self, eintraege: list[dict]) -> None:
+        tmp = self.pfad.with_suffix(".tmp")
+        with tmp.open("w", encoding="utf-8") as fh:
+            for e in eintraege:
+                fh.write(json.dumps(e, ensure_ascii=False) + "\n")
+        os.replace(tmp, self.pfad)
+
+    def nutzer_loeschen(self, nid: str) -> int:
+        """Alle Einträge eines Nutzers endgültig entfernen (Art. 17 DSGVO)."""
+        with self._sperre:
+            alle = self._alle()
+            rest = [e for e in alle if e.get("nutzer") != nid]
+            if len(rest) != len(alle):
+                self._schreiben(rest)
+            return len(alle) - len(rest)
+
+    def bereinigen(self, tage: int) -> int:
+        """Einträge, die älter als `tage` sind, entfernen."""
+        grenze = (datetime.now(timezone.utc) - timedelta(days=tage)).isoformat(timespec="seconds")
+        with self._sperre:
+            alle = self._alle()
+            rest = [e for e in alle if e.get("zeit", "") >= grenze]
+            if len(rest) != len(alle):
+                self._schreiben(rest)
+            return len(alle) - len(rest)
 
     def zaehlen(self, nutzer: str | None = None) -> dict[str, int]:
         with self._sperre:

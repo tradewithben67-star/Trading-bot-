@@ -114,6 +114,22 @@ class Nutzerliste:
             self._sichern()
             return _oeffentlich(n)
 
+    def zustimmen(self, nid: str, art: str, version: str) -> dict:
+        """Hält fest, wann jemand etwas bestätigt hat (Nachweis nach Art. 7 Abs. 1 DSGVO)."""
+        jetzt = datetime.now(timezone.utc).isoformat(timespec="seconds")
+        with self._sperre:
+            n = next((n for n in self._d if n["id"] == nid), None)
+            if n is None:
+                raise ValueError("Nutzer nicht gefunden.")
+            n.setdefault("zustimmungen", {})[art] = {"version": version, "zeit": jetzt}
+            self._sichern()
+            return _oeffentlich(n)
+
+    def passwort_stimmt(self, nid: str, passwort: str) -> bool:
+        with self._sperre:
+            n = next((n for n in self._d if n["id"] == nid), None)
+        return bool(n) and hash_pruefen(passwort or "", n["hash"])
+
     def abo_setzen(self, nid: str, abo: str) -> dict:
         if abo not in ABOS:
             raise ValueError(f"Unbekanntes Abo: {abo}. Möglich: {', '.join(ABOS)}")

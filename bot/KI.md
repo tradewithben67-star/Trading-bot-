@@ -77,6 +77,35 @@ unten? Formeln werden sicher ausgewertet (eigene Zerlegung, kein `eval`).
 Man kann Indikatoren auch einfach im Chat beschreiben; die KI baut und prüft
 sie dann selbst.
 
+## Recht, Datenschutz, Barrierefreiheit
+
+Die Oberfläche bringt alles mit, was eine App vor dem Start braucht. Die
+Rechtstexte sind **Vorlagen** und keine Rechtsberatung. Vor dem Start mit
+zahlenden Kunden sollte eine Fachperson sie prüfen; die wichtigsten Punkte
+dafür stehen in der Oberfläche unter **Rechtliches** und in
+`bengx_ki/rechtliches.py` (`PRUEFEN`).
+
+| Punkt | Umsetzung |
+| --- | --- |
+| Impressum, Betreiberangaben | Seite „Impressum“ (§ 5 DDG); Angaben trägt der Inhaber unter **Rechtliches** ein, bis dahin Warnung auf der Übersicht und beim Start mit `--offen` |
+| Datenschutzerklärung | Seite „Datenschutz“: Daten, Zwecke, Rechtsgrundlagen, Speicherdauer, Anthropic als Empfänger, Drittland, Rechte |
+| Nutzungsbedingungen | Seite „Nutzungsbedingungen“, mit Risikohinweis und „keine Anlageberatung“ |
+| Widerruf und Erstattung | Seite „Widerruf“: Widerrufsbelehrung, Muster-Formular, automatische Gutschrift bei Fehlern |
+| Cookies, Cookie-Hinweis | Seite „Cookies“; Hinweis mit zwei gleichwertigen Knöpfen „Nur Notwendiges“ / „Komfort erlauben“; ohne Zustimmung landet nur Notwendiges im Browser |
+| Zustimmung in Formularen | Beim ersten Anmelden drei leere Kästchen (Alter, Bedingungen, Datenschutz); Zeitpunkt und Fassung werden gespeichert; neue Fassung = neue Zustimmung |
+| Altersgrenze | ab 18, als Pflicht-Bestätigung |
+| Nur nötige Daten | kein E-Mail, keine Anschrift von Kunden, Passwort nur als Hash, keine IP-Protokolle; der Name geht nicht an Anthropic |
+| Drittanbieter | nur Anthropic (Chat) und PyTorch (läuft lokal); die Seite lädt nichts von fremden Servern (Content-Security-Policy) |
+| Keine Dark Patterns | gleichwertige Knöpfe, keine vorausgewählten Kästchen, Löschen ohne Hürden, Grenzen klar benannt, Modellwahl springt nicht heimlich um |
+| Keine versteckten Kosten | Abschnitt „Was es kostet“ unter Nutzung & Abo |
+| Keine Fake-Bewertungen, keine unbelegten Versprechen | keine Bewertungen; Testergebnisse als Test gekennzeichnet; Risikohinweis bei Anmeldung und jeder Analyse |
+| Alternativtexte | Charts mit Beschreibung für Screenreader, Symbole als Schmuck markiert |
+| Kontrast | Textfarben mit mindestens 4,5 : 1 in Hell und Dunkel (WCAG AA) |
+| Tastatur | sichtbarer Fokus, „Zum Inhalt springen“, Einträge per Enter, Detailblatt als Dialog mit Fokusrückgabe, Escape schließt |
+| Abmeldelink | es gibt keine Newsletter oder Werbe-Nachrichten; in der Datenschutzerklärung festgehalten |
+| Bildrechte | die Oberfläche nutzt keine Fremdbilder |
+| Datenlöschung | Konto → „Meine Daten herunterladen“ (JSON) und „Konto löschen“, sofort und vollständig; Verlauf und Chats nach 365 Tagen automatisch gelöscht |
+
 ## Drei Modelle
 
 | Modell | Blick | Aufbau | Gewichte | Verbrauch |
@@ -201,6 +230,7 @@ Wochentag.
 | `dienste.py` | Aktionen | Analyse mit Chart und Begründung, Indikatoren, Strategie-Test |
 | `eigene.py` | Baukasten | eigene Indikatoren aus Formeln, sicher ausgewertet und gemessen |
 | `chat.py` | Chat | Claude mit den eigenen Werkzeugen, Gespräche je Nutzer und Bereich |
+| `rechtliches.py` | Recht | Impressum, Datenschutz, Nutzungsbedingungen, Widerruf, Cookies; Betreiberangaben |
 | `modelle.py` | Modellfamilie | Mini, Standard, Max: Größe und Verbrauch |
 | `konto.py` | Nutzung | Kontingente je Modell und Abo, Buchungen |
 | `nutzer.py` | Nutzer | Konten, Passwort-Hashes, Sitzungen |

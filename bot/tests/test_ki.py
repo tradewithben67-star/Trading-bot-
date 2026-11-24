@@ -172,6 +172,23 @@ class TestNutzer(unittest.TestCase):
 
 
 class TestVerlauf(unittest.TestCase):
+    def test_loeschen_und_aufbewahrung(self):
+        import json
+        import tempfile
+        from bengx_ki.verlauf import Verlauf
+        with tempfile.TemporaryDirectory() as tmp:
+            v = Verlauf(Path(tmp) / "v.jsonl")
+            v.eintragen("analyse", "A", {"kurz": "a"}, nutzer={"id": "x", "name": "X"})
+            v.eintragen("analyse", "B", {"kurz": "b"}, nutzer={"id": "y", "name": "Y"})
+            alt = {"id": "alt", "zeit": "2020-01-01T00:00:00+00:00", "bereich": "analyse", "titel": "Alt",
+                   "nutzer": "y", "daten": {}}
+            with v.pfad.open("a") as fh:
+                fh.write(json.dumps(alt) + "\n")
+            self.assertEqual(v.bereinigen(365), 1)
+            self.assertEqual(v.nutzer_loeschen("x"), 1)
+            self.assertEqual([e["titel"] for e in v.liste()], ["B"])
+
+
     def test_eintragen_lesen_filtern(self):
         import tempfile
         from bengx_ki.verlauf import Verlauf
@@ -187,6 +204,11 @@ class TestVerlauf(unittest.TestCase):
             self.assertEqual(v.liste("analyse")[0]["kurz"], "eins")
             self.assertEqual(v.holen(a["id"])["daten"]["gross"], [1] * 100)
             self.assertEqual(v.zaehlen(), {"analyse": 1, "indikatoren": 1})
+
+
+def json_text(d):
+    import json
+    return json.dumps(d, ensure_ascii=False)
 
 
 @unittest.skipUnless(HAT_TORCH, "PyTorch nicht installiert")
@@ -224,10 +246,13 @@ class TestServer(unittest.TestCase):
         except urllib.error.HTTPError as e:
             return e.code, json.loads(e.read() or b"null"), ""
 
-    def einrichten(self):
+    def einrichten(self, zustimmen=True):
         _, _, chef = self.rufen("/api/einrichten", {"name": "Ben", "passwort": "geheim123"})
         self.rufen("/api/nutzer", {"name": "Anna", "passwort": "passwort9", "abo": "start"}, chef)
         _, _, kunde = self.rufen("/api/anmelden", {"name": "Anna", "passwort": "passwort9"})
+        if zustimmen:
+            self.rufen("/api/zustimmung", {"art": "nutzung", "volljaehrig": True,
+                                           "nutzungsbedingungen": True, "datenschutz": True}, kunde)
         return chef, kunde
 
     def test_ohne_anmeldung_nichts(self):
@@ -308,6 +333,63 @@ class TestServer(unittest.TestCase):
         self.assertEqual(self.rufen(f"/api/nutzer/{anna['id']}", keks=kunde)[0], 403)
         self.assertEqual(self.rufen("/api/nutzer/gibtsnicht", keks=chef)[0], 404)
 
+    def test_ohne_zustimmung_nur_zustimmen_export_loeschen(self):
+        import json
+        _, kunde = self.einrichten(zustimmen=False)
+        self.assertTrue(self.rufen("/api/ich", keks=kunde)[1]["zustimmung_noetig"])
+        status, d, _ = self.rufen("/api/indikatoren", {}, kunde)
+        self.assertEqual((status, d.get("zustimmung")), (403, True))
+        self.assertEqual(self.rufen("/api/konto/export", keks=kunde)[0], 200)
+        # Halbe Zustimmung reicht nicht, Kinder sind ausgeschlossen.
+        status, _, _ = self.rufen("/api/zustimmung", {"art": "nutzung", "volljaehrig": False,
+                                                      "nutzungsbedingungen": True, "datenschutz": True}, kunde)
+        self.assertEqual(status, 400)
+        self.rufen("/api/zustimmung", {"art": "nutzung", "volljaehrig": True,
+                                       "nutzungsbedingungen": True, "datenschutz": True}, kunde)
+        ich = self.rufen("/api/ich", keks=kunde)[1]
+        self.assertFalse(ich["zustimmung_noetig"])
+        self.assertIn("zeit", ich["nutzer"]["zustimmungen"]["nutzung"])
+        self.assertEqual(self.rufen("/api/indikatoren", {}, kunde)[0], 200)
+        json.dumps(ich)
+
+    def test_rechtliches_oeffentlich_betreiber_nur_inhaber(self):
+        for seite in ("impressum", "datenschutz", "nutzungsbedingungen", "widerruf", "cookies"):
+            status, d, _ = self.rufen(f"/api/rechtliches?seite={seite}")
+            self.assertEqual(status, 200)
+            self.assertTrue(d["bloecke"])
+        self.assertFalse(self.rufen("/api/rechtliches?seite=impressum")[1]["vollstaendig"])
+        chef, kunde = self.einrichten()
+        self.assertEqual(self.rufen("/api/betreiber", keks=kunde)[0], 403)
+        self.rufen("/api/betreiber", {"name": "Ben Muster", "anschrift": "Musterweg 1, 12345 Musterstadt",
+                                      "email": "kontakt@example.org"}, chef)
+        d = self.rufen("/api/rechtliches?seite=impressum")[1]
+        self.assertTrue(d["vollstaendig"])
+        self.assertIn("Musterweg 1", json_text(d))
+        self.assertEqual(self.rufen("/api/betreiber", {"email": "keine-mail"}, chef)[0], 400)
+
+    def test_export_und_konto_loeschen_entfernt_alles(self):
+        chef, kunde = self.einrichten()
+        self.rufen("/api/indikatoren", {}, kunde)
+        self.rufen("/api/indikatoren/eigene", {"name": "EMA 9", "formel": "ema(close, 9)", "anzeige": "chart"}, kunde)
+        status, d, _ = self.rufen("/api/konto/export", keks=kunde)
+        self.assertEqual((status, len(d["verlauf"]), d["eigene_indikatoren"][0]["name"]), (200, 1, "EMA 9"))
+        self.assertNotIn("hash", d["konto"])
+        self.assertEqual(self.rufen("/api/konto/loeschen", {"passwort": "falsch"}, kunde)[0], 400)
+        self.assertEqual(self.rufen("/api/konto/loeschen", {"passwort": "passwort9"}, kunde)[0], 200)
+        self.assertEqual(self.rufen("/api/stand", keks=kunde)[0], 401)
+        self.assertEqual(len(self.rufen("/api/verlauf", keks=chef)[1]), 0)
+        self.assertEqual(self.rufen("/api/konto/loeschen", {"passwort": "geheim123"}, chef)[0], 400)
+
+    def test_passwort_aendern_und_sicherheits_header(self):
+        import urllib.request
+        _, kunde = self.einrichten()
+        self.assertEqual(self.rufen("/api/konto/passwort", {"alt": "falsch", "neu": "neuesPasswort"}, kunde)[0], 400)
+        self.assertEqual(self.rufen("/api/konto/passwort", {"alt": "passwort9", "neu": "neuesPasswort"}, kunde)[0], 200)
+        self.assertEqual(self.rufen("/api/anmelden", {"name": "Anna", "passwort": "neuesPasswort"})[0], 200)
+        with urllib.request.urlopen(self.basis + "/") as r:
+            self.assertIn("default-src 'self'", r.headers["Content-Security-Policy"])
+            self.assertEqual(r.headers["X-Content-Type-Options"], "nosniff")
+
     def test_abmelden(self):
         chef, _ = self.einrichten()
         self.rufen("/api/abmelden", {}, chef)
@@ -365,6 +447,9 @@ class TestChat(unittest.TestCase):
             speichern(paket, self.app.modelle[m].pfad)
         self.chef = self.app.nutzer.anlegen("Ben", "geheim123")
         self.anna = self.app.nutzer.anlegen("Anna", "passwort9", "start")
+        for n in (self.chef, self.anna):
+            self.app.nutzer.zustimmen(n["id"], "chat", "1")
+        self.chef, self.anna = self.app.nutzer.holen(self.chef["id"]), self.app.nutzer.holen(self.anna["id"])
 
     def tearDown(self):
         self.claude.shutdown()
@@ -396,6 +481,7 @@ class TestChat(unittest.TestCase):
         self.assertEqual(erste["body"]["model"], "claude-opus-5-5")
         self.assertIn("server-side-fallback-2026-07-01", erste["beta"])
         self.assertTrue(erste["body"]["messages"][0]["content"].startswith("[Seite: Analyse"))
+        self.assertNotIn("Anna", json_text(erste["body"]))        # Name geht nicht an Anthropic
         ergebnis = self.anfragen[1]["body"]["messages"][-1]["content"][0]
         self.assertEqual(ergebnis["tool_use_id"], "toolu_1")
         self.assertIn("gruende", json.loads(ergebnis["content"]))
@@ -427,6 +513,13 @@ class TestChat(unittest.TestCase):
         a = self.app.chat_senden(self.anna, {"bereich": "indikatoren", "text": "Bau mir einen RSI 21"})
         self.assertEqual(self.app.eigene.liste(self.anna["id"])[0]["formel"], "rsi(close, 21)")
         self.assertIn("werte", a["antwort"]["anhaenge"][0]["auswertung"])
+
+    def test_ohne_chat_hinweis_kein_chat(self):
+        from bengx_ki.server import ChatHinweisFehlt
+        neu = self.app.nutzer.anlegen("Neu", "passwort9", "pro")
+        with self.assertRaises(ChatHinweisFehlt):
+            self.app.chat_senden(neu, {"bereich": "allgemein", "text": "Hallo"})
+        self.assertEqual(self.anfragen, [])
 
     def test_chat_limit_und_erstattung_bei_fehler(self):
         from bengx_ki.konto import Grenze

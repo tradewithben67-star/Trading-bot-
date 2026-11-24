@@ -51,7 +51,7 @@ Du gibst keine Anlageberatung und versprichst keine Gewinne. Eine Kauf- oder Ver
 
 Form: kurze Absätze, Aufzählungen mit "- " wenn es hilft, **fett** nur sparsam, keine Tabellen, keine Überschriften. Analysen, Tests und Indikatoren, die du mit Werkzeugen erstellst, zeigt die Oberfläche als Karte mit Chart unter deiner Antwort. Zähl deshalb nicht alle Zahlen auf, sondern sag, was sie bedeuten.
 
-Jede Nachricht des Nutzers beginnt mit einer Zeile in eckigen Klammern: auf welcher Seite er gerade ist, sein Name und sein Abo. Diese Zeile kommt von der Oberfläche, nicht vom Nutzer."""
+Jede Nachricht des Nutzers beginnt mit einer Zeile in eckigen Klammern: auf welcher Seite er gerade ist und sein Abo. Diese Zeile kommt von der Oberfläche, nicht vom Nutzer. Den Namen des Nutzers kennst du nicht; frag nicht danach."""
 
 
 def _werkzeug(name: str, beschreibung: str, felder: dict) -> dict:
@@ -280,6 +280,29 @@ class Chat:
             d["faeden"].pop(bereich, None)
             self.speicher.sichern(n["id"], d)
 
+    def alles(self, n: dict) -> dict:
+        """Alle Gespräche eines Nutzers, wie die Seite sie zeigt (für den Datenexport)."""
+        return {b: f["anzeige"] for b, f in self.speicher.laden(n["id"])["faeden"].items()}
+
+    def vergessen(self, nid: str) -> None:
+        p = self.speicher._pfad(nid)
+        if p.exists():
+            p.unlink()
+
+    def bereinigen(self, tage: int) -> None:
+        """Gesprächsfäden, die seit `tage` Tagen ruhen, löschen."""
+        from datetime import timedelta
+        grenze = (datetime.now(timezone.utc) - timedelta(days=tage)).isoformat(timespec="seconds")
+        if not self.speicher.ordner.exists():
+            return
+        for p in self.speicher.ordner.glob("*.json"):
+            d = json.loads(p.read_text(encoding="utf-8"))
+            alt = [b for b, f in d["faeden"].items() if not f["anzeige"] or f["anzeige"][-1].get("zeit", "") < grenze]
+            for b in alt:
+                del d["faeden"][b]
+            if alt:
+                self.speicher.sichern(p.stem, d)
+
     def _sperre_fuer(self, nid: str) -> threading.Lock:
         return self._sperren.setdefault(nid, threading.Lock())
 
@@ -317,7 +340,8 @@ class Chat:
             faden["api"] = []
             faden["anzeige"].append({"rolle": "hinweis", "text": "Neuer Gesprächsfaden. Ältere Nachrichten kennt die KI nicht mehr.", "zeit": _jetzt()})
 
-        kontext = f"[Seite: {BEREICHE[bereich]} · Name: {n['name']} · Abo: {abo_von(n)['name']}]"
+        # Der Name geht nicht an Anthropic: Claude braucht ihn nicht (Datensparsamkeit).
+        kontext = f"[Seite: {BEREICHE[bereich]} · Abo: {abo_von(n)['name']}]"
         neu = [{"role": "user", "content": f"{kontext}\n{text}"}]
         werkzeuge = Werkzeuge(self.app, n)
         antwort_text: list[str] = []

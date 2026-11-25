@@ -13,6 +13,9 @@
 //   4. Auf den Retest des POC warten (Hoch berührt POC +/- Toleranz).
 //      Schließt die Kerze wieder unter dem POC -> SELL-Signal.
 //
+//  Anzeige: alle Zonen von heute + den letzten X Handelstagen (Standard 2),
+//  ältere Zonen werden automatisch gelöscht. Status-Tabelle für die aktuelle Zone.
+//
 //  Pip-Größe Gold: bei den meisten Brokern 1 Pip = 0.10 USD (100 Pips = 10 USD).
 // ============================================================================
 indicator("XAU M15 – Range-POC Breakout & Retest (Sell)", shorttitle="XAU POC Retest Sell", overlay=true, max_bars_back=500, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
@@ -43,6 +46,12 @@ requireRejection = input.bool(true, "Schluss unter Level erforderlich", group=gr
 invalidPips      = input.float(20, "Setup ungültig bei Schluss über Level + (Pips)", minval=0, group=grpT)
 maxBarsRetest    = input.int(40, "Max. Kerzen bis Retest", minval=1, group=grpT)
 
+grpD = "5) Anzeige"
+zoneDays   = input.int(2, "Zonen der letzten X Tage zeigen", minval=0, maxval=10, group=grpD, tooltip="Zeigt alle Zonen von heute plus den letzten X Handelstagen. Ältere werden gelöscht.")
+extendOld  = input.bool(false, "POC-Linien bis zur aktuellen Kerze verlängern", group=grpD, tooltip="Zieht die POCs der vorherigen Zonen als Level nach rechts.")
+showPocLbl = input.bool(true, "POC-Preis beschriften", group=grpD)
+showStatus = input.bool(true, "Status-Tabelle anzeigen", group=grpD)
+
 // ─── Volumenprofil -> POC ────────────────────────────────────────────────────
 // Verteilt das Volumen jeder Kerze anteilig auf die Preisstufen, die sie überdeckt.
 // bars = Anzahl Range-Kerzen, beginnend mit Offset 1 (vorherige Kerze) rückwärts.
@@ -70,17 +79,54 @@ f_poc(int bars, float lo, float hi, int rows) =>
         result := lo + (pocIdx + 0.5) * step
     result
 
+// ─── Aufräumen alter Zonen ──────────────────────────────────────────────────
+// Löscht Zeichnungen, deren Zeitstempel vor 'cutoff' liegt. 'keep' = wie viele
+// der neuesten Objekte (aktive Zone) auf jeden Fall stehen bleiben.
+f_cleanBoxes(array<box> objs, array<int> ts, int cutoff, int keep) =>
+    while array.size(ts) > keep
+        if array.get(ts, 0) >= cutoff
+            break
+        box.delete(array.shift(objs))
+        array.shift(ts)
+    true
+
+f_cleanLines(array<line> objs, array<int> ts, int cutoff, int keep) =>
+    while array.size(ts) > keep
+        if array.get(ts, 0) >= cutoff
+            break
+        line.delete(array.shift(objs))
+        array.shift(ts)
+    true
+
+f_cleanLabels(array<label> objs, array<int> ts, int cutoff) =>
+    while array.size(ts) > 0
+        if array.get(ts, 0) >= cutoff
+            break
+        label.delete(array.shift(objs))
+        array.shift(ts)
+    true
+
 // ─── Zustände ───────────────────────────────────────────────────────────────
 // 0 = suche Seitwärtsphase | 1 = Range aktiv | 2 = warte auf Breakout | 3 = warte auf Retest
-var int   state    = 0
-var int   rStart   = na
-var int   rEnd     = na
-var float rHi      = na
-var float rLo      = na
-var float poc      = na
-var int   stateBar = na
-var line  pocLine  = na
-var box   rBox     = na
+var int   state      = 0
+var int   rStart     = na
+var int   rStartTime = na
+var int   rEnd       = na
+var float rHi        = na
+var float rLo        = na
+var float poc        = na
+var int   stateBar   = na
+var line  pocLine    = na
+var box   rBox       = na
+
+// Speicher für alle gezeichneten Zonen (für die Tages-Begrenzung)
+var array<box>   zBoxes    = array.new<box>()
+var array<int>   zBoxT     = array.new<int>()
+var array<line>  zLines    = array.new<line>()
+var array<int>   zLineT    = array.new<int>()
+var array<label> zLbls     = array.new<label>()
+var array<int>   zLblT     = array.new<int>()
+var array<int>   dayStarts = array.new<int>()
 
 float rangeMax = maxRangePips * pipSize
 float hh = ta.highest(high, minBars)
@@ -106,6 +152,11 @@ if state == 1
         rEnd := bar_index - 1
         poc := f_poc(bar_index - rStart, rLo, rHi, vpRows)
         pocLine := line.new(rStart, poc, bar_index, poc, color=pocColor, width=pocWidth)
+        array.push(zLines, pocLine)
+        array.push(zLineT, rStartTime)
+        if showPocLbl
+            array.push(zLbls, label.new(rStart, poc, "POC " + str.tostring(poc, format.mintick), style=label.style_label_right, color=color.new(color.black, 100), textcolor=pocColor, size=size.small))
+            array.push(zLblT, rStartTime)
         state := 2
         stateBar := bar_index
 
@@ -120,6 +171,8 @@ if state == 2
         state := 3
         stateBar := bar_index
         breakoutNow := true
+        array.push(zLbls, label.new(bar_index, low, "BO", yloc=yloc.belowbar, style=label.style_label_up, color=color.new(color.red, 40), textcolor=color.white, size=size.tiny))
+        array.push(zLblT, rStartTime)
     else if upPx >= refUp + breakoutPips * pipSize
         // Ausbruch nach oben -> kein Sell-Setup
         line.set_style(pocLine, line.style_dashed)
@@ -143,6 +196,8 @@ if state == 3 and bar_index > stateBar
     else if high >= lvl - tol and (not requireRejection or close < lvl)
         sellSignal := true
         state := 0
+        array.push(zLbls, label.new(bar_index, high, "SELL", yloc=yloc.abovebar, style=label.style_label_down, color=color.red, textcolor=color.white, size=size.small))
+        array.push(zLblT, rStartTime)
     else if bar_index - stateBar >= maxBarsRetest
         line.set_style(pocLine, line.style_dashed)
         line.set_color(pocLine, color.gray)
@@ -153,23 +208,50 @@ if state == 0 and bar_index >= minBars and hh - ll <= rangeMax
     int newStart = bar_index - minBars + 1
     if na(rEnd) or newStart > rEnd
         rStart := newStart
+        rStartTime := time[minBars - 1]
         rHi := hh
         rLo := ll
         state := 1
         if showBox
             rBox := box.new(rStart, rHi, bar_index, rLo, border_color=color.new(pocColor, 60), bgcolor=color.new(pocColor, 90))
+            array.push(zBoxes, rBox)
+            array.push(zBoxT, rStartTime)
 
-// ─── Plots & Alerts ─────────────────────────────────────────────────────────
-plotshape(breakoutNow, "Breakout nach unten", shape.triangledown, location.belowbar, color.new(color.red, 30), size=size.tiny, text="BO")
-plotshape(sellSignal, "SELL", shape.labeldown, location.abovebar, color.red, text="SELL", textcolor=color.white, size=size.small)
+// ─── Nur heute + die letzten X Handelstage anzeigen ─────────────────────────
+if timeframe.change("D")
+    array.push(dayStarts, time)
+    if array.size(dayStarts) > zoneDays + 1
+        array.shift(dayStarts)
 
+if array.size(dayStarts) == zoneDays + 1
+    int cutoff = array.get(dayStarts, 0)
+    f_cleanBoxes(zBoxes, zBoxT, cutoff, state == 1 ? 1 : 0)
+    f_cleanLines(zLines, zLineT, cutoff, state >= 2 ? 1 : 0)
+    f_cleanLabels(zLbls, zLblT, cutoff)
+
+// Vorherige POCs optional als Level bis zur aktuellen Kerze ziehen
+if barstate.islast and extendOld and array.size(zLines) > 0
+    for ln in zLines
+        line.set_x2(ln, bar_index)
+
+// ─── Alerts ─────────────────────────────────────────────────────────────────
 alertcondition(sellSignal, "XAU POC Retest SELL", "Gold M15: Retest des POC nach Breakout – SELL-Signal")
 alertcondition(breakoutNow, "XAU Range Breakout", "Gold M15: Breakout nach unten aus der Seitwärtsphase – warte auf Retest")
 
 if sellSignal
     alert("SELL XAUUSD @ " + str.tostring(close, format.mintick) + " | POC " + str.tostring(poc, format.mintick), alert.freq_once_per_bar_close)
 
-// Hinweis, falls nicht auf M15
-var table tfInfo = table.new(position.top_right, 1, 1)
-if barstate.islast and timeframe.period != "15"
-    table.cell(tfInfo, 0, 0, "Indikator ist für den 15-Min-Chart gebaut", text_color=color.white, bgcolor=color.new(color.red, 20))
+// ─── Status der aktuellen Zone ──────────────────────────────────────────────
+var table info = table.new(position.top_right, 2, 4, bgcolor=color.new(color.black, 30), border_width=1)
+if barstate.islast
+    string st = state == 0 ? "Suche Seitwärtsphase" : state == 1 ? "Seitwärtsphase läuft" : state == 2 ? "Warte auf Breakout ↓" : "Warte auf Retest → SELL"
+    if showStatus
+        table.cell(info, 0, 0, "Status", text_color=color.white, text_size=size.small)
+        table.cell(info, 1, 0, st, text_color=color.white, text_size=size.small)
+        table.cell(info, 0, 1, "Range", text_color=color.white, text_size=size.small)
+        table.cell(info, 1, 1, state >= 1 ? str.tostring(rLo, format.mintick) + " – " + str.tostring(rHi, format.mintick) : "–", text_color=color.white, text_size=size.small)
+        table.cell(info, 0, 2, "Aktueller POC", text_color=color.white, text_size=size.small)
+        table.cell(info, 1, 2, state >= 2 ? str.tostring(poc, format.mintick) : "–", text_color=pocColor, text_size=size.small)
+    if timeframe.period != "15"
+        table.cell(info, 0, 3, "Achtung", text_color=color.white, bgcolor=color.red, text_size=size.small)
+        table.cell(info, 1, 3, "Für den 15-Min-Chart gebaut", text_color=color.white, bgcolor=color.red, text_size=size.small)

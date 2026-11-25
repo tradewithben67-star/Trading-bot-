@@ -1,0 +1,175 @@
+//@version=6
+// ============================================================================
+//  XAUUSD M15 – Range-POC Breakout & Retest (SELL)
+//
+//  Logik:
+//   1. Seitwärtsphase finden: mind. N Kerzen (Standard 5), deren Gesamt-Range
+//      (Hoch bis Tief) nicht größer als X Pips ist (Standard 100 Pips).
+//      Die Range wird verlängert, solange neue Kerzen innerhalb dieses Limits bleiben.
+//   2. Sobald die Range endet: Volumenprofil über alle Range-Kerzen berechnen
+//      und NUR den POC (Point of Control) als Linie einzeichnen.
+//   3. Auf einen Breakout nach unten warten (mind. 100 Pips unter Range-Tief bzw. POC).
+//      Ein Ausbruch nach oben verwirft das Setup.
+//   4. Auf den Retest des POC warten (Hoch berührt POC +/- Toleranz).
+//      Schließt die Kerze wieder unter dem POC -> SELL-Signal.
+//
+//  Pip-Größe Gold: bei den meisten Brokern 1 Pip = 0.10 USD (100 Pips = 10 USD).
+// ============================================================================
+indicator("XAU M15 – Range-POC Breakout & Retest (Sell)", shorttitle="XAU POC Retest Sell", overlay=true, max_bars_back=500, max_lines_count=500, max_labels_count=500, max_boxes_count=500)
+
+// ─── Inputs ─────────────────────────────────────────────────────────────────
+grpR = "1) Seitwärtsphase"
+pipSize      = input.float(0.10, "Pip-Größe", minval=0.0001, group=grpR, tooltip="Gold (XAUUSD): meist 0.10 = 1 Pip. Falls dein Broker 0.01 als Pip zählt, hier ändern.")
+minBars      = input.int(5, "Mindestanzahl Kerzen", minval=2, maxval=50, group=grpR, tooltip="Wie viele Kerzen die Seitwärtsphase mindestens dauern muss (5 oder 6).")
+maxRangePips = input.float(100, "Max. Range-Höhe (Pips)", minval=1, group=grpR, tooltip="Die Phase gilt als seitwärts, solange Hoch-Tief nicht größer ist (80–100 Pips).")
+maxRangeBars = input.int(150, "Max. Länge der Range (Kerzen)", minval=5, maxval=400, group=grpR)
+showBox      = input.bool(true, "Range-Box anzeigen", group=grpR)
+
+grpVP = "2) Volumenprofil"
+vpRows   = input.int(40, "Anzahl Preisstufen (Auflösung)", minval=5, maxval=200, group=grpVP)
+pocColor = input.color(color.orange, "POC Farbe", group=grpVP)
+pocWidth = input.int(2, "POC Linienbreite", minval=1, maxval=5, group=grpVP)
+
+grpB = "3) Breakout"
+breakoutPips    = input.float(100, "Min. Breakout (Pips)", minval=1, group=grpB)
+breakoutRef     = input.string("Range-Tief", "Breakout gemessen ab", options=["Range-Tief", "POC"], group=grpB)
+breakoutSrc     = input.string("Schlusskurs", "Breakout bestätigt durch", options=["Schlusskurs", "Docht"], group=grpB, tooltip="Schlusskurs = Kerze muss 100 Pips unter dem Level schließen. Docht = das Tief reicht.")
+maxBarsBreakout = input.int(20, "Max. Kerzen bis Breakout", minval=1, group=grpB)
+
+grpT = "4) Retest & Signal"
+retestRef        = input.string("POC", "Retest-Level", options=["POC", "Range-Tief"], group=grpT)
+retestTolPips    = input.float(10, "Retest-Toleranz (Pips)", minval=0, group=grpT, tooltip="Hoch muss bis auf diese Distanz an das Level herankommen.")
+requireRejection = input.bool(true, "Schluss unter Level erforderlich", group=grpT, tooltip="Signal nur, wenn die Retest-Kerze unter dem Level schließt (Ablehnung).")
+invalidPips      = input.float(20, "Setup ungültig bei Schluss über Level + (Pips)", minval=0, group=grpT)
+maxBarsRetest    = input.int(40, "Max. Kerzen bis Retest", minval=1, group=grpT)
+
+// ─── Volumenprofil -> POC ────────────────────────────────────────────────────
+// Verteilt das Volumen jeder Kerze anteilig auf die Preisstufen, die sie überdeckt.
+// bars = Anzahl Range-Kerzen, beginnend mit Offset 1 (vorherige Kerze) rückwärts.
+f_poc(int bars, float lo, float hi, int rows) =>
+    float step = (hi - lo) / rows
+    float result = (hi + lo) / 2
+    if step > 0 and bars > 0
+        array<float> vols = array.new<float>(rows, 0.0)
+        for i = 1 to bars
+            float h = high[i]
+            float l = low[i]
+            float rawV = nz(volume[i])
+            float v = rawV > 0 ? rawV : 1.0   // kein Volumen verfügbar -> Zeit am Preis
+            int r1 = math.max(0, math.min(rows - 1, math.floor((l - lo) / step)))
+            int r2 = math.max(0, math.min(rows - 1, math.floor((h - lo) / step)))
+            if h - l <= 0
+                array.set(vols, r1, array.get(vols, r1) + v)
+            else
+                for r = r1 to r2
+                    float rowLo = lo + r * step
+                    float rowHi = rowLo + step
+                    float ov = math.max(0.0, math.min(h, rowHi) - math.max(l, rowLo))
+                    array.set(vols, r, array.get(vols, r) + v * ov / (h - l))
+        int pocIdx = array.indexof(vols, array.max(vols))
+        result := lo + (pocIdx + 0.5) * step
+    result
+
+// ─── Zustände ───────────────────────────────────────────────────────────────
+// 0 = suche Seitwärtsphase | 1 = Range aktiv | 2 = warte auf Breakout | 3 = warte auf Retest
+var int   state    = 0
+var int   rStart   = na
+var int   rEnd     = na
+var float rHi      = na
+var float rLo      = na
+var float poc      = na
+var int   stateBar = na
+var line  pocLine  = na
+var box   rBox     = na
+
+float rangeMax = maxRangePips * pipSize
+float hh = ta.highest(high, minBars)
+float ll = ta.lowest(low, minBars)
+
+bool sellSignal  = false
+bool breakoutNow = false
+
+// ─── 1) Range aktiv: verlängern oder abschließen ────────────────────────────
+if state == 1
+    float nHi = math.max(rHi, high)
+    float nLo = math.min(rLo, low)
+    int   len = bar_index - rStart + 1
+    if nHi - nLo <= rangeMax and len <= maxRangeBars
+        rHi := nHi
+        rLo := nLo
+        if showBox
+            box.set_top(rBox, rHi)
+            box.set_bottom(rBox, rLo)
+            box.set_right(rBox, bar_index)
+    else
+        // Range endet mit der vorherigen Kerze -> Volumenprofil berechnen
+        rEnd := bar_index - 1
+        poc := f_poc(bar_index - rStart, rLo, rHi, vpRows)
+        pocLine := line.new(rStart, poc, bar_index, poc, color=pocColor, width=pocWidth)
+        state := 2
+        stateBar := bar_index
+
+// ─── 2) Warten auf Breakout (mind. X Pips nach unten) ──────────────────────
+if state == 2
+    float refLvl = breakoutRef == "POC" ? poc : rLo
+    float refUp  = breakoutRef == "POC" ? poc : rHi
+    float dnPx   = breakoutSrc == "Schlusskurs" ? close : low
+    float upPx   = breakoutSrc == "Schlusskurs" ? close : high
+    line.set_x2(pocLine, bar_index)
+    if dnPx <= refLvl - breakoutPips * pipSize
+        state := 3
+        stateBar := bar_index
+        breakoutNow := true
+    else if upPx >= refUp + breakoutPips * pipSize
+        // Ausbruch nach oben -> kein Sell-Setup
+        line.set_style(pocLine, line.style_dashed)
+        line.set_color(pocLine, color.gray)
+        state := 0
+    else if bar_index - stateBar >= maxBarsBreakout
+        line.set_style(pocLine, line.style_dashed)
+        line.set_color(pocLine, color.gray)
+        state := 0
+
+// ─── 3) Warten auf Retest -> SELL ───────────────────────────────────────────
+if state == 3 and bar_index > stateBar
+    float lvl = retestRef == "POC" ? poc : rLo
+    float tol = retestTolPips * pipSize
+    line.set_x2(pocLine, bar_index)
+    if close > lvl + invalidPips * pipSize
+        // Kurs ist zurück über das Level gelaufen -> Setup ungültig
+        line.set_style(pocLine, line.style_dashed)
+        line.set_color(pocLine, color.gray)
+        state := 0
+    else if high >= lvl - tol and (not requireRejection or close < lvl)
+        sellSignal := true
+        state := 0
+    else if bar_index - stateBar >= maxBarsRetest
+        line.set_style(pocLine, line.style_dashed)
+        line.set_color(pocLine, color.gray)
+        state := 0
+
+// ─── 0) Neue Seitwärtsphase suchen ──────────────────────────────────────────
+if state == 0 and bar_index >= minBars and hh - ll <= rangeMax
+    int newStart = bar_index - minBars + 1
+    if na(rEnd) or newStart > rEnd
+        rStart := newStart
+        rHi := hh
+        rLo := ll
+        state := 1
+        if showBox
+            rBox := box.new(rStart, rHi, bar_index, rLo, border_color=color.new(pocColor, 60), bgcolor=color.new(pocColor, 90))
+
+// ─── Plots & Alerts ─────────────────────────────────────────────────────────
+plotshape(breakoutNow, "Breakout nach unten", shape.triangledown, location.belowbar, color.new(color.red, 30), size=size.tiny, text="BO")
+plotshape(sellSignal, "SELL", shape.labeldown, location.abovebar, color.red, text="SELL", textcolor=color.white, size=size.small)
+
+alertcondition(sellSignal, "XAU POC Retest SELL", "Gold M15: Retest des POC nach Breakout – SELL-Signal")
+alertcondition(breakoutNow, "XAU Range Breakout", "Gold M15: Breakout nach unten aus der Seitwärtsphase – warte auf Retest")
+
+if sellSignal
+    alert("SELL XAUUSD @ " + str.tostring(close, format.mintick) + " | POC " + str.tostring(poc, format.mintick), alert.freq_once_per_bar_close)
+
+// Hinweis, falls nicht auf M15
+var table tfInfo = table.new(position.top_right, 1, 1)
+if barstate.islast and timeframe.period != "15"
+    table.cell(tfInfo, 0, 0, "Indikator ist für den 15-Min-Chart gebaut", text_color=color.white, bgcolor=color.new(color.red, 20))

@@ -67,6 +67,20 @@ def epiano(note, dauer=1.6):
     return x * huelle(len(t), .006, .9)
 
 
+def flaeche(note, dauer):
+    """Weiche Synth-Flaeche: verstimmte Obertoene, langsam ein- und ausgeblendet."""
+    t = t_achse(dauer)
+    f = hz(note)
+    x = np.zeros_like(t)
+    for verstimmt in (-0.12, 0.0, 0.13):
+        g = f * 2 ** (verstimmt / 12)
+        for n, a in ((1, 1), (2, .3), (3, .12)):
+            x += a * np.sin(2 * np.pi * g * n * t + verstimmt * 7)
+    an = np.minimum(1, t / .6)
+    ab = np.minimum(1, (dauer - t) / .8)
+    return x / 4.3 * an * np.clip(ab, 0, 1)
+
+
 def bass(note, dauer=.8):
     t = t_achse(dauer)
     f = hz(note)
@@ -166,18 +180,19 @@ def main():
 
     bpm = 88
     schlag = 60 / bpm
-    akkorde = [  # Fmaj7, Em7, Dm7, Cmaj7 - hell und ruhig
-        (41, [65, 69, 72, 76]), (40, [64, 67, 71, 74]),
-        (38, [62, 65, 69, 72]), (36, [60, 64, 67, 71])]
+    akkorde = [  # Am9, Fmaj7, Cmaj7, G6 - dunkel, ruhig, modern
+        (33, [57, 60, 64, 71]), (29, [57, 60, 64, 65]),
+        (36, [55, 60, 64, 71]), (31, [55, 59, 62, 64])]
     takt = 0
     while takt * 4 * schlag < dauer:
         b0 = takt * 4 * schlag
         wurzel, toene = akkorde[takt % 4]
         for i, n in enumerate(toene):
-            musik.add(b0 + i * .018, epiano(n), .16, pan=(i - 1.5) * .25)
+            musik.add(b0, flaeche(n, 4 * schlag + .9), .07, pan=(i - 1.5) * .35)
+            musik.add(b0 + i * .018, epiano(n + 12), .1, pan=(i - 1.5) * .25)
             musik.add(b0 + 2.5 * schlag + i * .018, epiano(n + 12 if i == 3 else n, 1.0), .09, pan=(i - 1.5) * .25)
-        musik.add(b0, bass(wurzel), .38)
-        musik.add(b0 + 2 * schlag, bass(wurzel + 7, .6), .28)
+        musik.add(b0, bass(wurzel + 12), .42)
+        musik.add(b0 + 2.5 * schlag, bass(wurzel + 12, .5), .26)
         if b0 > 0.5:  # die Trommeln setzen nach dem ersten Takt ein
             for s in (0, 2):
                 musik.add(b0 + s * schlag, kick(), .42)

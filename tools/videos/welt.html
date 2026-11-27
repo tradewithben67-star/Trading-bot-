@@ -9,70 +9,84 @@
   body{display:flex;align-items:center;justify-content:center}
   /* Die Buehne ist immer 540x960 gedacht (9:16). Aufgenommen wird mit
      doppelter Pixeldichte, also 1080x1920. Im Browser wird sie nur skaliert. */
-  #buehne{position:relative;width:540px;height:960px;overflow:hidden;
-    transform-origin:center center;background:#EEF1F5;
-    font-family:Inter,"Inter Display",Arial,sans-serif;color:#1F2328}
+  #buehne{position:relative;width:540px;height:960px;overflow:hidden;flex:none;
+    transform-origin:center center;background:#050507;
+    font-family:Inter,"Inter Display",Arial,sans-serif;color:#EDEEF2}
   #buehne canvas{position:absolute;inset:0;display:block}
   .ebene{position:absolute;inset:0;pointer-events:none}
 
-  .karte{position:absolute;left:26px;right:26px;top:96px;background:#fff;
-    border-radius:20px;padding:18px 22px 19px;
-    box-shadow:0 10px 30px rgba(20,30,50,.16),0 2px 6px rgba(20,30,50,.08);
+  /* Karten: dunkles Glas, feiner Silberrand, Chrom-Schrift */
+  .karte{position:absolute;left:24px;right:24px;top:94px;
+    background:linear-gradient(180deg,rgba(28,24,40,.78),rgba(12,11,18,.82));
+    border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:18px 22px 19px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
     transform-origin:50% 0;opacity:0}
-  .karte.mitte{top:auto;bottom:auto;top:50%;left:50%;right:auto;width:400px;
-    margin-left:-222px;transform-origin:50% 50%;text-align:center;padding:24px 22px}
+  .karte:before{content:"";position:absolute;left:22px;right:22px;top:-1px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(196,170,255,.85),transparent)}
   .karte.unten{top:auto;bottom:206px;transform-origin:50% 100%}
-  .karte .zeile{display:flex;align-items:center;gap:12px}
+  .karte .zeile{display:flex;align-items:center;gap:13px}
   .karte .symbol{flex:none;width:40px;height:40px;border-radius:12px;display:flex;
-    align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:22px}
+    align-items:center;justify-content:center;font-weight:800;font-size:21px;color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.4)}
+  .s-lila{background:linear-gradient(160deg,#B79BFF,#7C3AED 55%,#4C1D95)}
+  .s-chrom{background:linear-gradient(160deg,#FFFFFF,#C9CCD6 45%,#7D808C 75%,#E6E8EE);color:#15151C!important}
+  .chrom{background:linear-gradient(180deg,#FFFFFF 0%,#E4E6EC 45%,#A9ADB9 70%,#F1F2F6 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
   .karte h2{margin:0;font-size:25px;line-height:1.15;font-weight:800;letter-spacing:-.4px}
-  .karte p{margin:6px 0 0;font-size:16.5px;line-height:1.38;color:#4A525C}
-  .karte .klein{font-size:13px;font-weight:700;letter-spacing:1.6px;text-transform:uppercase;color:#1A73E8;margin-bottom:6px}
-  .karte.titel h2{font-size:40px;letter-spacing:-1px}
-  .legende{display:flex;flex-direction:column;gap:10px}
-  .legende div{display:flex;align-items:center;gap:12px;font-size:17px;font-weight:600}
-  .legende i{width:18px;height:30px;border-radius:5px;display:block;position:relative}
-  .legende i:before{content:"";position:absolute;left:8px;top:-7px;bottom:-7px;width:2px;background:inherit;border-radius:2px}
+  .karte p{margin:7px 0 0;font-size:16.5px;line-height:1.4;color:#A7ABB8}
+  .karte .klein{font-size:12.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:#B79BFF;margin-bottom:7px}
+  .karte.titel h2{font-size:40px;letter-spacing:-1.2px}
+  .legende{display:flex;flex-direction:column;gap:11px}
+  .legende div{display:flex;align-items:center;gap:13px;font-size:17px;font-weight:600;color:#E4E6EC}
+  .legende i{width:16px;height:28px;border-radius:5px;display:block;position:relative}
+  .legende i:before{content:"";position:absolute;left:7px;top:-7px;bottom:-7px;width:2px;background:inherit;border-radius:2px}
+  .legende small{font-size:13px;color:#7F8492;font-weight:500;margin-top:2px}
 
-  .tag{position:absolute;left:0;top:0;white-space:nowrap;background:#fff;border-radius:999px;
-    padding:6px 12px 6px 10px;font-size:14px;font-weight:700;display:flex;align-items:center;gap:7px;
-    box-shadow:0 4px 14px rgba(20,30,50,.18);opacity:0;transform-origin:0 50%}
-  .tag b{width:9px;height:9px;border-radius:50%;display:block}
+  .tag{position:absolute;left:0;top:0;white-space:nowrap;
+    background:rgba(16,14,24,.82);border:1px solid rgba(255,255,255,.16);border-radius:999px;
+    padding:6px 12px 6px 10px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;color:#ECEDF1;
+    box-shadow:0 6px 18px rgba(0,0,0,.5);opacity:0;transform-origin:0 50%;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .tag b{width:8px;height:8px;border-radius:50%;display:block;box-shadow:0 0 8px currentColor}
 
-  #schluss{position:absolute;left:26px;right:26px;top:96px;text-align:center;opacity:0;background:#fff;
-    border-radius:20px;padding:22px 22px 20px;box-shadow:0 10px 30px rgba(20,30,50,.16),0 2px 6px rgba(20,30,50,.08)}
-  #schluss .marke{font-size:38px;font-weight:800;letter-spacing:-1px;color:#1F2328}
-  #schluss .satz{font-size:17px;color:#4A525C;margin-top:8px;line-height:1.38}
-  #hinweis{position:absolute;left:0;right:0;top:700px;text-align:center;font-size:12.5px;color:#8A919A;letter-spacing:.4px;opacity:0}
-  #blitz{position:absolute;inset:0;background:#D93025;opacity:0}
+  #schluss{position:absolute;left:24px;right:24px;top:94px;text-align:center;opacity:0;
+    background:linear-gradient(180deg,rgba(28,24,40,.78),rgba(12,11,18,.82));
+    border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:24px 22px 22px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  #schluss .marke{font-size:40px;font-weight:800;letter-spacing:-1.2px}
+  #schluss .satz{font-size:16.5px;color:#A7ABB8;margin-top:9px;line-height:1.4}
+  #hinweis{position:absolute;left:0;right:0;top:712px;text-align:center;font-size:12px;color:#6E7380;letter-spacing:.6px;opacity:0}
+  #blitz{position:absolute;inset:0;background:radial-gradient(circle at 50% 60%,rgba(139,92,246,.55),rgba(76,29,149,.35) 60%,transparent);opacity:0}
+  #vignette{position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 45%,transparent 55%,rgba(0,0,0,.55))}
 </style>
 </head>
 <body>
 <div id="buehne">
+  <div id="vignette" class="ebene"></div>
   <div id="blitz" class="ebene"></div>
   <div id="karten" class="ebene"></div>
   <div id="tags" class="ebene"></div>
   <div id="schluss">
-    <div class="marke">Das ist Trading.</div>
+    <div class="marke chrom">Das ist Trading.</div>
     <div class="satz">Kaufen, verkaufen – und das Risiko im Griff behalten.</div>
   </div>
   <div id="hinweis">Nur zur Bildung · Keine Anlageberatung</div>
 </div>
-<script src="vendor/three.min.js"></script>
+<script src="vendor/three-paket.min.js"></script>
 <script>
-/* Ein Erklaerfilm als 3D-Welt im Stil sauberer Karten-Animationen:
-   helle Low-Poly-Stadt, eine durchgehende Kamerafahrt, Karten, die mit
-   Feder ins Bild springen. Jedes Bild haengt allein an der Bildnummer
-   (window.zeichne(b)), damit die Aufnahme sich Zeit lassen kann. */
+/* Ein Erklaerfilm als 3D-Welt: schwarzer Spiegelboden, Chrom und Lila,
+   eine durchgehende Kamerafahrt, Karten aus dunklem Glas. Jedes Bild
+   haengt allein an der Bildnummer (window.zeichne(b), b darf gebrochen
+   sein), damit die Aufnahme sich Zeit lassen und 60 fps liefern kann. */
 (function(){
 "use strict";
-var B = 540, H = 960, FPS = 30, LAENGE = 960;   /* 32 Sekunden */
+var B = 540, H = 960, FPS = 30, LAENGE = 960;   /* 32 Sekunden, Zeitleiste in 30 fps */
 window.__laenge = LAENGE; window.__fps = FPS;
 
 /* ---------- Farben ---------- */
-var HIMMEL = new THREE.Color("#EEF1F5");
-var GRUEN = "#2FB673", ROT = "#E8574B", BLAU = "#1A73E8", GOLD = "#E9B949";
-var BODEN = new THREE.Color("#F3F4F6");
+var LILA = "#8B5CF6", LILA_HELL = "#B79BFF", LILA_TIEF = "#4C1D95", SILBER = "#D9DCE3", NEBEL = "#07060B";
 
 /* ---------- Helfer ---------- */
 function klemm(t){ return t < 0 ? 0 : t > 1 ? 1 : t; }
@@ -85,132 +99,175 @@ function zufall(saat){ return function(){ saat |= 0; saat = saat + 0x6D2B79F5 | 
   return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 function v(x, y, z){ return new THREE.Vector3(x, y, z); }
 
-/* ---------- Renderer, Szene, Kamera ---------- */
+/* ---------- Renderer, Nachbearbeitung ---------- */
 var buehne = document.getElementById("buehne");
+var DPR = window.devicePixelRatio || 1;
 var renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setPixelRatio(window.devicePixelRatio || 1);
+renderer.setPixelRatio(DPR);
 renderer.setSize(B, H);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.05;
+renderer.toneMappingExposure = 1.0;
 buehne.insertBefore(renderer.domElement, buehne.firstChild);
 
 var szene = new THREE.Scene();
-szene.background = HIMMEL.clone();
-szene.fog = new THREE.Fog(HIMMEL.clone(), 20, 62);
+szene.fog = new THREE.Fog(NEBEL, 20, 62);
 var kamera = new THREE.PerspectiveCamera(42, B / H, 0.1, 300);
 
-var himmelLicht = new THREE.HemisphereLight(0xffffff, 0xcfd5de, 1.55);
-szene.add(himmelLicht);
-var sonne = new THREE.DirectionalLight(0xffffff, 2.3);
+/* Hintergrund: fast schwarz, am Horizont ein Hauch Lila */
+(function(){
+  var c = document.createElement("canvas"); c.width = 4; c.height = 512;
+  var g = c.getContext("2d"), v = g.createLinearGradient(0, 0, 0, 512);
+  v.addColorStop(0, "#030305"); v.addColorStop(.42, "#0A0712"); v.addColorStop(.56, "#170C2B");
+  v.addColorStop(.66, "#0A0712"); v.addColorStop(1, "#050507");
+  g.fillStyle = v; g.fillRect(0, 0, 4, 512);
+  var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; szene.background = t;
+})();
+
+/* Umgebung fuer Chrom: ein dunkler Raum mit weissen und lila Lichtflaechen */
+(function(){
+  var raum = new THREE.Scene();
+  raum.add(new THREE.Mesh(new THREE.BoxGeometry(30, 16, 30), new THREE.MeshBasicMaterial({ color: 0x050508, side: THREE.BackSide })));
+  function flaeche(w, h, farbe, staerke, x, y, z, rx, ry){
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(farbe).multiplyScalar(staerke), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, 0); raum.add(m);
+  }
+  flaeche(14, 2.2, 0xffffff, 1.7, 0, 7.5, 0, Math.PI / 2);         /* Lichtband oben */
+  flaeche(3, 10, 0xffffff, 2.2, -14.5, 2, 4, 0, Math.PI / 2);       /* Softbox links */
+  flaeche(4, 9, LILA, 3.5, 14.5, 1, -2, 0, -Math.PI / 2);           /* lila Seite rechts */
+  flaeche(12, 1.2, LILA_HELL, 2.5, 0, 1.5, -14.5);                  /* lila Band hinten */
+  flaeche(22, 7, 0xffffff, 1.5, 0, 2, 14.5, 0, Math.PI);            /* grosse Softbox vorn */
+  var pm = new THREE.PMREMGenerator(renderer);
+  szene.environment = pm.fromScene(raum, .02).texture;
+})();
+
+var renderZiel = new THREE.WebGLRenderTarget(B * DPR, H * DPR, { type: THREE.HalfFloatType, samples: 4 });
+var composer = new THREE.EffectComposer(renderer, renderZiel);
+composer.setPixelRatio(DPR); composer.setSize(B, H);
+composer.addPass(new THREE.RenderPass(szene, kamera));
+var bloom = new THREE.UnrealBloomPass(new THREE.Vector2(B * DPR, H * DPR), .48, .5, .96);
+composer.addPass(bloom);
+composer.addPass(new THREE.OutputPass());
+
+/* ---------- Licht ---------- */
+szene.add(new THREE.HemisphereLight(0x9C8CFF, 0x050507, .55));
+var sonne = new THREE.DirectionalLight(0xffffff, 2.4);
 sonne.castShadow = true;
 sonne.shadow.mapSize.set(2048, 2048);
 var sc = sonne.shadow.camera; sc.left = -16; sc.right = 16; sc.top = 16; sc.bottom = -16; sc.near = 1; sc.far = 70;
-sonne.shadow.bias = -0.0006; sonne.shadow.radius = 4;
+sonne.shadow.bias = -0.0006; sonne.shadow.radius = 5;
 szene.add(sonne); szene.add(sonne.target);
+var kante = new THREE.DirectionalLight(LILA, 2.2);   /* lila Kantenlicht von hinten */
+szene.add(kante); szene.add(kante.target);
 
-function ton(farbe, extra){
-  var m = new THREE.MeshStandardMaterial(Object.assign({ color: farbe, roughness: .88, metalness: 0, flatShading: true }, extra || {}));
-  return m;
-}
+/* ---------- Materialien ---------- */
+var CHROM = new THREE.MeshStandardMaterial({ color: 0xF2F3F7, metalness: 1, roughness: .14, envMapIntensity: 1.0 });
+var LILA_MAT = new THREE.MeshPhysicalMaterial({ color: LILA, metalness: .25, roughness: .2, clearcoat: 1, clearcoatRoughness: .08,
+  emissive: LILA_TIEF, emissiveIntensity: .55, envMapIntensity: 1.1 });
+var SCHWARZ_GLANZ = new THREE.MeshPhysicalMaterial({ color: 0x0B0B10, metalness: .4, roughness: .4, clearcoat: .6, clearcoatRoughness: .32, envMapIntensity: .6 });
+var LEUCHT_LILA = new THREE.MeshBasicMaterial({ color: new THREE.Color(LILA_HELL).multiplyScalar(2.2), toneMapped: false });
+var LEUCHT_WEISS = new THREE.MeshBasicMaterial({ color: new THREE.Color(0xffffff).multiplyScalar(2.0), toneMapped: false });
+
 function teil(geo, mat, x, y, z, schatten){
   var m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
   m.castShadow = schatten !== false; m.receiveShadow = true; szene.add(m); return m;
 }
+function rund(b, h, t, r){ return new THREE.RoundedBoxGeometry(b, h, t, 4, Math.min(r, h / 2 - .001, b / 2 - .001)); }
 
-/* ---------- Boden, Strassen, Stadt ---------- */
-var bodenMat = ton(BODEN.getHex(), { flatShading: false });
-var boden = new THREE.Mesh(new THREE.PlaneGeometry(400, 200), bodenMat);
-boden.rotation.x = -Math.PI / 2; boden.position.set(55, 0, 0); boden.receiveShadow = true; szene.add(boden);
+/* ---------- Boden: schwarzer Spiegel, feines Raster, weiche Schatten ---------- */
+var spiegel = new THREE.Reflector(new THREE.PlaneGeometry(260, 120), {
+  color: 0x3A3A44, textureWidth: B * DPR, textureHeight: H * DPR, clipBias: .003 });
+spiegel.rotation.x = -Math.PI / 2; spiegel.position.set(55, 0, 0); szene.add(spiegel);
+var dunkel = new THREE.Mesh(new THREE.PlaneGeometry(260, 120), new THREE.MeshBasicMaterial({ color: 0x050507, transparent: true, opacity: .9 }));
+dunkel.rotation.x = -Math.PI / 2; dunkel.position.set(55, .002, 0); szene.add(dunkel);
+var schattenBoden = new THREE.Mesh(new THREE.PlaneGeometry(260, 120), new THREE.ShadowMaterial({ opacity: .55 }));
+schattenBoden.rotation.x = -Math.PI / 2; schattenBoden.position.set(55, .004, 0); schattenBoden.receiveShadow = true; szene.add(schattenBoden);
+var raster = new THREE.GridHelper(260, 260, LILA, LILA);
+raster.material.transparent = true; raster.material.opacity = .2; raster.material.depthWrite = false;
+raster.position.set(55, .006, 0); szene.add(raster);
 
-var strasseMat = ton(0xDDE1E7, { flatShading: false });
-var strichMat = ton(0xffffff, { flatShading: false });
-function strasse(x1, z1, x2, z2, breite){
-  var lang = Math.hypot(x2 - x1, z2 - z1), w = Math.atan2(z2 - z1, x2 - x1);
-  var s = new THREE.Mesh(new THREE.PlaneGeometry(lang, breite), strasseMat);
-  s.rotation.x = -Math.PI / 2; s.rotation.z = -w; s.position.set((x1 + x2) / 2, .012, (z1 + z2) / 2);
-  s.receiveShadow = true; szene.add(s);
-  for (var d = 1; d < lang - 1; d += 2.2){
-    var st = new THREE.Mesh(new THREE.PlaneGeometry(1.1, .12), strichMat);
-    st.rotation.x = -Math.PI / 2; st.rotation.z = -w;
-    st.position.set(x1 + Math.cos(w) * d, .02, z1 + Math.sin(w) * d); szene.add(st);
-  }
-}
-strasse(-20, 6.2, 135, 6.2, 2.6);
-[31, 47.5, 76, 90, 104].forEach(function(x){ strasse(x, -40, x, 5, 2.2); });
-
-var r = zufall(7);
-var hausFarben = [0xE6E1D8, 0xDDD8CE, 0xE9E6E0, 0xD9DDE3, 0xE4DDD2];
-var baumMat = ton(0xA9D8AE), stammMat = ton(0xB7B2AA), fensterMat = ton(0xC9CED6);
-function frei(x){ /* Strassen freihalten */
-  return [31, 47.5, 76, 90, 104].every(function(s){ return Math.abs(x - s) > 2.2; });
-}
-for (var hx = -18; hx < 132; hx += 2.6){
-  for (var reihe = 0; reihe < 4; reihe++){
-    var x = hx + (r() - .5) * .8, z = -12.5 - reihe * 4.4 - r() * 1.2;
-    if (!frei(x)) continue;
-    if (r() < .28){
-      var hoehe = .5 + r() * .5;
-      teil(new THREE.CylinderGeometry(.06, .08, hoehe, 5), stammMat, x, hoehe / 2, z);
-      teil(new THREE.IcosahedronGeometry(.75 + r() * .35, 0), baumMat, x, hoehe + .55, z);
-      continue;
+/* schlanke schwarze Saeulen mit lila Lichtkante: Tiefe, ohne zu stoeren */
+(function(){
+  var r = zufall(9);
+  var kanteMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(LILA).multiplyScalar(1.6), toneMapped: false });
+  var saeuleMat = new THREE.MeshPhysicalMaterial({ color: 0x08080C, metalness: .6, roughness: .3, envMapIntensity: .3, clearcoat: .6 });
+  for (var x = -16; x < 130; x += 3.2 + r() * 2.4){
+    for (var reihe = 0; reihe < 2; reihe++){
+      if (r() < .3) continue;
+      var z = -21 - reihe * 7 - r() * 3, hoehe = 2.5 + r() * (reihe ? 9 : 5), breite = .6 + r() * .9;
+      var s = teil(rund(breite, hoehe, breite, .05), saeuleMat, x + r() * 1.5, hoehe / 2, z, false);
+      if (r() < .6) teil(new THREE.BoxGeometry(breite * .9, .025, .025), kanteMat, s.position.x, hoehe - .25 - r() * hoehe * .5, z + breite / 2 + .02, false);
+      teil(new THREE.BoxGeometry(.02, hoehe * .8, .02), kanteMat, s.position.x - breite / 2 - .005, hoehe * .45, z + breite / 2 + .005, false).visible = r() < .35;
     }
-    var bw = 1.4 + r() * .9, bt = 1.6 + r() * 1.4, bh = .7 + r() * (reihe === 0 ? 1.3 : 3.2);
-    var haus = teil(new THREE.BoxGeometry(bw, bh, bt), ton(hausFarben[Math.floor(r() * hausFarben.length)]), x, bh / 2, z);
-    for (var f = .55; f < bh - .3; f += .7){   /* Fensterbaender */
-      teil(new THREE.BoxGeometry(bw * .78, .16, .02), fensterMat, x, f, z + bt / 2 + .011, false);
-    }
-    haus.rotation.y = 0;
   }
-}
-/* ein paar Baeume vorne an der Strasse, weit weg von den Szenen */
-[-12, -6, 28.5, 33.5, 45, 50.5, 73.5, 78.5, 88, 92.5, 101, 107].forEach(function(x, i){
-  var z = 8.4 + (i % 2) * .4;
-  teil(new THREE.CylinderGeometry(.05, .07, .5, 5), stammMat, x, .25, z);
-  teil(new THREE.IcosahedronGeometry(.55, 0), baumMat, x, .85, z);
-});
+})();
 
-/* ---------- Leuchtender Positionspunkt (wie bei Navigation) ---------- */
+/* schwebende Lichtpartikel fuer Tiefe */
+var STAUB = 900, staubPos = new Float32Array(STAUB * 3), staubBasis = [];
+(function(){
+  var r = zufall(21);
+  for (var i = 0; i < STAUB; i++){
+    staubBasis.push([-12 + r() * 140, .3 + r() * 9, -16 + r() * 26, r() * 6.28, .3 + r() * .7]);
+  }
+  var c = document.createElement("canvas"); c.width = c.height = 64;
+  var g = c.getContext("2d"), v = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  v.addColorStop(0, "rgba(255,255,255,1)"); v.addColorStop(.3, "rgba(200,180,255,.6)"); v.addColorStop(1, "rgba(140,92,246,0)");
+  g.fillStyle = v; g.fillRect(0, 0, 64, 64);
+  var geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(staubPos, 3));
+  var p = new THREE.Points(geo, new THREE.PointsMaterial({ size: .09, map: new THREE.CanvasTexture(c), transparent: true,
+    depthWrite: false, blending: THREE.AdditiveBlending, color: 0xC9B8FF, opacity: .75 }));
+  szene.add(p); window.__staub = p;
+})();
+function staub(b){
+  for (var i = 0; i < STAUB; i++){
+    var s = staubBasis[i];
+    staubPos[i * 3] = s[0] + Math.sin(b * .006 * s[4] + s[3]) * .6;
+    staubPos[i * 3 + 1] = s[1] + Math.sin(b * .011 * s[4] + s[3] * 2) * .35;
+    staubPos[i * 3 + 2] = s[2] + Math.cos(b * .007 * s[4] + s[3]) * .5;
+  }
+  window.__staub.geometry.attributes.position.needsUpdate = true;
+}
+
+/* ---------- Leuchtender Punkt ---------- */
 function hofTextur(){
   var c = document.createElement("canvas"); c.width = c.height = 128;
   var g = c.getContext("2d"), v = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  v.addColorStop(0, "rgba(26,115,232,.55)"); v.addColorStop(.55, "rgba(26,115,232,.18)"); v.addColorStop(1, "rgba(26,115,232,0)");
+  v.addColorStop(0, "rgba(183,155,255,.75)"); v.addColorStop(.5, "rgba(139,92,246,.22)"); v.addColorStop(1, "rgba(139,92,246,0)");
   g.fillStyle = v; g.fillRect(0, 0, 128, 128);
   return new THREE.CanvasTexture(c);
 }
 var HOF = hofTextur();
 function punkt(){
   var gr = new THREE.Group();
-  var ring = new THREE.Mesh(new THREE.SphereGeometry(.2, 24, 16), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: .4 }));
-  var kern = new THREE.Mesh(new THREE.SphereGeometry(.15, 24, 16), new THREE.MeshStandardMaterial({ color: BLAU, roughness: .35, emissive: BLAU, emissiveIntensity: .25 }));
-  kern.position.z = .07; ring.castShadow = true;
-  var hof = new THREE.Sprite(new THREE.SpriteMaterial({ map: HOF, depthWrite: false, transparent: true }));
-  gr.add(ring); gr.add(kern); gr.add(hof);
-  gr.userData = { hof: hof, kern: kern };
+  var kern = new THREE.Mesh(new THREE.SphereGeometry(.15, 32, 20), LEUCHT_WEISS.clone());
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(.24, .025, 12, 48), LEUCHT_LILA);
+  var hof = new THREE.Sprite(new THREE.SpriteMaterial({ map: HOF, depthWrite: false, transparent: true, blending: THREE.AdditiveBlending }));
+  gr.add(kern); gr.add(ring); gr.add(hof);
+  gr.userData = { hof: hof, kern: kern, ring: ring };
   szene.add(gr); return gr;
 }
 function pulsiere(p, b, groesse){
   var t = (b % 36) / 36;
-  p.userData.hof.scale.setScalar((groesse || 1) * (.8 + t * 1.6));
+  p.userData.hof.scale.setScalar((groesse || 1) * (.9 + t * 1.8));
   p.userData.hof.material.opacity = 1 - t;
+  p.userData.ring.lookAt(kamera.position);
 }
 
-/* ---------- Szene 1: Muenze auf der Plattform ---------- */
+/* ---------- Muenze ---------- */
 function muenzTextur(drehung){
   var c = document.createElement("canvas"); c.width = c.height = 512;
   var g = c.getContext("2d");
-  var v = g.createRadialGradient(200, 180, 30, 256, 256, 280);
-  v.addColorStop(0, "#FFE7A3"); v.addColorStop(.55, "#EFC45E"); v.addColorStop(1, "#B08E36");
+  var v = g.createLinearGradient(60, 40, 450, 480);
+  v.addColorStop(0, "#FFFFFF"); v.addColorStop(.35, "#D5D8E0"); v.addColorStop(.6, "#8E92A0"); v.addColorStop(1, "#E9EBF0");
   g.fillStyle = v; g.fillRect(0, 0, 512, 512);
-  g.strokeStyle = "rgba(120,86,20,.45)"; g.lineWidth = 14; g.beginPath(); g.arc(256, 256, 214, 0, Math.PI * 2); g.stroke();
-  /* drei Kerzen und ein Pfeil: das Zeichen fuer Trading */
-  var kz = [[170, 300, 250, 330, 220, "#8A6418"], [240, 250, 200, 290, 170, "#8A6418"], [310, 190, 140, 230, 110, "#8A6418"]];
-  kz.forEach(function(k){
-    g.fillStyle = k[5]; g.fillRect(k[0] - 4, k[4], 8, k[3] - k[4] + 30);
+  g.strokeStyle = "rgba(40,40,52,.55)"; g.lineWidth = 10; g.beginPath(); g.arc(256, 256, 216, 0, Math.PI * 2); g.stroke();
+  g.strokeStyle = "rgba(255,255,255,.7)"; g.lineWidth = 3; g.beginPath(); g.arc(256, 256, 203, 0, Math.PI * 2); g.stroke();
+  [[170, 300, 250, 330, 220], [240, 250, 200, 290, 170], [310, 190, 140, 230, 110]].forEach(function(k){
+    g.fillStyle = "#23232D"; g.fillRect(k[0] - 4, k[4], 8, k[3] - k[4] + 30);
     g.fillRect(k[0] - 22, k[2], 44, k[1] - k[2] + 40);
   });
-  g.strokeStyle = "#7A5610"; g.lineWidth = 16; g.lineCap = "round"; g.lineJoin = "round";
+  g.strokeStyle = "#7C3AED"; g.lineWidth = 16; g.lineCap = "round"; g.lineJoin = "round";
   g.beginPath(); g.moveTo(140, 370); g.lineTo(240, 300); g.lineTo(290, 330); g.lineTo(380, 220); g.stroke();
   g.beginPath(); g.moveTo(330, 216); g.lineTo(384, 214); g.lineTo(380, 268); g.stroke();
   var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace;
@@ -220,39 +277,39 @@ function muenzTextur(drehung){
 var MUENZ_TEX = muenzTextur(Math.PI / 2), MUENZ_TEX_HINTEN = muenzTextur(Math.PI / 2);
 function muenze(x, y, z){
   var gr = new THREE.Group(); gr.position.set(x, y, z);
-  var rand = new THREE.MeshStandardMaterial({ color: 0xD9A93F, metalness: .7, roughness: .3 });
-  var vorn = new THREE.MeshStandardMaterial({ map: MUENZ_TEX, emissiveMap: MUENZ_TEX, emissive: 0xffffff, emissiveIntensity: 0, metalness: .45, roughness: .35 });
-  var hinten = vorn.clone(); hinten.map = hinten.emissiveMap = MUENZ_TEX_HINTEN;
-  var m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, .16, 64), [rand, vorn, hinten]);
-  gr.userData.flaechen = [vorn, hinten];
+  var vorn = new THREE.MeshStandardMaterial({ map: MUENZ_TEX, metalness: .75, roughness: .28, envMapIntensity: 1.4 });
+  var hinten = vorn.clone(); hinten.map = MUENZ_TEX_HINTEN;
+  var m = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, .16, 96), [CHROM, vorn, hinten]);
   m.rotation.x = Math.PI / 2; m.castShadow = true; gr.add(m);
   szene.add(gr); return gr;
 }
-function plattform(x, z){
+function plattform(x, z, radius){
+  radius = radius || 2.3;
   var gr = new THREE.Group(); gr.position.set(x, 0, z);
-  var p = new THREE.Mesh(new THREE.CylinderGeometry(2.3, 2.45, .28, 48), ton(0xffffff, { flatShading: false }));
-  p.position.y = .14; p.receiveShadow = true; p.castShadow = true; gr.add(p);
-  var ring = new THREE.Mesh(new THREE.TorusGeometry(2.3, .035, 8, 64), new THREE.MeshStandardMaterial({ color: BLAU }));
-  ring.rotation.x = Math.PI / 2; ring.position.y = .29; gr.add(ring);
-  var welle = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 64), new THREE.MeshBasicMaterial({ color: BLAU, transparent: true, depthWrite: false }));
-  welle.rotation.x = -Math.PI / 2; welle.position.y = .3; gr.add(welle);
+  var p = new THREE.Mesh(new THREE.CylinderGeometry(radius, radius + .1, .24, 96), SCHWARZ_GLANZ);
+  p.position.y = .12; p.receiveShadow = true; p.castShadow = true; gr.add(p);
+  var ring = new THREE.Mesh(new THREE.TorusGeometry(radius, .022, 8, 128), LEUCHT_LILA);
+  ring.rotation.x = Math.PI / 2; ring.position.y = .245; gr.add(ring);
+  var welle = new THREE.Mesh(new THREE.RingGeometry(.92, 1, 96), new THREE.MeshBasicMaterial({ color: LILA_HELL, transparent: true,
+    depthWrite: false, blending: THREE.AdditiveBlending }));
+  welle.rotation.x = -Math.PI / 2; welle.position.y = .25; gr.add(welle);
   gr.userData.welle = welle;
   szene.add(gr); return gr;
 }
 var platt1 = plattform(0, 0), muenze1 = muenze(0, 1.55, 0);
 
-/* ---------- Kerzen ---------- */
-var gruenMat = ton(GRUEN), rotMat = ton(ROT);
+/* ---------- Kerzen: Chrom steigt, Lila faellt ---------- */
 function kerzen(daten, x0, abstand, y0, mass, basis, breite){
-  breite = breite || .86;
+  breite = breite || .82;
   return daten.map(function(k, i){
     var o = k[0], c = k[1], hoch = k[2], tief = k[3], steigt = c >= o;
     var y = function(p){ return y0 + (p - basis) * mass; };
     var gr = new THREE.Group(); gr.position.set(x0 + i * abstand, 0, 0);
-    var kh = Math.max(.08, Math.abs(y(c) - y(o)));
-    var koerper = new THREE.Mesh(new THREE.BoxGeometry(breite, kh, breite), steigt ? gruenMat : rotMat);
+    var kh = Math.max(.1, Math.abs(y(c) - y(o)));
+    var mat = steigt ? CHROM : LILA_MAT;
+    var koerper = new THREE.Mesh(rund(breite, kh, breite, .09), mat);
     koerper.position.y = (y(c) + y(o)) / 2; koerper.castShadow = true;
-    var docht = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, y(hoch) - y(tief), 8), steigt ? gruenMat : rotMat);
+    var docht = new THREE.Mesh(new THREE.CylinderGeometry(.045, .045, y(hoch) - y(tief), 16), mat);
     docht.position.y = (y(hoch) + y(tief)) / 2; docht.castShadow = true;
     gr.add(koerper); gr.add(docht); szene.add(gr);
     gr.userData = { mitte: (y(hoch) + y(tief)) / 2, y: y, k: k };
@@ -264,89 +321,87 @@ function wachsen(kz, b, start, takt){
     var t = feder(sp(b, start + i * takt, start + i * takt + 14));
     var m = g.userData.mitte;
     g.scale.set(1, Math.max(.001, t), 1);
-    g.position.y = m * (1 - t);   /* waechst um die eigene Mitte */
+    g.position.y = m * (1 - t);
     g.visible = t > .001;
   });
 }
-/* Szene 2: gemischter Chart, Kerze 5 wird erklaert */
 var C1 = [[104,102,105,101],[102,105,106,101.5],[105,107,108,104],[107,104.5,107.5,103.5],[104.5,103,105,102],
           [103,108,110,101.5],[108,109.5,110.5,107],[109.5,106.5,110,106],[106.5,108,109,105.5],[108,111,112,107.5],[111,109,111.5,108]];
 var kerzen1 = kerzen(C1, 10, 1.6, .7, .3, 100);
-/* Szene 4: Aufwaertstrend */
 var C2 = [[100,103,104,99],[103,106,107,102],[106,104,107,103],[104,102,105,101],[102,106,107,101.5],[106,110,111,105],
           [110,107,110.5,106],[107,105.5,108,105],[105.5,110,111,105],[110,114,115,109.5],[114,112,114.5,111],[112,117,118,111.5]];
 var kerzen2 = kerzen(C2, 52, 1.15, .6, .22, 99);
 
-/* ---------- Szene 3: Kaeufer gegen Verkaeufer ---------- */
-var platz = new THREE.Mesh(new THREE.CircleGeometry(5.2, 64), ton(0xffffff, { flatShading: false }));
-platz.rotation.x = -Math.PI / 2; platz.position.set(40, .015, 0); platz.receiveShadow = true; szene.add(platz);
+/* ---------- Kaeufer gegen Verkaeufer ---------- */
+var platz = plattform(40, 0, 5.2);
 function figur(x, z, mat){
-  var gr = new THREE.Group(); gr.position.set(x, 0, z);
-  var k = new THREE.Mesh(new THREE.CylinderGeometry(.13, .19, .5, 10), mat); k.position.y = .25; k.castShadow = true;
-  var kopf = new THREE.Mesh(new THREE.SphereGeometry(.14, 14, 10), mat); kopf.position.y = .64; kopf.castShadow = true;
+  var gr = new THREE.Group(); gr.position.set(x, .24, z);
+  var k = new THREE.Mesh(new THREE.CapsuleGeometry(.15, .32, 8, 20), mat); k.position.y = .31; k.castShadow = true;
+  var kopf = new THREE.Mesh(new THREE.SphereGeometry(.13, 24, 16), mat); kopf.position.y = .74; kopf.castShadow = true;
   gr.add(k); gr.add(kopf); gr.visible = false; szene.add(gr); return gr;
 }
 var kaeufer = [], verkaeufer = [];
 (function(){
   var rr = zufall(3);
-  for (var i = 0; i < 18; i++) kaeufer.push(figur(38.4 - (i % 4) * .55 - rr() * .12, -1.2 + Math.floor(i / 4) * .6 + rr() * .1, gruenMat));
-  for (var j = 0; j < 8; j++) verkaeufer.push(figur(41.6 + (j % 4) * .55 + rr() * .12, -1.2 + Math.floor(j / 4) * .6 + rr() * .1, rotMat));
+  for (var i = 0; i < 18; i++) kaeufer.push(figur(38.4 - (i % 4) * .55 - rr() * .12, -1.2 + Math.floor(i / 4) * .6 + rr() * .1, CHROM));
+  for (var j = 0; j < 8; j++) verkaeufer.push(figur(41.6 + (j % 4) * .55 + rr() * .12, -1.2 + Math.floor(j / 4) * .6 + rr() * .1, LILA_MAT));
 })();
-var saeule = teil(new THREE.CylinderGeometry(.05, .05, 4.6, 8), ton(0xB9C0CA), 40, 2.3, -.2);
-for (var s = 0; s < 9; s++) teil(new THREE.BoxGeometry(.22, .025, .025), ton(0xB9C0CA), 40, .6 + s * .5, -.2, false);
+teil(new THREE.CylinderGeometry(.035, .035, 4.6, 16), CHROM, 40, 2.54, -.2);
+for (var s = 0; s < 9; s++) teil(new THREE.BoxGeometry(.2, .018, .018), CHROM, 40, .84 + s * .5, -.2, false);
 var preisPunkt = punkt();
 
-/* ---------- Route (Linie, die sich zeichnet) ---------- */
-function route(punkte, radius, farbe){
+/* ---------- Leuchtende Route, die sich zeichnet ---------- */
+function route(punkte, radius){
   var kurve = new THREE.CatmullRomCurve3(punkte, false, "centripetal");
-  var geo = new THREE.TubeGeometry(kurve, 240, radius, 10, false);
-  var m = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ color: farbe, roughness: .35, emissive: farbe, emissiveIntensity: .15 }));
-  m.castShadow = true; szene.add(m);
-  m.userData = { kurve: kurve, ring: 10 };
+  var m = new THREE.Mesh(new THREE.TubeGeometry(kurve, 300, radius, 12, false), LEUCHT_LILA);
+  szene.add(m);
+  m.userData = { kurve: kurve, ring: 12, stuecke: 300 };
   return m;
 }
 function zeichneRoute(m, t){
-  m.geometry.setDrawRange(0, Math.floor(klemm(t) * 240) * m.userData.ring * 6);
+  m.geometry.setDrawRange(0, Math.floor(klemm(t) * m.userData.stuecke) * m.userData.ring * 6);
   m.visible = t > 0;
 }
 var trendPunkte = [v(51.6, kerzen2[0].userData.y(100), .62)].concat(C2.map(function(k, i){ return v(52 + i * 1.15, kerzen2[i].userData.y(k[1]), .62); }));
-var trend = route(trendPunkte, .065, BLAU), trendPunkt = punkt();
+var trend = route(trendPunkte, .045), trendPunkt = punkt();
 
-/* ---------- Szene 5: Long und Short ---------- */
+/* ---------- Long und Short ---------- */
 function pfeil(mat, oben){
   var gr = new THREE.Group();
-  var schaft = new THREE.Mesh(new THREE.BoxGeometry(.55, 2.2, .55), mat); schaft.castShadow = true;
-  var spitze = new THREE.Mesh(new THREE.ConeGeometry(.75, 1.05, 4), mat); spitze.castShadow = true;
-  spitze.rotation.y = Math.PI / 4;
-  spitze.position.y = 1.6; gr.add(schaft); gr.add(spitze);
+  var schaft = new THREE.Mesh(rund(.52, 2.2, .52, .1), mat); schaft.castShadow = true;
+  var spitze = new THREE.Mesh(new THREE.ConeGeometry(.74, 1.05, 4), mat); spitze.castShadow = true;
+  spitze.rotation.y = Math.PI / 4; spitze.position.y = 1.6; gr.add(schaft); gr.add(spitze);
   if (!oben) gr.rotation.z = Math.PI;
   szene.add(gr); return gr;
 }
-var pLong = pfeil(gruenMat, true), pShort = pfeil(rotMat, false);
-var sockel = teil(new THREE.CylinderGeometry(3.2, 3.3, .18, 48), ton(0xffffff, { flatShading: false }), 82, .09, 0);
+var pLong = pfeil(CHROM, true), pShort = pfeil(LILA_MAT, false);
+plattform(82, 0, 3.2);
 
-/* ---------- Szene 6: Risiko ---------- */
-function zone(y1, y2, farbe){
+/* ---------- Risiko ---------- */
+function zone(y1, y2, farbe, deckung){
   var m = new THREE.Mesh(new THREE.BoxGeometry(7.4, y2 - y1, 1.2),
-    new THREE.MeshStandardMaterial({ color: farbe, transparent: true, opacity: .26, roughness: .6, depthWrite: false }));
-  m.position.set(95.3, (y1 + y2) / 2, 0); szene.add(m); return m;
+    new THREE.MeshPhysicalMaterial({ color: farbe, transparent: true, opacity: deckung, roughness: .15, metalness: .2, depthWrite: false }));
+  m.position.set(95.3, (y1 + y2) / 2, 0); szene.add(m);
+  var kante = new THREE.Mesh(new THREE.BoxGeometry(7.4, .018, .018), new THREE.MeshBasicMaterial({ color: new THREE.Color(farbe).multiplyScalar(1.3), toneMapped: false }));
+  kante.position.set(95.3, y2, .6); szene.add(kante);
+  m.userData.kante = kante;
+  return m;
 }
-var tpZone = zone(3.7, 4.3, GRUEN), slZone = zone(1.4, 1.9, ROT);
-var einstieg = teil(new THREE.BoxGeometry(7.4, .035, .035), ton(0x5F6670), 95.3, 2.6, .62, false);
-var risikoPfad = route([v(92.2, 2.6, .62), v(93.2, 3.05, .62), v(94.2, 2.85, .62), v(95.2, 3.3, .62), v(96.2, 2.55, .62), v(97.1, 1.9, .62)], .06, BLAU);
+var tpZone = zone(3.7, 4.3, 0xC9CCD6, .07), slZone = zone(1.4, 1.9, LILA, .22);
+var einstieg = teil(new THREE.BoxGeometry(7.4, .03, .03), CHROM, 95.3, 2.6, .62, false);
+var risikoPfad = route([v(92.2, 2.6, .62), v(93.2, 3.05, .62), v(94.2, 2.85, .62), v(95.2, 3.3, .62), v(96.2, 2.55, .62), v(97.1, 1.9, .62)], .045);
 var risikoPunkt = punkt();
 
-/* ---------- Schluss ---------- */
+/* ---------- Schluss: ein sauberer, steigender Chart ---------- */
 var C3 = [[100,102,102.5,99.5],[102,104,104.5,101.5],[104,103,104.5,102.2],[103,105.5,106,102.8],[105.5,107.5,108,105],
           [107.5,106.5,108,106],[106.5,109,109.5,106.2],[109,111.5,112,108.6],[111.5,110.5,112,110],[110.5,113.5,114,110.2]];
-var kerzen3 = kerzen(C3, 108, .7, .5, .3, 99.5, .52);
-var schlussLinie = route(C3.map(function(k, i){ return v(108 + i * .7, kerzen3[i].userData.y(k[1]), .4); }), .05, BLAU);
+var kerzen3 = kerzen(C3, 108, .7, .5, .3, 99.5, .5);
+var schlussLinie = route(C3.map(function(k, i){ return v(108 + i * .7, kerzen3[i].userData.y(k[1]), .4); }), .04);
 var schlussPunkt = punkt();
-var sockel3 = teil(new THREE.BoxGeometry(8.4, .14, 2.6), ton(0xffffff, { flatShading: false }), 111.15, .07, 0);
+var sockel3 = teil(rund(8.4, .16, 2.6, .07), SCHWARZ_GLANZ, 111.15, .08, 0);
+var sockelKante = teil(new THREE.BoxGeometry(8.2, .016, .016), LEUCHT_LILA, 111.15, .165, 1.3, false);
 
-/* ---------- Kamerafahrt ----------
-   [Bild, Kameraposition, Blickpunkt, Art]  Art "f" = Flug (weich, mit Bogen),
-   sonst ruhiges Gleiten. */
+/* ---------- Kamerafahrt ---------- */
 var KEYS = [
   [0,   v(3.0, 2.6, 6.2),   v(0, 1.2, 0)],
   [86,  v(-2.6, 3.2, 6.8),  v(0, 1.1, 0)],
@@ -370,30 +425,30 @@ function kameraBei(b){
   var a = KEYS[i], z = KEYS[i + 1], t = sp(b, a[0], z[0]);
   var flug = z[3] === "f", e = flug ? weich(t) : t;
   var pos = a[1].clone().lerp(z[1], e), ziel = a[2].clone().lerp(z[2], e);
-  if (flug) pos.y += Math.sin(Math.PI * e) * 2.2;   /* Bogen nach oben im Flug */
+  if (flug) pos.y += Math.sin(Math.PI * e) * 2.2;
   return { pos: pos, ziel: ziel };
 }
-/* Stellen, an denen die Kamera losfliegt: dort sitzt ein Wusch im Ton. */
 var EREIGNISSE = [];
 KEYS.forEach(function(k, i){ if (k[3] === "f") EREIGNISSE.push({ b: KEYS[i - 1][0], typ: "wusch", dauer: k[0] - KEYS[i - 1][0] }); });
 
-/* ---------- Karten (HTML-Ebene) ---------- */
-function symbol(farbe, zeichen){ return '<div class="symbol" style="background:' + farbe + '">' + zeichen + '</div>'; }
+/* ---------- Karten ---------- */
+function symbol(art, zeichen){ return '<div class="symbol s-' + art + '">' + zeichen + '</div>'; }
+function h(text){ return '<h2 class="chrom">' + text + '</h2>'; }
 var KARTEN = [
-  { von: 6,   bis: 84,  art: "titel", html: '<div class="klein">In 30 Sekunden</div><h2>Was ist Trading?</h2>' },
-  { von: 46,  bis: 96,  art: "unten", html: '<div class="zeile">' + symbol(GOLD, "⇅") + '<div><h2>Kaufen &amp; verkaufen</h2></div></div><p>Du handelst mit Preisbewegungen – bei Gold, Aktien, Währungen oder Krypto.</p>' },
-  { von: 124, bis: 210, art: "", html: '<h2>Der Chart</h2><p>Jede Kerze zeigt den Preis in einem Zeitraum – zum Beispiel eine Stunde.</p>' },
-  { von: 166, bis: 214, art: "unten", html: '<div class="legende"><div><i style="background:' + GRUEN + '"></i>Grün: Preis ist gestiegen</div><div><i style="background:' + ROT + '"></i>Rot: Preis ist gefallen</div></div>' },
-  { von: 218, bis: 280, art: "", html: '<h2>Eine Kerze, vier Preise</h2><p>Eröffnung, Schluss, Hoch und Tief.</p>' },
-  { von: 302, bis: 356, art: "", html: '<h2>Angebot &amp; Nachfrage</h2><p>Käufer und Verkäufer bestimmen den Preis.</p>' },
-  { von: 356, bis: 426, art: "", html: '<div class="zeile">' + symbol(GRUEN, "↑") + '<h2>Mehr Käufer → Preis steigt</h2></div><p>Mehr Verkäufer → Preis fällt.</p>' },
-  { von: 460, bis: 512, art: "", html: '<h2>Der Trend</h2><p>Die Richtung, in die sich der Markt bewegt.</p>' },
-  { von: 512, bis: 584, art: "", html: '<div class="zeile">' + symbol(BLAU, "↗") + '<h2>Aufwärtstrend</h2></div><p>Höhere Hochs und höhere Tiefs.</p>' },
-  { von: 616, bis: 668, art: "", html: '<div class="zeile">' + symbol(GRUEN, "↑") + '<h2>Long</h2></div><p>Du kaufst – und gewinnst, wenn der Preis steigt.</p>' },
-  { von: 668, bis: 726, art: "", html: '<div class="zeile">' + symbol(ROT, "↓") + '<h2>Short</h2></div><p>Du verkaufst – und gewinnst, wenn der Preis fällt.</p>' },
-  { von: 760, bis: 820, art: "", html: '<h2>Risiko zuerst</h2><p>Vor jedem Trade legst du fest, wo du aussteigst.</p>' },
-  { von: 822, bis: 874, art: "unten", html: '<div class="zeile" style="justify-content:center">' + symbol(ROT, "!") + '<h2>Stop-Loss ausgelöst</h2></div><p>Verlust begrenzt – dein Konto bleibt geschützt.</p>' },
-  { von: 826, bis: 874, art: "", html: '<div class="klein">Faustregel</div><h2>Riskiere nie mehr als 1 % pro Trade.</h2>' }
+  { von: 6,   bis: 84,  art: "titel", html: '<div class="klein">In 30 Sekunden</div>' + h("Was ist Trading?") },
+  { von: 46,  bis: 96,  art: "unten", html: '<div class="zeile">' + symbol("lila", "⇅") + h("Kaufen &amp; verkaufen") + '</div><p>Du handelst mit Preisbewegungen – bei Gold, Aktien, Währungen oder Krypto.</p>' },
+  { von: 124, bis: 210, art: "", html: h("Der Chart") + '<p>Jede Kerze zeigt den Preis in einem Zeitraum – zum Beispiel eine Stunde.</p>' },
+  { von: 166, bis: 214, art: "unten", html: '<div class="legende"><div><i style="background:linear-gradient(180deg,#fff,#9EA2AE)"></i>Silber: Preis ist gestiegen</div><div><i style="background:' + LILA + '"></i>Lila: Preis ist gefallen</div><small>Auf vielen Charts siehst du dafür Grün und Rot.</small></div>' },
+  { von: 218, bis: 280, art: "", html: h("Eine Kerze, vier Preise") + '<p>Eröffnung, Schluss, Hoch und Tief.</p>' },
+  { von: 302, bis: 356, art: "", html: h("Angebot &amp; Nachfrage") + '<p>Käufer und Verkäufer bestimmen den Preis.</p>' },
+  { von: 356, bis: 426, art: "", html: '<div class="zeile">' + symbol("chrom", "↑") + h("Mehr Käufer → Preis steigt") + '</div><p>Mehr Verkäufer → Preis fällt.</p>' },
+  { von: 460, bis: 512, art: "", html: h("Der Trend") + '<p>Die Richtung, in die sich der Markt bewegt.</p>' },
+  { von: 512, bis: 584, art: "", html: '<div class="zeile">' + symbol("lila", "↗") + h("Aufwärtstrend") + '</div><p>Höhere Hochs und höhere Tiefs.</p>' },
+  { von: 616, bis: 668, art: "", html: '<div class="zeile">' + symbol("chrom", "↑") + h("Long") + '</div><p>Du kaufst – und gewinnst, wenn der Preis steigt.</p>' },
+  { von: 668, bis: 726, art: "", html: '<div class="zeile">' + symbol("lila", "↓") + h("Short") + '</div><p>Du verkaufst – und gewinnst, wenn der Preis fällt.</p>' },
+  { von: 760, bis: 820, art: "", html: h("Risiko zuerst") + '<p>Vor jedem Trade legst du fest, wo du aussteigst.</p>' },
+  { von: 822, bis: 874, art: "unten", html: '<div class="zeile">' + symbol("lila", "!") + h("Stop-Loss ausgelöst") + '</div><p>Verlust begrenzt – dein Konto bleibt geschützt.</p>' },
+  { von: 826, bis: 874, art: "", html: '<div class="klein">Faustregel</div>' + h("Riskiere nie mehr als 1 % pro Trade.") }
 ];
 var kartenEbene = document.getElementById("karten");
 KARTEN.forEach(function(k){
@@ -403,33 +458,32 @@ KARTEN.forEach(function(k){
 });
 
 /* ---------- Schildchen an 3D-Punkten ---------- */
-function anker(gr, p){ return function(){ var w = new THREE.Vector3(); gr.localToWorld(w.copy(p)); return w; }; }
 var k5 = kerzen1[5], y5 = k5.userData.y;
+var GRAU = "#AEB2BE";
 var TAGS = [
-  { von: 224, bis: 280, ort: function(){ return v(18.5, y5(110), 0); }, text: "Hoch", farbe: "#5F6670" },
-  { von: 232, bis: 280, ort: function(){ return v(18.5, y5(108), .43); }, text: "Schluss", farbe: GRUEN },
-  { von: 240, bis: 280, ort: function(){ return v(18.5, y5(103), .43); }, text: "Eröffnung", farbe: GRUEN },
-  { von: 248, bis: 280, ort: function(){ return v(18.5, y5(101.5), 0); }, text: "Tief", farbe: "#5F6670" },
-  { von: 308, bis: 424, ort: function(){ return v(37.6, 1.15, .2); }, text: "Käufer", farbe: GRUEN, mitte: true },
-  { von: 314, bis: 424, ort: function(){ return v(42.4, 1.15, .2); }, text: "Verkäufer", farbe: ROT, mitte: true },
-  { von: 362, bis: 424, ort: function(){ return preisPunkt.position.clone().add(v(.3, 0, 0)); }, text: "Preis ↑", farbe: BLAU },
-  { von: 0, bis: 584, ort: function(){ return v(52 + 3 * 1.15 + .2, kerzen2[3].userData.y(101), .5); }, text: "Tief", farbe: "#5F6670", kerze: 3 },
-  { von: 0, bis: 584, ort: function(){ return v(52 + 5 * 1.15 + .2, kerzen2[5].userData.y(111), .5); }, text: "Hoch", farbe: "#5F6670", kerze: 5 },
-  { von: 0, bis: 584, ort: function(){ return v(52 + 7 * 1.15 + .2, kerzen2[7].userData.y(105), .5); }, text: "höheres Tief", farbe: BLAU, kerze: 7 },
-  { von: 0, bis: 584, ort: function(){ return v(52 + 9 * 1.15 + .2, kerzen2[9].userData.y(115), .5); }, text: "höheres Hoch", farbe: BLAU, kerze: 9 },
-  { von: 636, bis: 726, ort: function(){ return pLong.position.clone().add(v(.4, 1.0, .3)); }, text: "LONG", farbe: GRUEN },
-  { von: 686, bis: 726, ort: function(){ return pShort.position.clone().add(v(-.4, -1.0, .3)); }, text: "SHORT", farbe: ROT, links: true },
-  { von: 768, bis: 874, ort: function(){ return v(92.6, 4.0, .6); }, text: "Take-Profit", farbe: GRUEN },
-  { von: 776, bis: 874, ort: function(){ return v(92.6, 2.6, .6); }, text: "Einstieg", farbe: "#5F6670" },
-  { von: 784, bis: 874, ort: function(){ return v(92.6, 1.65, .6); }, text: "Stop-Loss", farbe: ROT }
+  { von: 224, bis: 280, ort: function(){ return v(18.5, y5(110), 0); }, text: "Hoch", farbe: GRAU },
+  { von: 232, bis: 280, ort: function(){ return v(18.5, y5(108), .43); }, text: "Schluss", farbe: SILBER },
+  { von: 240, bis: 280, ort: function(){ return v(18.5, y5(103), .43); }, text: "Eröffnung", farbe: SILBER },
+  { von: 248, bis: 280, ort: function(){ return v(18.5, y5(101.5), 0); }, text: "Tief", farbe: GRAU },
+  { von: 308, bis: 424, ort: function(){ return v(37.6, 1.4, .2); }, text: "Käufer", farbe: SILBER, mitte: true },
+  { von: 314, bis: 424, ort: function(){ return v(42.4, 1.4, .2); }, text: "Verkäufer", farbe: LILA_HELL, mitte: true },
+  { von: 362, bis: 424, ort: function(){ return preisPunkt.position.clone().add(v(.3, 0, 0)); }, text: "Preis ↑", farbe: LILA_HELL },
+  { von: 0, bis: 584, ort: function(){ return v(52 + 3 * 1.15 + .2, kerzen2[3].userData.y(101), .5); }, text: "Tief", farbe: GRAU, kerze: 3 },
+  { von: 0, bis: 584, ort: function(){ return v(52 + 5 * 1.15 + .2, kerzen2[5].userData.y(111), .5); }, text: "Hoch", farbe: GRAU, kerze: 5 },
+  { von: 0, bis: 584, ort: function(){ return v(52 + 7 * 1.15 + .2, kerzen2[7].userData.y(105), .5); }, text: "höheres Tief", farbe: LILA_HELL, kerze: 7 },
+  { von: 0, bis: 584, ort: function(){ return v(52 + 9 * 1.15 + .2, kerzen2[9].userData.y(115), .5); }, text: "höheres Hoch", farbe: LILA_HELL, kerze: 9 },
+  { von: 636, bis: 726, ort: function(){ return pLong.position.clone().add(v(.4, 1.0, .3)); }, text: "LONG", farbe: SILBER },
+  { von: 686, bis: 726, ort: function(){ return pShort.position.clone().add(v(-.4, -1.0, .3)); }, text: "SHORT", farbe: LILA_HELL, links: true },
+  { von: 768, bis: 874, ort: function(){ return v(92.6, 4.0, .6); }, text: "Take-Profit", farbe: SILBER },
+  { von: 776, bis: 874, ort: function(){ return v(92.6, 2.6, .6); }, text: "Einstieg", farbe: GRAU },
+  { von: 784, bis: 874, ort: function(){ return v(92.6, 1.65, .6); }, text: "Stop-Loss", farbe: LILA_HELL }
 ];
 var tagEbene = document.getElementById("tags");
 TAGS.forEach(function(t){
   var d = document.createElement("div"); d.className = "tag";
-  d.innerHTML = '<b style="background:' + t.farbe + '"></b>' + t.text; d.style.color = "#1F2328";
+  d.innerHTML = '<b style="background:' + t.farbe + ';color:' + t.farbe + '"></b>' + t.text;
   tagEbene.appendChild(d); t.el = d;
 });
-/* Wann die Trend-Schildchen aufgehen, haengt am Fortschritt der Linie. */
 var TREND_VON = 470, TREND_BIS = 572;
 TAGS.forEach(function(t){
   if (t.kerze !== undefined){   /* aufgehen, wenn der Punkt die Kerze erreicht */
@@ -440,7 +494,7 @@ TAGS.forEach(function(t){
   }
   EREIGNISSE.push({ b: t.von, typ: "tick" });
 });
-EREIGNISSE.push({ b: 822, typ: "alarm" }, { b: 900, typ: "klang" });
+EREIGNISSE.push({ b: 822, typ: "alarm" }, { b: 912, typ: "klang" });
 kerzen1.forEach(function(_, i){ EREIGNISSE.push({ b: 128 + i * 5, typ: "kerze" }); });
 kerzen2.forEach(function(_, i){ EREIGNISSE.push({ b: 440 + i * 3, typ: "kerze" }); });
 kerzen3.forEach(function(_, i){ EREIGNISSE.push({ b: 880 + i * 3, typ: "kerze" }); });
@@ -449,23 +503,20 @@ window.__ereignisse = EREIGNISSE;
 
 var schluss = document.getElementById("schluss"), hinweis = document.getElementById("hinweis"), blitz = document.getElementById("blitz");
 var hilf = new THREE.Vector3();
-function bildschirm(p){ hilf.copy(p).project(kamera); return { x: (hilf.x + 1) / 2 * B, y: (1 - hilf.y) / 2 * H, z: hilf.z }; }
+function bildschirm(p){ hilf.copy(p).project(kamera); return { x: (hilf.x + 1) / 2 * B, y: (1 - hilf.y) / 2 * H }; }
 
 function karteStellen(k, b){
   var a = sp(b, k.von, k.von + 13), w = sp(b, k.bis - 9, k.bis);
-  var sicht = b >= k.von && b <= k.bis;
-  if (!sicht){ k.el.style.opacity = 0; return; }
-  var s = .82 + .18 * feder(a);
-  var mitte = k.art.indexOf("mitte") >= 0;
+  if (b < k.von || b > k.bis){ k.el.style.opacity = 0; return; }
+  var s = .84 + .16 * feder(a);
   k.el.style.opacity = Math.min(1, a * 1.8) * (1 - raus(w));
-  k.el.style.transform = (mitte ? "translateY(-50%) " : "") + "translateY(" + (-14 * raus(w)) + "px) scale(" + s + ")";
+  k.el.style.transform = "translateY(" + (-14 * raus(w) + 10 * (1 - raus(a))) + "px) scale(" + s + ")";
+  k.el.style.filter = "blur(" + ((1 - raus(a)) * 6 + raus(w) * 4) + "px)";
 }
 
 /* ================= Ein Bild ================= */
 window.zeichne = function(b){
-  /* --- Kamera --- */
   var k = kameraBei(b);
-  /* Im Trend folgt die Kamera dem Punkt. */
   var tp = weich(sp(b, TREND_VON, TREND_BIS));
   var am = trend.userData.kurve.getPointAt(Math.max(.0001, tp));
   var folg = Math.min(sp(b, 452, 480), 1 - sp(b, 574, 600));
@@ -474,81 +525,82 @@ window.zeichne = function(b){
     k.ziel.lerp(fz, weich(folg)); k.pos.lerp(fp, weich(folg));
   }
   kamera.position.copy(k.pos); kamera.lookAt(k.ziel); kamera.updateMatrixWorld();
-  sonne.position.copy(k.ziel).add(v(9, 16, 11)); sonne.target.position.copy(k.ziel);
+  sonne.position.copy(k.ziel).add(v(7, 16, 12)); sonne.target.position.copy(k.ziel);
+  kante.position.copy(k.ziel).add(v(-6, 6, -12)); kante.target.position.copy(k.ziel);
+  staub(b);
 
-
-  /* --- Szene 1 --- */
+  /* Szene 1 */
   muenze1.rotation.y = b * .045 + Math.sin(b * .05) * .2;
   muenze1.position.y = 1.55 + Math.sin(b * .08) * .07;
-  [platt1].forEach(function(p){
-    var t = (b % 45) / 45, w = p.userData.welle;
-    w.scale.setScalar(1 + t * 1.25); w.material.opacity = (1 - t) * .55;
+  [platt1, platz].forEach(function(p){
+    var t = ((b + 22) % 45) / 45, w = p.userData.welle;
+    w.scale.setScalar(1.1 + t * 1.25); w.material.opacity = (1 - t) * .32;
   });
 
-  /* --- Szene 2 und 4: Kerzen wachsen --- */
+  /* Szene 2 und 4 */
   wachsen(kerzen1, b, 128, 5);
   wachsen(kerzen2, b, 440, 3);
-  /* die erklaerte Kerze leuchtet kurz auf, die anderen treten zurueck */
   var fokus = Math.min(sp(b, 212, 228), 1 - sp(b, 272, 290));
   k5.scale.x = k5.scale.z = 1 + fokus * .12;
 
-  /* --- Szene 3 --- */
+  /* Szene 3 */
   kaeufer.forEach(function(f, i){
     var start = i < 6 ? 300 + i * 3 : 340 + (i - 6) * 3.5;
     var t = feder(sp(b, start, start + 12)); f.visible = t > 0; f.scale.setScalar(Math.max(.001, t));
-    f.position.y = Math.max(0, Math.sin((b + i * 7) * .25)) * .06 * (b > 356 ? 1 : 0);
+    f.position.y = .24 + Math.max(0, Math.sin((b + i * 7) * .25)) * .06 * (b > 356 ? 1 : 0);
   });
   verkaeufer.forEach(function(f, i){
     var t = feder(sp(b, 302 + i * 3, 314 + i * 3)); f.visible = t > 0; f.scale.setScalar(Math.max(.001, t));
   });
   var nachfrage = weich(sp(b, 344, 400));
-  preisPunkt.position.set(40, 1.6 + nachfrage * 2.6, -.2 + .25);
+  preisPunkt.position.set(40, 1.85 + nachfrage * 2.6, .05);
   preisPunkt.visible = b > 296 && b < 440;
   pulsiere(preisPunkt, b);
 
-  /* --- Szene 4: Trendlinie --- */
+  /* Szene 4 */
   zeichneRoute(trend, tp);
   trendPunkt.position.copy(am); trendPunkt.visible = b > TREND_VON && b < 600;
   pulsiere(trendPunkt, b);
 
-  /* --- Szene 5 --- */
+  /* Szene 5 */
   var aL = feder(sp(b, 618, 640)), aS = feder(sp(b, 668, 690));
-  pLong.position.set(80.9, -2.6 + aL * 3.9 + Math.sin(b * .09) * .08 * aL, 0);
-  pShort.position.set(83.1, 8.4 - aS * 5.4 - Math.sin(b * .09) * .08 * aS, 0);
+  pLong.position.set(80.9, -2.4 + aL * 3.9 + Math.sin(b * .09) * .08 * aL, 0);
+  pShort.position.set(83.1, 8.6 - aS * 5.4 - Math.sin(b * .09) * .08 * aS, 0);
   pLong.visible = aL > 0; pShort.visible = aS > 0;
-  pLong.rotation.y = (1 - aL) * 1.5 + Math.sin(b * .03) * .15;
-  pShort.rotation.y = -(1 - aS) * 1.5 - Math.sin(b * .03) * .15;
+  pLong.rotation.y = (1 - aL) * 1.5 + Math.sin(b * .03) * .25;
+  pShort.rotation.y = -(1 - aS) * 1.5 - Math.sin(b * .03) * .25;
 
-  /* --- Szene 6 --- */
+  /* Szene 6 */
   var rp = weich(sp(b, 776, 822));
   zeichneRoute(risikoPfad, rp);
   risikoPunkt.position.copy(risikoPfad.userData.kurve.getPointAt(Math.max(.0001, rp)));
   risikoPunkt.visible = b > 772 && b < 890;
   pulsiere(risikoPunkt, b);
   var treffer = b >= 822 ? Math.max(0, 1 - (b - 822) / 22) : 0;
-  slZone.material.opacity = .26 + treffer * .5;
-  risikoPunkt.userData.kern.material.color.set(b >= 822 ? ROT : BLAU);
-  risikoPunkt.userData.kern.material.emissive.set(b >= 822 ? ROT : BLAU);
-  blitz.style.opacity = treffer * .16;
+  slZone.material.opacity = .22 + treffer * .45;
+  risikoPunkt.userData.kern.material.color.set(b >= 822 ? LILA_HELL : "#ffffff").multiplyScalar(2.2);
+  blitz.style.opacity = treffer * .55;
   var zonen = sp(b, 760, 776);
-  tpZone.visible = slZone.visible = einstieg.visible = zonen > 0;
-  tpZone.scale.x = slZone.scale.x = einstieg.scale.x = Math.max(.001, raus(zonen));
+  [tpZone, slZone, einstieg, tpZone.userData.kante, slZone.userData.kante].forEach(function(m){
+    m.visible = zonen > 0; m.scale.x = Math.max(.001, raus(zonen));
+  });
 
-  /* --- Schluss --- */
+  /* Schluss */
   wachsen(kerzen3, b, 880, 3);
   var sl = weich(sp(b, 896, 936));
   zeichneRoute(schlussLinie, sl);
   schlussPunkt.position.copy(schlussLinie.userData.kurve.getPointAt(Math.max(.0001, sl)));
   schlussPunkt.visible = b > 896; pulsiere(schlussPunkt, b);
   var sa = raus(sp(b, 912, 936));
-  schluss.style.opacity = sa; schluss.style.transform = "translateY(" + (-14 * (1 - sa)) + "px) scale(" + (.82 + .18 * feder(sp(b, 912, 925))) + ")";
+  schluss.style.opacity = sa;
+  schluss.style.transform = "translateY(" + (10 * (1 - sa)) + "px) scale(" + (.84 + .16 * feder(sp(b, 912, 925))) + ")";
+  schluss.style.filter = "blur(" + ((1 - sa) * 6) + "px)";
   hinweis.style.opacity = raus(sp(b, 930, 945));
 
-  /* --- Karten und Schildchen --- */
+  /* Karten und Schildchen */
   KARTEN.forEach(function(kk){ karteStellen(kk, b); });
   TAGS.forEach(function(t){
-    var sicht = b >= t.von && b <= t.bis;
-    if (!sicht){ t.el.style.opacity = 0; return; }
+    if (b < t.von || b > t.bis){ t.el.style.opacity = 0; return; }
     var a = sp(b, t.von, t.von + 10), w = sp(b, t.bis - 8, t.bis);
     var p = bildschirm(t.ort());
     var dx = t.mitte ? -t.el.offsetWidth / 2 : t.links ? -t.el.offsetWidth - 12 : 12;
@@ -556,20 +608,19 @@ window.zeichne = function(b){
     t.el.style.transform = "translate(" + (p.x + dx) + "px," + (p.y - 15 - (t.mitte ? 26 : 0)) + "px) scale(" + (.7 + .3 * feder(a)) + ")";
   });
 
-  renderer.render(szene, kamera);
+  composer.render();
 };
 
 /* ---------- Abspielen im Browser (zum Abfilmen) ---------- */
 function einpassen(){
   var s = Math.min(window.innerWidth / B, window.innerHeight / H);
   buehne.style.transform = "scale(" + s + ")";
-  if (!window.__aufnahme) renderer.setPixelRatio((window.devicePixelRatio || 1) * Math.max(1, s));
 }
 window.addEventListener("resize", einpassen); einpassen();
 if (!window.__aufnahme){
   var start = performance.now();
   (function lauf(){
-    var b = Math.floor((performance.now() - start) / 1000 * FPS) % LAENGE;
+    var b = ((performance.now() - start) / 1000 * FPS) % LAENGE;
     window.zeichne(b); requestAnimationFrame(lauf);
   })();
   document.addEventListener("click", function(){ start = performance.now(); });

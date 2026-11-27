@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>BENGX 3D-Welt</title>
+<title>Trading 3D-Welt</title>
 <style>
   html,body{margin:0;height:100%;background:#000;overflow:hidden}
   body{display:flex;align-items:center;justify-content:center}
@@ -39,10 +39,11 @@
     box-shadow:0 4px 14px rgba(20,30,50,.18);opacity:0;transform-origin:0 50%}
   .tag b{width:9px;height:9px;border-radius:50%;display:block}
 
-  #schluss{position:absolute;left:0;right:0;top:600px;text-align:center;opacity:0}
-  #schluss .marke{font-size:64px;font-weight:800;letter-spacing:10px;color:#EFC45E;margin-left:10px}
-  #schluss .satz{font-size:20px;color:#DCE1E8;margin-top:10px;font-weight:500}
-  #schluss .hinweis{font-size:12.5px;color:#7D848D;margin-top:120px;letter-spacing:.4px}
+  #schluss{position:absolute;left:26px;right:26px;top:96px;text-align:center;opacity:0;background:#fff;
+    border-radius:20px;padding:22px 22px 20px;box-shadow:0 10px 30px rgba(20,30,50,.16),0 2px 6px rgba(20,30,50,.08)}
+  #schluss .marke{font-size:38px;font-weight:800;letter-spacing:-1px;color:#1F2328}
+  #schluss .satz{font-size:17px;color:#4A525C;margin-top:8px;line-height:1.38}
+  #hinweis{position:absolute;left:0;right:0;top:700px;text-align:center;font-size:12.5px;color:#8A919A;letter-spacing:.4px;opacity:0}
   #blitz{position:absolute;inset:0;background:#D93025;opacity:0}
 </style>
 </head>
@@ -52,10 +53,10 @@
   <div id="karten" class="ebene"></div>
   <div id="tags" class="ebene"></div>
   <div id="schluss">
-    <div class="marke">BENGX</div>
-    <div class="satz">Trading verstehen. Schritt für Schritt.</div>
-    <div class="hinweis">Nur zur Bildung · Keine Anlageberatung</div>
+    <div class="marke">Das ist Trading.</div>
+    <div class="satz">Kaufen, verkaufen – und das Risiko im Griff behalten.</div>
   </div>
+  <div id="hinweis">Nur zur Bildung · Keine Anlageberatung</div>
 </div>
 <script src="vendor/three.min.js"></script>
 <script>
@@ -69,9 +70,9 @@ var B = 540, H = 960, FPS = 30, LAENGE = 960;   /* 32 Sekunden */
 window.__laenge = LAENGE; window.__fps = FPS;
 
 /* ---------- Farben ---------- */
-var HIMMEL = new THREE.Color("#EEF1F5"), NACHT = new THREE.Color("#0B0C10");
+var HIMMEL = new THREE.Color("#EEF1F5");
 var GRUEN = "#2FB673", ROT = "#E8574B", BLAU = "#1A73E8", GOLD = "#E9B949";
-var BODEN = new THREE.Color("#F3F4F6"), BODEN_N = new THREE.Color("#111318");
+var BODEN = new THREE.Color("#F3F4F6");
 
 /* ---------- Helfer ---------- */
 function klemm(t){ return t < 0 ? 0 : t > 1 ? 1 : t; }
@@ -97,7 +98,7 @@ buehne.insertBefore(renderer.domElement, buehne.firstChild);
 
 var szene = new THREE.Scene();
 szene.background = HIMMEL.clone();
-szene.fog = new THREE.Fog(HIMMEL.clone(), 28, 80);
+szene.fog = new THREE.Fog(HIMMEL.clone(), 20, 62);
 var kamera = new THREE.PerspectiveCamera(42, B / H, 0.1, 300);
 
 var himmelLicht = new THREE.HemisphereLight(0xffffff, 0xcfd5de, 1.55);
@@ -147,7 +148,7 @@ function frei(x){ /* Strassen freihalten */
 }
 for (var hx = -18; hx < 132; hx += 2.6){
   for (var reihe = 0; reihe < 4; reihe++){
-    var x = hx + (r() - .5) * .8, z = -9 - reihe * 4.4 - r() * 1.2;
+    var x = hx + (r() - .5) * .8, z = -12.5 - reihe * 4.4 - r() * 1.2;
     if (!frei(x)) continue;
     if (r() < .28){
       var hoehe = .5 + r() * .5;
@@ -155,7 +156,7 @@ for (var hx = -18; hx < 132; hx += 2.6){
       teil(new THREE.IcosahedronGeometry(.75 + r() * .35, 0), baumMat, x, hoehe + .55, z);
       continue;
     }
-    var bw = 1.4 + r() * .9, bt = 1.6 + r() * 1.4, bh = 1 + r() * (reihe === 0 ? 2.2 : 4.5);
+    var bw = 1.4 + r() * .9, bt = 1.6 + r() * 1.4, bh = .7 + r() * (reihe === 0 ? 1.3 : 3.2);
     var haus = teil(new THREE.BoxGeometry(bw, bh, bt), ton(hausFarben[Math.floor(r() * hausFarben.length)]), x, bh / 2, z);
     for (var f = .55; f < bh - .3; f += .7){   /* Fensterbaender */
       teil(new THREE.BoxGeometry(bw * .78, .16, .02), fensterMat, x, f, z + bt / 2 + .011, false);
@@ -242,13 +243,14 @@ var platt1 = plattform(0, 0), muenze1 = muenze(0, 1.55, 0);
 
 /* ---------- Kerzen ---------- */
 var gruenMat = ton(GRUEN), rotMat = ton(ROT);
-function kerzen(daten, x0, abstand, y0, mass, basis){
+function kerzen(daten, x0, abstand, y0, mass, basis, breite){
+  breite = breite || .86;
   return daten.map(function(k, i){
     var o = k[0], c = k[1], hoch = k[2], tief = k[3], steigt = c >= o;
     var y = function(p){ return y0 + (p - basis) * mass; };
     var gr = new THREE.Group(); gr.position.set(x0 + i * abstand, 0, 0);
     var kh = Math.max(.08, Math.abs(y(c) - y(o)));
-    var koerper = new THREE.Mesh(new THREE.BoxGeometry(.86, kh, .86), steigt ? gruenMat : rotMat);
+    var koerper = new THREE.Mesh(new THREE.BoxGeometry(breite, kh, breite), steigt ? gruenMat : rotMat);
     koerper.position.y = (y(c) + y(o)) / 2; koerper.castShadow = true;
     var docht = new THREE.Mesh(new THREE.CylinderGeometry(.055, .055, y(hoch) - y(tief), 8), steigt ? gruenMat : rotMat);
     docht.position.y = (y(hoch) + y(tief)) / 2; docht.castShadow = true;
@@ -335,8 +337,12 @@ var risikoPfad = route([v(92.2, 2.6, .62), v(93.2, 3.05, .62), v(94.2, 2.85, .62
 var risikoPunkt = punkt();
 
 /* ---------- Schluss ---------- */
-var muenze2 = muenze(112, 1.75, 0);
-var goldLicht = new THREE.PointLight(0xFFE2A0, 0, 0, 2); goldLicht.position.set(112.6, 2.6, 2.2); szene.add(goldLicht);
+var C3 = [[100,102,102.5,99.5],[102,104,104.5,101.5],[104,103,104.5,102.2],[103,105.5,106,102.8],[105.5,107.5,108,105],
+          [107.5,106.5,108,106],[106.5,109,109.5,106.2],[109,111.5,112,108.6],[111.5,110.5,112,110],[110.5,113.5,114,110.2]];
+var kerzen3 = kerzen(C3, 108, .7, .5, .3, 99.5, .52);
+var schlussLinie = route(C3.map(function(k, i){ return v(108 + i * .7, kerzen3[i].userData.y(k[1]), .4); }), .05, BLAU);
+var schlussPunkt = punkt();
+var sockel3 = teil(new THREE.BoxGeometry(8.4, .14, 2.6), ton(0xffffff, { flatShading: false }), 111.15, .07, 0);
 
 /* ---------- Kamerafahrt ----------
    [Bild, Kameraposition, Blickpunkt, Art]  Art "f" = Flug (weich, mit Bogen),
@@ -356,8 +362,8 @@ var KEYS = [
   [722, v(82.5, 3.9, 11.2), v(82, 2.2, 0)],
   [756, v(94.6, 4.2, 13.2), v(95.2, 2.6, 0), "f"],
   [870, v(95.5, 3.7, 12.2), v(95.2, 2.55, 0)],
-  [904, v(112, 3.1, 8.6),   v(112, .35, 0), "f"],
-  [960, v(112, 2.9, 7.9),   v(112, .35, 0)]
+  [904, v(110.5, 4.0, 19.6), v(111.15, 2.5, 0), "f"],
+  [960, v(111.7, 3.7, 18.8), v(111.15, 2.55, 0)]
 ];
 function kameraBei(b){
   var i = 0; while (i < KEYS.length - 2 && b >= KEYS[i + 1][0]) i++;
@@ -437,10 +443,11 @@ TAGS.forEach(function(t){
 EREIGNISSE.push({ b: 822, typ: "alarm" }, { b: 900, typ: "klang" });
 kerzen1.forEach(function(_, i){ EREIGNISSE.push({ b: 128 + i * 5, typ: "kerze" }); });
 kerzen2.forEach(function(_, i){ EREIGNISSE.push({ b: 440 + i * 3, typ: "kerze" }); });
+kerzen3.forEach(function(_, i){ EREIGNISSE.push({ b: 880 + i * 3, typ: "kerze" }); });
 EREIGNISSE.sort(function(a, b){ return a.b - b.b; });
 window.__ereignisse = EREIGNISSE;
 
-var schluss = document.getElementById("schluss"), blitz = document.getElementById("blitz");
+var schluss = document.getElementById("schluss"), hinweis = document.getElementById("hinweis"), blitz = document.getElementById("blitz");
 var hilf = new THREE.Vector3();
 function bildschirm(p){ hilf.copy(p).project(kamera); return { x: (hilf.x + 1) / 2 * B, y: (1 - hilf.y) / 2 * H, z: hilf.z }; }
 
@@ -469,15 +476,6 @@ window.zeichne = function(b){
   kamera.position.copy(k.pos); kamera.lookAt(k.ziel); kamera.updateMatrixWorld();
   sonne.position.copy(k.ziel).add(v(9, 16, 11)); sonne.target.position.copy(k.ziel);
 
-  /* --- Abend fuer den Schluss --- */
-  var nacht = weich(sp(b, 872, 904));
-  szene.background.copy(HIMMEL).lerp(NACHT, nacht);
-  szene.fog.color.copy(szene.background);
-  szene.fog.near = 28 - nacht * 18; szene.fog.far = 80 - nacht * 64;
-  bodenMat.color.copy(BODEN).lerp(BODEN_N, nacht);
-  himmelLicht.intensity = 1.55 - nacht * 1.0;
-  goldLicht.intensity = nacht * 40;
-  muenze2.userData.flaechen.forEach(function(m){ m.emissiveIntensity = nacht * .35; });
 
   /* --- Szene 1 --- */
   muenze1.rotation.y = b * .045 + Math.sin(b * .05) * .2;
@@ -537,10 +535,14 @@ window.zeichne = function(b){
   tpZone.scale.x = slZone.scale.x = einstieg.scale.x = Math.max(.001, raus(zonen));
 
   /* --- Schluss --- */
-  muenze2.rotation.y = Math.PI * (1 - raus(sp(b, 890, 930))) * 2 + Math.sin(b * .04) * .12;
-  muenze2.position.y = 1.75 + Math.sin(b * .07) * .05;
+  wachsen(kerzen3, b, 880, 3);
+  var sl = weich(sp(b, 896, 936));
+  zeichneRoute(schlussLinie, sl);
+  schlussPunkt.position.copy(schlussLinie.userData.kurve.getPointAt(Math.max(.0001, sl)));
+  schlussPunkt.visible = b > 896; pulsiere(schlussPunkt, b);
   var sa = raus(sp(b, 912, 936));
-  schluss.style.opacity = sa; schluss.style.transform = "translateY(" + (20 * (1 - sa)) + "px)";
+  schluss.style.opacity = sa; schluss.style.transform = "translateY(" + (-14 * (1 - sa)) + "px) scale(" + (.82 + .18 * feder(sp(b, 912, 925))) + ")";
+  hinweis.style.opacity = raus(sp(b, 930, 945));
 
   /* --- Karten und Schildchen --- */
   KARTEN.forEach(function(kk){ karteStellen(kk, b); });

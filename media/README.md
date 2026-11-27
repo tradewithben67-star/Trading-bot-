@@ -22,7 +22,7 @@ die mit Feder ins Bild springen.
 
 | Datei | Inhalt |
 | --- | --- |
-| `01-trading-erklaert.mp4` | Was ist Trading? Kerzen, Angebot & Nachfrage, Trend, Long/Short, Stop-Loss (32 s) |
+| `01-trading-erklaert.mp4` | Was ist Trading? Kerzen, Angebot & Nachfrage, Trend, Long/Short, Stop-Loss – ohne Branding, Schluss mit sauberem Chart (32 s) |
 
 Neu bauen:
 

@@ -275,6 +275,28 @@ function niveau(x1, x2, y, farbe, z){
     farbe: function(f, s){ mat.color.set(f).multiplyScalar(s); }
   };
 }
+/* Zone zwischen zwei Preisen (z. B. eine Luecke), die sich nach rechts zieht.
+   farbe(f) faerbt Flaeche und Kanten um, puls(a) laesst sie aufleuchten. */
+function zone(x1, x2, yU, yO, farbe){
+  var hoehe = yO - yU;
+  var geo = new THREE.PlaneGeometry(1, hoehe); geo.translate(.5, 0, 0);
+  var mat = new THREE.MeshBasicMaterial({ color: farbe || SILBER, transparent: true, opacity: .05, depthWrite: false });
+  var m = new THREE.Mesh(geo, mat); m.position.set(x1, (yU + yO) / 2, .3); m.scale.x = .001; szene.add(m);
+  var kGeo = new THREE.BoxGeometry(1, .016, .016); kGeo.translate(.5, 0, 0);
+  var kMat = leucht(farbe || SILBER, 1.3);
+  var oben = new THREE.Mesh(kGeo, kMat), unten = new THREE.Mesh(kGeo, kMat);
+  oben.position.set(x1, yO, .46); unten.position.set(x1, yU, .46); szene.add(oben); szene.add(unten);
+  var basis = .05;
+  return {
+    zeichne: function(t){
+      var w = Math.max(.001, (x2 - x1) * raus(t));
+      [m, oben, unten].forEach(function(o){ o.visible = t > 0; o.scale.x = w; });
+    },
+    farbe: function(f, staerke){ mat.color.set(f); kMat.color.set(f).multiplyScalar(staerke || 1.3); },
+    puls: function(a){ mat.opacity = basis + a * .1; }
+  };
+}
+
 /* Leuchtende Linie durch Punkte, die sich zeichnet. */
 function linie(punkte, radius, mat){
   var kurve = new THREE.CatmullRomCurve3(punkte, false, "catmullrom", .05);
@@ -315,7 +337,7 @@ var E = {
   fenster: fenster, zufall: zufall,
   farben: { LILA: LILA, LILA_HELL: LILA_HELL, SILBER: SILBER, GRAU: GRAU },
   mat: { CHROM: CHROM, LILA: LILA_MAT, SCHWARZ: SCHWARZ_GLANZ, LEUCHT_LILA: LEUCHT_LILA, leucht: leucht },
-  teil: teil, rund: rund, kerze: kerze, chart: chart, niveau: niveau, linie: linie, welle: welle, sockel: sockel,
+  teil: teil, rund: rund, kerze: kerze, chart: chart, niveau: niveau, zone: zone, linie: linie, welle: welle, sockel: sockel,
   symbol: symbol, h: h, ereignis: ereignis,
   blitz: function(b, start, farbe){
     var a = b >= start ? Math.max(0, 1 - (b - start) / 22) : 0;

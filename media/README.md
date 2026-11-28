@@ -26,12 +26,16 @@ aus dunklem Glas, eine durchgehende Kamerafahrt.
 | `01-trading-erklaert.mp4` | Was ist Trading? Kerzen, Angebot & Nachfrage, Trend, Long/Short, Stop-Loss (32 s) |
 | `02-bos.mp4` | Kerzen lesen (Aufbau, steigend/fallend, vier Kerzen-Typen), dann BOS: Docht allein reicht nicht, erst der Schluss über dem letzten Hoch (33 s) |
 | `03-choch.mp4` | Kerzen lesen, dann CHoCH: kein neues Hoch, Schluss unter dem letzten höheren Tief (33 s) |
+| `04-fvg.mp4` | Kerzen lesen, dann FVG: drei Kerzen, die mittlere läuft weg, Lücke zwischen Hoch von Kerze 1 und Tief von Kerze 3, Rücklauf und Reaktion (33 s) |
+| `05-ifvg.mp4` | Kerzen lesen, dann IFVG: FVG wird komplett durchbrochen, dreht von Unterstützung zu Widerstand, Preis prallt von unten ab (33 s) |
 
 Neu bauen (rund 35–40 Minuten je Video, vier Browser nehmen parallel auf):
 
     node tools/videos/welt-rendern.js                                              # 01
     node tools/videos/welt-rendern.js media/tiktok/02-bos.mp4 "kerzen-film.html?film=bos"
     node tools/videos/welt-rendern.js media/tiktok/03-choch.mp4 "kerzen-film.html?film=choch"
+    node tools/videos/welt-rendern.js media/tiktok/04-fvg.mp4 "kerzen-film.html?film=fvg"
+    node tools/videos/welt-rendern.js media/tiktok/05-ifvg.mp4 "kerzen-film.html?film=ifvg"
 
 Die Kerzen-Filme teilen sich ein Gerüst (`tools/videos/kerzen-film.html`) und
 den Anfang „Kerzen lesen“ (`tools/videos/filme/kerzen-intro.js`). Ein neuer

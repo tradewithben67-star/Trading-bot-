@@ -150,6 +150,19 @@ def alarm():
     return x
 
 
+def treffer():
+    """Bruch der Struktur: tiefer Schlag, kurzer heller Glanz, Rauschen."""
+    t = t_achse(1.6)
+    f = 42 + 110 * np.exp(-t / .05)
+    schlag = np.sin(2 * np.pi * np.cumsum(f) / RATE) * huelle(len(t), .002, .32)
+    glanz = sum(a * np.sin(2 * np.pi * hz(n) * t) for n, a in ((88, .5), (95, .35), (100, .25))) * huelle(len(t), .004, .5)
+    n = int(.4 * RATE)
+    rausch = np.zeros_like(t)
+    rausch[:n] = bandpass(rng.standard_normal(n), 2500, 9000) * huelle(n, .002, .09)
+    rausch /= np.abs(rausch).max() + 1e-9
+    return schlag * .9 + glanz * .35 + rausch * .25
+
+
 def klang():
     t = t_achse(2.8)
     x = np.zeros_like(t)
@@ -223,6 +236,8 @@ def main():
             fx.r[i:i + n] += w[:n] * .2 * np.sqrt((1 + pan[:n]) / 2)
         elif typ == "alarm":
             fx.add(zeit, alarm(), .3)
+        elif typ == "treffer":
+            fx.add(zeit, treffer(), .55)
         elif typ == "klang":
             fx.add(zeit, klang(), .5)
 

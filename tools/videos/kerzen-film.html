@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Kerzen-Filme</title>
+<style>
+  html,body{margin:0;height:100%;background:#000;overflow:hidden}
+  body{display:flex;align-items:center;justify-content:center}
+  /* Buehne 540x960 (9:16), aufgenommen mit doppelter Pixeldichte: 1080x1920 */
+  #buehne{position:relative;width:540px;height:960px;overflow:hidden;flex:none;
+    transform-origin:center center;background:#050507;
+    font-family:Inter,"Inter Display",Arial,sans-serif;color:#EDEEF2}
+  #buehne canvas{position:absolute;inset:0;display:block}
+  .ebene{position:absolute;inset:0;pointer-events:none}
+
+  .karte{position:absolute;left:24px;right:24px;top:94px;
+    background:linear-gradient(180deg,rgba(28,24,40,.8),rgba(12,11,18,.84));
+    border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:18px 22px 19px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55),0 0 0 1px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(16px) saturate(1.2);-webkit-backdrop-filter:blur(16px) saturate(1.2);
+    transform-origin:50% 0;opacity:0}
+  .karte:before{content:"";position:absolute;left:22px;right:22px;top:-1px;height:1px;
+    background:linear-gradient(90deg,transparent,rgba(196,170,255,.85),transparent)}
+  .karte.unten{top:auto;bottom:200px;transform-origin:50% 100%}
+  .karte .zeile{display:flex;align-items:center;gap:13px}
+  .karte .symbol{flex:none;width:40px;height:40px;border-radius:12px;display:flex;
+    align-items:center;justify-content:center;font-weight:800;font-size:20px;color:#fff;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35),0 6px 18px rgba(0,0,0,.4)}
+  .s-lila{background:linear-gradient(160deg,#B79BFF,#7C3AED 55%,#4C1D95)}
+  .s-chrom{background:linear-gradient(160deg,#FFFFFF,#C9CCD6 45%,#7D808C 75%,#E6E8EE);color:#15151C!important}
+  .chrom{background:linear-gradient(180deg,#FFFFFF 0%,#E4E6EC 45%,#A9ADB9 70%,#F1F2F6 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .karte h2{margin:0;font-size:25px;line-height:1.15;font-weight:800;letter-spacing:-.4px}
+  .karte p{margin:7px 0 0;font-size:16.5px;line-height:1.4;color:#A7ABB8}
+  .karte p b{color:#E4E6EC;font-weight:700}
+  .karte .klein{font-size:12.5px;font-weight:700;letter-spacing:2.2px;text-transform:uppercase;color:#B79BFF;margin-bottom:7px}
+  .karte.titel h2{font-size:36px;letter-spacing:-1.1px}
+  .legende{display:flex;flex-direction:column;gap:12px}
+  .legende > div{display:flex;align-items:center;gap:13px;font-size:16.5px;font-weight:600;color:#E4E6EC;line-height:1.3}
+  .legende > div > div{display:block}
+  .legende i{flex:none;width:16px;height:28px;border-radius:5px;display:block;position:relative}
+  .legende i:before{content:"";position:absolute;left:7px;top:-7px;bottom:-7px;width:2px;background:inherit;border-radius:2px}
+  .legende span{color:#A7ABB8;font-weight:500}
+
+  .tag{position:absolute;left:0;top:0;white-space:nowrap;
+    background:rgba(16,14,24,.84);border:1px solid rgba(255,255,255,.16);border-radius:999px;
+    padding:6px 12px 6px 10px;font-size:13.5px;font-weight:700;display:flex;align-items:center;gap:7px;color:#ECEDF1;
+    box-shadow:0 6px 18px rgba(0,0,0,.5);opacity:0;transform-origin:0 50%;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+  .tag b{width:8px;height:8px;border-radius:50%;display:block;box-shadow:0 0 8px currentColor}
+  .tag.gross{font-size:16px;padding:8px 15px 8px 12px}
+
+  #schluss{position:absolute;left:24px;right:24px;top:94px;text-align:center;opacity:0;
+    background:linear-gradient(180deg,rgba(28,24,40,.8),rgba(12,11,18,.84));
+    border:1px solid rgba(255,255,255,.13);border-radius:22px;padding:24px 22px 22px;
+    box-shadow:0 18px 50px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.10);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  #schluss h2{margin:0;font-size:38px;font-weight:800;letter-spacing:-1.1px}
+  #schluss p{font-size:16.5px;color:#A7ABB8;margin:9px 0 0;line-height:1.4}
+  #hinweis{position:absolute;left:0;right:0;top:720px;text-align:center;font-size:12px;color:#6E7380;letter-spacing:.6px;opacity:0}
+  #blitz{position:absolute;inset:0;opacity:0}
+  #vignette{position:absolute;inset:0;background:radial-gradient(120% 80% at 50% 45%,transparent 55%,rgba(0,0,0,.55))}
+</style>
+</head>
+<body>
+<div id="buehne">
+  <div id="vignette" class="ebene"></div>
+  <div id="blitz" class="ebene"></div>
+  <div id="karten" class="ebene"></div>
+  <div id="tags" class="ebene"></div>
+  <div id="schluss"><h2 class="chrom"></h2><p></p></div>
+  <div id="hinweis">Nur zur Bildung · Keine Anlageberatung</div>
+</div>
+<script src="vendor/three-paket.min.js"></script>
+<script>
+/* Geruest fuer Erklaerfilme mit Kerzen: Design (schwarz, Lila, Chrom,
+   Silber), Kerzen, die sich wie auf einem echten Chart bilden, Karten,
+   Schildchen, Kamerafahrt und Ereignisse fuer den Ton.
+   Ein Film ist eine Datei in filme/, die FILMKERN(function(E){...}) aufruft.
+   Welcher Film laeuft, steht in der Adresse: kerzen-film.html?film=bos
+   Jedes Bild haengt allein an der (auch gebrochenen) Bildnummer. */
+window.FILMKERN = function(bau){
+"use strict";
+var B = 540, H = 960, FPS = 30;
+var LILA = "#8B5CF6", LILA_HELL = "#B79BFF", LILA_TIEF = "#4C1D95", SILBER = "#D9DCE3", GRAU = "#AEB2BE", NEBEL = "#07060B";
+
+function klemm(t){ return t < 0 ? 0 : t > 1 ? 1 : t; }
+function sp(b, von, bis){ return klemm((b - von) / (bis - von)); }
+function raus(t){ t = klemm(t); return 1 - Math.pow(1 - t, 3); }
+function weich(t){ t = klemm(t); return t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2; }
+function feder(t){ t = klemm(t); var s = 1.9, u = t - 1; return 1 + (s + 1)*u*u*u + s*u*u; }
+function fenster(b, von, bis, rein, rausF){ return Math.min(raus(sp(b, von, von + (rein || 10))), 1 - raus(sp(b, bis - (rausF || 10), bis))); }
+function zufall(saat){ return function(){ saat |= 0; saat = saat + 0x6D2B79F5 | 0;
+  var t = Math.imul(saat ^ saat >>> 15, 1 | saat); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+  return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function v(x, y, z){ return new THREE.Vector3(x, y, z); }
+
+/* ---------- Renderer ---------- */
+var buehne = document.getElementById("buehne");
+var DPR = window.devicePixelRatio || 1;
+var renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(DPR); renderer.setSize(B, H);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.0;
+buehne.insertBefore(renderer.domElement, buehne.firstChild);
+
+var szene = new THREE.Scene();
+szene.fog = new THREE.Fog(NEBEL, 22, 64);
+var kamera = new THREE.PerspectiveCamera(42, B / H, 0.1, 300);
+
+(function(){
+  var c = document.createElement("canvas"); c.width = 4; c.height = 512;
+  var g = c.getContext("2d"), vv = g.createLinearGradient(0, 0, 0, 512);
+  vv.addColorStop(0, "#030305"); vv.addColorStop(.42, "#0A0712"); vv.addColorStop(.56, "#170C2B");
+  vv.addColorStop(.66, "#0A0712"); vv.addColorStop(1, "#050507");
+  g.fillStyle = vv; g.fillRect(0, 0, 4, 512);
+  var t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; szene.background = t;
+})();
+(function(){
+  var raum = new THREE.Scene();
+  raum.add(new THREE.Mesh(new THREE.BoxGeometry(30, 16, 30), new THREE.MeshBasicMaterial({ color: 0x050508, side: THREE.BackSide })));
+  function flaeche(w, h, farbe, staerke, x, y, z, rx, ry){
+    var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(farbe).multiplyScalar(staerke), side: THREE.DoubleSide }));
+    m.position.set(x, y, z); m.rotation.set(rx || 0, ry || 0, 0); raum.add(m);
+  }
+  flaeche(14, 2.2, 0xffffff, 1.7, 0, 7.5, 0, Math.PI / 2);
+  flaeche(3, 10, 0xffffff, 2.2, -14.5, 2, 4, 0, Math.PI / 2);
+  flaeche(4, 9, LILA, 3.5, 14.5, 1, -2, 0, -Math.PI / 2);
+  flaeche(12, 1.2, LILA_HELL, 2.5, 0, 1.5, -14.5);
+  flaeche(22, 7, 0xffffff, .8, 0, 2, 14.5, 0, Math.PI);
+  szene.environment = new THREE.PMREMGenerator(renderer).fromScene(raum, .02).texture;
+})();
+var composer = new THREE.EffectComposer(renderer, new THREE.WebGLRenderTarget(B * DPR, H * DPR, { type: THREE.HalfFloatType, samples: 4 }));
+composer.setPixelRatio(DPR); composer.setSize(B, H);
+composer.addPass(new THREE.RenderPass(szene, kamera));
+composer.addPass(new THREE.UnrealBloomPass(new THREE.Vector2(B * DPR, H * DPR), .48, .5, .96));
+composer.addPass(new THREE.OutputPass());
+
+szene.add(new THREE.HemisphereLight(0x9C8CFF, 0x050507, .55));
+var sonne = new THREE.DirectionalLight(0xffffff, 2.4);
+sonne.castShadow = true; sonne.shadow.mapSize.set(2048, 2048);
+var sc = sonne.shadow.camera; sc.left = -14; sc.right = 14; sc.top = 14; sc.bottom = -14; sc.near = 1; sc.far = 70;
+sonne.shadow.bias = -0.0006; sonne.shadow.radius = 5;
+szene.add(sonne); szene.add(sonne.target);
+var kante = new THREE.DirectionalLight(LILA, 2.2); szene.add(kante); szene.add(kante.target);
+
+/* ---------- Materialien ---------- */
+var CHROM = new THREE.MeshStandardMaterial({ color: 0xDCDEE4, metalness: 1, roughness: .2, envMapIntensity: 1.0 });
+var LILA_MAT = new THREE.MeshPhysicalMaterial({ color: LILA, metalness: .25, roughness: .2, clearcoat: 1, clearcoatRoughness: .08,
+  emissive: LILA_TIEF, emissiveIntensity: .55, envMapIntensity: 1.1 });
+var SCHWARZ_GLANZ = new THREE.MeshPhysicalMaterial({ color: 0x0B0B10, metalness: .4, roughness: .4, clearcoat: .6, clearcoatRoughness: .32, envMapIntensity: .6 });
+function leucht(farbe, staerke){ return new THREE.MeshBasicMaterial({ color: new THREE.Color(farbe).multiplyScalar(staerke || 2.2), toneMapped: false }); }
+var LEUCHT_LILA = leucht(LILA_HELL, 2.2);
+
+function teil(geo, mat, x, y, z, schatten){
+  var m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  m.castShadow = schatten !== false; m.receiveShadow = true; szene.add(m); return m;
+}
+function rund(b, h, t, r){ return new THREE.RoundedBoxGeometry(b, h, t, 4, Math.max(.001, Math.min(r, h / 2 - .001, b / 2 - .001))); }
+
+/* ---------- Boden, Saeulen, Lichtstaub ---------- */
+var BX = -15;
+var spiegel = new THREE.Reflector(new THREE.PlaneGeometry(170, 90), { color: 0x2C2C34, textureWidth: B * DPR, textureHeight: H * DPR, clipBias: .003 });
+spiegel.rotation.x = -Math.PI / 2; spiegel.position.set(BX, 0, 0); szene.add(spiegel);
+var dunkel = new THREE.Mesh(new THREE.PlaneGeometry(170, 90), new THREE.MeshBasicMaterial({ color: 0x050507, transparent: true, opacity: .9 }));
+dunkel.rotation.x = -Math.PI / 2; dunkel.position.set(BX, .002, 0); szene.add(dunkel);
+var sb = new THREE.Mesh(new THREE.PlaneGeometry(170, 90), new THREE.ShadowMaterial({ opacity: .55 }));
+sb.rotation.x = -Math.PI / 2; sb.position.set(BX, .004, 0); sb.receiveShadow = true; szene.add(sb);
+var raster = new THREE.GridHelper(170, 170, LILA, LILA);
+raster.material.transparent = true; raster.material.opacity = .2; raster.material.depthWrite = false;
+raster.position.set(BX, .006, 0); szene.add(raster);
+(function(){
+  var r = zufall(9), km = leucht(LILA, 1.6);
+  var sm = new THREE.MeshPhysicalMaterial({ color: 0x08080C, metalness: .6, roughness: .3, envMapIntensity: .3, clearcoat: .6 });
+  for (var x = -60; x < 30; x += 3.2 + r() * 2.4){
+    for (var reihe = 0; reihe < 2; reihe++){
+      if (r() < .3) continue;
+      var z = -21 - reihe * 7 - r() * 3, hoehe = 2.5 + r() * (reihe ? 9 : 5), breite = .6 + r() * .9;
+      var s = teil(rund(breite, hoehe, breite, .05), sm, x + r() * 1.5, hoehe / 2, z, false);
+      if (r() < .6) teil(new THREE.BoxGeometry(breite * .9, .025, .025), km, s.position.x, hoehe - .25 - r() * hoehe * .5, z + breite / 2 + .02, false);
+      teil(new THREE.BoxGeometry(.02, hoehe * .8, .02), km, s.position.x - breite / 2 - .005, hoehe * .45, z + breite / 2 + .005, false).visible = r() < .35;
+    }
+  }
+})();
+var STAUB = 700, staubPos = new Float32Array(STAUB * 3), staubBasis = [], staubPunkte;
+(function(){
+  var r = zufall(21);
+  for (var i = 0; i < STAUB; i++) staubBasis.push([-55 + r() * 80, .3 + r() * 9, -16 + r() * 26, r() * 6.28, .3 + r() * .7]);
+  var c = document.createElement("canvas"); c.width = c.height = 64;
+  var g = c.getContext("2d"), vv = g.createRadialGradient(32, 32, 0, 32, 32, 32);
+  vv.addColorStop(0, "rgba(255,255,255,1)"); vv.addColorStop(.3, "rgba(200,180,255,.6)"); vv.addColorStop(1, "rgba(140,92,246,0)");
+  g.fillStyle = vv; g.fillRect(0, 0, 64, 64);
+  var geo = new THREE.BufferGeometry(); geo.setAttribute("position", new THREE.BufferAttribute(staubPos, 3));
+  staubPunkte = new THREE.Points(geo, new THREE.PointsMaterial({ size: .08, map: new THREE.CanvasTexture(c), transparent: true,
+    depthWrite: false, blending: THREE.AdditiveBlending, color: 0xC9B8FF, opacity: .7 }));
+  szene.add(staubPunkte);
+})();
+function staub(b){
+  for (var i = 0; i < STAUB; i++){
+    var s = staubBasis[i];
+    staubPos[i * 3] = s[0] + Math.sin(b * .006 * s[4] + s[3]) * .6;
+    staubPos[i * 3 + 1] = s[1] + Math.sin(b * .011 * s[4] + s[3] * 2) * .35;
+    staubPos[i * 3 + 2] = s[2] + Math.cos(b * .007 * s[4] + s[3]) * .5;
+  }
+  staubPunkte.geometry.attributes.position.needsUpdate = true;
+}
+
+/* ---------- Bausteine fuer Filme ---------- */
+var HOF = (function(){
+  var c = document.createElement("canvas"); c.width = c.height = 128;
+  var g = c.getContext("2d"), vv = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+  vv.addColorStop(0, "rgba(183,155,255,.75)"); vv.addColorStop(.5, "rgba(139,92,246,.22)"); vv.addColorStop(1, "rgba(139,92,246,0)");
+  g.fillStyle = vv; g.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+})();
+
+/* Eine Kerze, die sich bildet: erst waechst der Koerper von der Eroeffnung
+   zum Schluss, dann die Dochte. leuchte(a) legt einen lila Schein darum. */
+function kerze(o, c, h, l, opt){
+  opt = opt || {};
+  var y0 = opt.y0 === undefined ? .5 : opt.y0, mass = opt.mass || .25, basis = opt.basis === undefined ? 99 : opt.basis;
+  var br = opt.breite || .46, x = opt.x || 0, z = opt.z || 0;
+  var y = function(p){ return y0 + (p - basis) * mass; };
+  var steigt = c >= o, mat = steigt ? CHROM : LILA_MAT;
+  var oben = Math.max(o, c), unten = Math.min(o, c);
+  var kh = Math.max(.07, y(oben) - y(unten));
+  var gr = new THREE.Group(); gr.position.set(x, 0, z); szene.add(gr);
+  var koerper = new THREE.Mesh(rund(br, kh, br, Math.min(.07, br * .16)), mat); koerper.castShadow = true; gr.add(koerper);
+  var dO = new THREE.Mesh(new THREE.CylinderGeometry(br * .09, br * .09, 1, 16), mat); dO.castShadow = true; gr.add(dO);
+  var dU = new THREE.Mesh(new THREE.CylinderGeometry(br * .09, br * .09, 1, 16), mat); dU.castShadow = true; gr.add(dU);
+  var schein = new THREE.Mesh(rund(br + .16, kh + .16, br + .16, .1), new THREE.MeshBasicMaterial({ color: new THREE.Color(LILA_HELL).multiplyScalar(1.6),
+    transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  gr.add(schein);
+  var lo = y(h) - y(oben), lu = y(unten) - y(l);
+  var k = {
+    gruppe: gr, y: y, x: x, o: o, c: c, h: h, l: l, steigt: steigt,
+    stelle: function(t){
+      var tk = raus(sp(t, 0, .7)), td = raus(sp(t, .35, 1));
+      gr.visible = t > 0;
+      var cy = y(o) + (y(c) - y(o)) * tk;          /* aktueller Schluss waehrend der Bildung */
+      var top = Math.max(y(o), cy), bot = Math.min(y(o), cy);
+      var hh = Math.max(.001, top - bot);
+      koerper.scale.y = Math.max(.001, hh / kh); koerper.position.y = (top + bot) / 2;
+      if (hh < .02 && kh > .1) koerper.scale.y = .02 / kh;
+      dO.visible = lo > .01 && td > 0; dO.scale.y = Math.max(.001, lo * td); dO.position.y = y(oben) + lo * td / 2;
+      dU.visible = lu > .01 && td > 0; dU.scale.y = Math.max(.001, lu * td); dU.position.y = y(unten) - lu * td / 2;
+      schein.position.y = (y(oben) + y(unten)) / 2;
+    },
+    leuchte: function(a){ schein.material.opacity = a * .3; schein.visible = a > 0; var s = 1 + a * .06; koerper.scale.x = koerper.scale.z = s; }
+  };
+  k.stelle(0);
+  return k;
+}
+/* Ein Chart aus vielen Kerzen; bilde(b, zeiten) laesst jede Kerze zu ihrer Zeit entstehen. */
+function chart(daten, opt){
+  opt = opt || {};
+  var x0 = opt.x0 || 0, ab = opt.abstand || .72;
+  var ks = daten.map(function(d, i){ return kerze(d[0], d[1], d[2], d[3], Object.assign({}, opt, { x: x0 + i * ab })); });
+  return {
+    kerzen: ks, x: function(i){ return x0 + i * ab; }, y: ks[0].y,
+    bilde: function(b, zeiten, dauer){
+      ks.forEach(function(k, i){ k.stelle(sp(b, zeiten[i], zeiten[i] + (dauer && dauer[i] || 16))); });
+    }
+  };
+}
+/* Waagerechte Linie (Niveau), die sich von links nach rechts zieht. */
+function niveau(x1, x2, y, farbe, z){
+  var mat = leucht(farbe || SILBER, 1.1);
+  var geo = new THREE.BoxGeometry(1, .022, .022); geo.translate(.5, 0, 0);
+  var m = new THREE.Mesh(geo, mat); m.position.set(x1, y, z === undefined ? .3 : z); m.scale.x = .001; szene.add(m);
+  return {
+    mesh: m, mat: mat,
+    zeichne: function(t){ m.visible = t > 0; m.scale.x = Math.max(.001, (x2 - x1) * raus(t)); },
+    farbe: function(f, s){ mat.color.set(f).multiplyScalar(s); }
+  };
+}
+/* Leuchtende Linie durch Punkte, die sich zeichnet. */
+function linie(punkte, radius, mat){
+  var kurve = new THREE.CatmullRomCurve3(punkte, false, "catmullrom", .05);
+  var m = new THREE.Mesh(new THREE.TubeGeometry(kurve, 400, radius || .03, 10, false), mat || LEUCHT_LILA);
+  szene.add(m);
+  return {
+    mesh: m, kurve: kurve,
+    zeichne: function(t){ m.geometry.setDrawRange(0, Math.floor(klemm(t) * 400) * 10 * 6); m.visible = t > 0; }
+  };
+}
+/* Ring, der von einem Punkt aus aufgeht (Bruch). */
+function welle(pos, farbe){
+  var m = new THREE.Mesh(new THREE.TorusGeometry(.3, .025, 10, 64), new THREE.MeshBasicMaterial({ color: new THREE.Color(farbe || LILA_HELL).multiplyScalar(2.4),
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, toneMapped: false }));
+  m.position.copy(pos); szene.add(m); m.visible = false;
+  return {
+    stelle: function(b, start){
+      var t = sp(b, start, start + 26);
+      m.visible = b >= start && t < 1;
+      m.scale.setScalar(.2 + raus(t) * 3.2); m.material.opacity = 1 - t;
+      m.quaternion.copy(kamera.quaternion);
+    }
+  };
+}
+function sockel(x, z, breite, tiefe){
+  teil(rund(breite, .14, tiefe, .06), SCHWARZ_GLANZ, x, .07, z);
+  teil(new THREE.BoxGeometry(breite - .2, .014, .014), LEUCHT_LILA, x, .145, z + tiefe / 2, false);
+}
+
+/* ---------- Karten, Schildchen, Ereignisse ---------- */
+function symbol(art, zeichen){ return '<div class="symbol s-' + art + '">' + zeichen + '</div>'; }
+function h(text){ return '<h2 class="chrom">' + text + '</h2>'; }
+var EREIGNISSE = [];
+function ereignis(b, typ, extra){ EREIGNISSE.push(Object.assign({ b: b, typ: typ }, extra || {})); }
+
+var E = {
+  THREE: THREE, szene: szene, kamera: kamera, v: v, sp: sp, raus: raus, weich: weich, feder: feder, klemm: klemm,
+  fenster: fenster, zufall: zufall,
+  farben: { LILA: LILA, LILA_HELL: LILA_HELL, SILBER: SILBER, GRAU: GRAU },
+  mat: { CHROM: CHROM, LILA: LILA_MAT, SCHWARZ: SCHWARZ_GLANZ, LEUCHT_LILA: LEUCHT_LILA, leucht: leucht },
+  teil: teil, rund: rund, kerze: kerze, chart: chart, niveau: niveau, linie: linie, welle: welle, sockel: sockel,
+  symbol: symbol, h: h, ereignis: ereignis,
+  blitz: function(b, start, farbe){
+    var a = b >= start ? Math.max(0, 1 - (b - start) / 22) : 0;
+    var el = document.getElementById("blitz");
+    el.style.background = "radial-gradient(circle at 50% 55%," + (farbe || "rgba(139,92,246,.55)") + ",rgba(76,29,149,.3) 60%,transparent)";
+    el.style.opacity = a * .6;
+  }
+};
+
+var F = bau(E);
+var LAENGE = F.laenge;
+window.__laenge = LAENGE; window.__fps = FPS;
+
+/* Kamerafahrt aus Schluesselbildern: [Bild, Position, Blickpunkt, "f" = Flug] */
+var KEYS = F.keys;
+KEYS.forEach(function(k, i){ if (k[3] === "f") ereignis(KEYS[i - 1][0], "wusch", { dauer: k[0] - KEYS[i - 1][0] }); });
+function kameraBei(b){
+  var i = 0; while (i < KEYS.length - 2 && b >= KEYS[i + 1][0]) i++;
+  var a = KEYS[i], z = KEYS[i + 1], t = sp(b, a[0], z[0]);
+  var flug = z[3] === "f", e = flug ? weich(t) : weich(t) * .3 + t * .7;
+  var pos = a[1].clone().lerp(z[1], e), ziel = a[2].clone().lerp(z[2], e);
+  if (flug) pos.y += Math.sin(Math.PI * e) * (z[4] === undefined ? 1.6 : z[4]);
+  return { pos: pos, ziel: ziel };
+}
+
+var kartenEbene = document.getElementById("karten");
+F.karten.forEach(function(k){
+  var d = document.createElement("div"); d.className = "karte " + (k.art || ""); d.innerHTML = k.html;
+  kartenEbene.appendChild(d); k.el = d; ereignis(k.von, "plopp");
+});
+var tagEbene = document.getElementById("tags");
+F.tags.forEach(function(t){
+  var d = document.createElement("div"); d.className = "tag" + (t.gross ? " gross" : "");
+  var f = t.farbe || SILBER;
+  d.innerHTML = '<b style="background:' + f + ';color:' + f + '"></b>' + t.text;
+  tagEbene.appendChild(d); t.el = d; ereignis(t.von, "tick");
+});
+EREIGNISSE.sort(function(a, b){ return a.b - b.b; });
+window.__ereignisse = EREIGNISSE;
+
+var schluss = document.getElementById("schluss"), hinweis = document.getElementById("hinweis");
+schluss.querySelector("h2").innerHTML = F.schluss.titel; schluss.querySelector("p").innerHTML = F.schluss.text;
+
+var hilf = new THREE.Vector3();
+function bildschirm(p){ hilf.copy(p).project(kamera); return { x: (hilf.x + 1) / 2 * B, y: (1 - hilf.y) / 2 * H }; }
+function karteStellen(k, b){
+  if (b < k.von || b > k.bis){ k.el.style.opacity = 0; return; }
+  var a = sp(b, k.von, k.von + 13), w = sp(b, k.bis - 9, k.bis);
+  k.el.style.opacity = Math.min(1, a * 1.8) * (1 - raus(w));
+  k.el.style.transform = "translateY(" + (-14 * raus(w) + 10 * (1 - raus(a))) + "px) scale(" + (.84 + .16 * feder(a)) + ")";
+  k.el.style.filter = "blur(" + ((1 - raus(a)) * 6 + raus(w) * 4) + "px)";
+}
+
+window.zeichne = function(b){
+  var k = kameraBei(b);
+  if (F.kamera) F.kamera(b, k);
+  kamera.position.copy(k.pos); kamera.lookAt(k.ziel); kamera.updateMatrixWorld();
+  sonne.position.copy(k.ziel).add(v(6, 15, 12)); sonne.target.position.copy(k.ziel);
+  kante.position.copy(k.ziel).add(v(-6, 6, -12)); kante.target.position.copy(k.ziel);
+  staub(b);
+  F.update(b);
+
+  var sa = raus(sp(b, F.schluss.von, F.schluss.von + 22));
+  schluss.style.opacity = sa;
+  schluss.style.transform = "translateY(" + (10 * (1 - sa)) + "px) scale(" + (.84 + .16 * feder(sp(b, F.schluss.von, F.schluss.von + 13))) + ")";
+  schluss.style.filter = "blur(" + ((1 - sa) * 6) + "px)";
+  hinweis.style.opacity = raus(sp(b, F.schluss.von + 18, F.schluss.von + 32));
+
+  F.karten.forEach(function(kk){ karteStellen(kk, b); });
+  F.tags.forEach(function(t){
+    if (b < t.von || b > t.bis){ t.el.style.opacity = 0; return; }
+    var a = sp(b, t.von, t.von + 10), w = sp(b, t.bis - 8, t.bis);
+    var p = bildschirm(typeof t.ort === "function" ? t.ort() : t.ort);
+    var dx = t.mitte ? -t.el.offsetWidth / 2 : t.links ? -t.el.offsetWidth - 12 : 12;
+    var dy = t.mitte ? -t.el.offsetHeight - 10 : -t.el.offsetHeight / 2;
+    if (t.unter) dy = 10;
+    t.el.style.opacity = Math.min(1, a * 2) * (1 - w);
+    t.el.style.transform = "translate(" + (p.x + dx) + "px," + (p.y + dy) + "px) scale(" + (.7 + .3 * feder(a)) + ")";
+  });
+  composer.render();
+};
+
+function einpassen(){ buehne.style.transform = "scale(" + Math.min(window.innerWidth / B, window.innerHeight / H) + ")"; }
+window.addEventListener("resize", einpassen); einpassen();
+if (!window.__aufnahme){
+  var start = performance.now();
+  (function lauf(){ window.zeichne(((performance.now() - start) / 1000 * FPS) % LAENGE); requestAnimationFrame(lauf); })();
+  document.addEventListener("click", function(){ start = performance.now(); });
+} else {
+  window.zeichne(0);
+}
+window.__bereit = true;
+};
+
+/* Film laden: erst das gemeinsame Kerzen-Intro, dann der Film selbst. */
+(function(){
+  var film = new URLSearchParams(location.search).get("film") || "bos";
+  var s1 = document.createElement("script"); s1.src = "filme/kerzen-intro.js";
+  s1.onload = function(){ var s2 = document.createElement("script"); s2.src = "filme/" + film + ".js"; document.body.appendChild(s2); };
+  document.body.appendChild(s1);
+})();
+</script>
+</body>
+</html>

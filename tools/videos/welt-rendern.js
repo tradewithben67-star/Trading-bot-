@@ -1,6 +1,8 @@
-/* Nimmt welt.html Bild fuer Bild auf (1080x1920, 60 fps) und legt den Ton dazu.
+/* Nimmt eine Film-Seite Bild fuer Bild auf (1080x1920, 60 fps) und legt den Ton dazu.
 
-     node tools/videos/welt-rendern.js [ziel.mp4]
+     node tools/videos/welt-rendern.js [ziel.mp4] [seite]
+
+   seite ist welt.html (Vorgabe) oder z. B. "kerzen-film.html?film=bos".
 
    Ablauf: Die Bilder sind allein von der Bildnummer abhaengig, darum nehmen
    mehrere Browser parallel je ein Stueck auf (TEILE, Vorgabe 4). Die Stuecke
@@ -15,21 +17,23 @@ const hier = __dirname;
 const AUFNAHME_FPS = 60;
 const TEILE = Number(process.env.TEILE || 4);
 
-async function oeffnen() {
+async function oeffnen(seiteName) {
   const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
   const seite = await browser.newPage({ viewport: { width: 540, height: 960 }, deviceScaleFactor: 2 });
   const fehler = [];
   seite.on('pageerror', e => fehler.push(e.message));
   await seite.addInitScript(() => { window.__aufnahme = true; });
-  await seite.goto('file://' + path.join(hier, 'welt.html'));
-  await seite.waitForTimeout(1500);
+  const [datei, frage] = seiteName.split('?');
+  await seite.goto('file://' + path.join(hier, datei) + (frage ? '?' + frage : ''));
+  await seite.waitForFunction(() => typeof window.zeichne === 'function' && window.__laenge > 0, null, { timeout: 30000 });
+  await seite.waitForTimeout(1200);
   if (fehler.length) throw new Error('Seitenfehler: ' + fehler.join(' | '));
   return { browser, seite, fehler };
 }
 
 /* Ein Stueck: Bilder von..bis (Aufnahmebilder, 60 fps) in eine Datei. */
-async function stueck(von, bis, datei) {
-  const { browser, seite, fehler } = await oeffnen();
+async function stueck(von, bis, datei, seiteName) {
+  const { browser, seite, fehler } = await oeffnen(seiteName);
   const { fps } = await seite.evaluate(() => ({ fps: window.__fps }));
   const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(AUFNAHME_FPS), '-i', 'pipe:0',
     '-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '15', '-preset', 'slow', '-profile:v', 'high', datei]);
@@ -49,12 +53,13 @@ async function stueck(von, bis, datei) {
   if (fehler.length) throw new Error('Fehler waehrend der Aufnahme: ' + fehler.join(' | '));
 }
 
-async function ganz(ziel) {
+async function ganz(ziel, seiteName) {
+  ziel = path.resolve(ziel);   /* ffmpeg liest die Liste relativ zu ihrem eigenen Ort */
   fs.mkdirSync(path.dirname(ziel), { recursive: true });
   const arbeit = ziel.replace(/\.mp4$/, '.teile');
   fs.mkdirSync(arbeit, { recursive: true });
 
-  const { browser, seite } = await oeffnen();
+  const { browser, seite } = await oeffnen(seiteName);
   const { laenge, fps, liste } = await seite.evaluate(() => ({ laenge: window.__laenge, fps: window.__fps, liste: window.__ereignisse }));
   await browser.close();
   const ereignisse = path.join(arbeit, 'ereignisse.json'), wav = path.join(arbeit, 'ton.wav');
@@ -70,7 +75,7 @@ async function ganz(ziel) {
     const datei = path.join(arbeit, `teil${t}.mp4`);
     dateien.push(datei);
     laeufe.push(new Promise((ok, nein) => {
-      const p = spawn(process.execPath, [__filename, '--stueck', String(von), String(bis), datei], { stdio: 'inherit' });
+      const p = spawn(process.execPath, [__filename, '--stueck', String(von), String(bis), datei, seiteName], { stdio: 'inherit' });
       p.on('close', c => c === 0 ? ok() : nein(new Error('Stück ' + von + ' fehlgeschlagen')));
     }));
   }
@@ -91,6 +96,6 @@ async function ganz(ziel) {
 
 const a = process.argv.slice(2);
 (a[0] === '--stueck'
-  ? stueck(Number(a[1]), Number(a[2]), a[3])
-  : ganz(a[0] || path.join(hier, '..', '..', 'media', 'tiktok', '01-trading-erklaert.mp4'))
+  ? stueck(Number(a[1]), Number(a[2]), a[3], a[4])
+  : ganz(a[0] || path.join(hier, '..', '..', 'media', 'tiktok', '01-trading-erklaert.mp4'), a[1] || 'welt.html')
 ).catch(e => { console.error(e); process.exit(1); });
